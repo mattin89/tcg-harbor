@@ -1,0 +1,16 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+*.log
+coverage
+.idea
+.vscode
+.DS_Store
+playwright-report
+test-results
+
+# Preserve locally, but publish only the active generated snapshot.
+src/data/generated/onepiece-market.json
+src/data/generated/onepiece-market-v6.json

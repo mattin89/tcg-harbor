@@ -1,0 +1,112 @@
+.trades-section { margin-top: 18px; }
+.trade-toolbar { display: flex; align-items: center; gap: 9px; }
+.match-toggle { min-height: 40px; display: flex; align-items: center; cursor: pointer; }
+.match-toggle input { position: absolute; opacity: 0; }
+.match-toggle span { min-height: 40px; padding: 0 11px; display: flex; align-items: center; gap: 6px; color: var(--muted); background: var(--paper); border: 1px solid var(--line); border-radius: 9px; font-size: 8px; }
+.match-toggle input:checked + span { color: var(--violet); background: var(--violet-soft); border-color: #d5d0eb; }
+.trade-disclaimer { min-height: 44px; margin: 11px 0 14px; padding: 9px 12px; display: flex; align-items: center; gap: 8px; color: #705b30; background: var(--gold-soft); border: 1px solid #e8d6b0; border-radius: 10px; font-size: 8px; }
+.trade-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 15px; }
+.trade-card { padding: 16px; background: var(--paper); border: 1px solid var(--line); border-radius: 15px; box-shadow: var(--shadow-sm); }
+.trade-card > header { display: flex; align-items: center; gap: 8px; padding-bottom: 11px; border-bottom: 1px solid var(--line); }
+.trade-card > header > span:nth-child(2) { flex: 1; display: grid; }
+.trade-card > header strong { font-size: 9px; }
+.trade-card > header small { color: var(--subtle); font-size: 7px; }
+.trade-sides { display: grid; grid-template-columns: 1fr 28px 1fr; gap: 8px; margin-top: 14px; }
+.trade-sides > div { min-width: 0; }
+.trade-sides .eyebrow { display: flex; align-items: center; gap: 4px; margin-bottom: 7px; }
+.eyebrow.offering { color: var(--coral); }
+.eyebrow.looking { color: var(--blue); }
+.trade-asset { display: flex; gap: 9px; align-items: center; }
+.trade-asset > span { min-width: 0; display: grid; gap: 3px; }
+.trade-asset strong { font-size: 9px; }
+.trade-asset small,.trade-asset em { color: var(--muted); font-size: 7px; font-style: normal; }
+.trade-arrow { align-self: center; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; color: var(--muted); background: #efeee9; }
+.wanted-asset { min-height: 47px; display: flex; align-items: center; gap: 7px; }
+.wanted-asset + .wanted-asset { margin-top: 5px; }
+.wanted-asset span { min-width: 0; display: grid; gap: 2px; }
+.wanted-asset strong { font-size: 8px; }
+.wanted-asset small { color: var(--muted); font-size: 7px; }
+.trade-note { min-height: 43px; margin: 13px 0; padding: 10px; color: var(--muted); background: #f4f2ed; border-radius: 9px; font-size: 8px; line-height: 1.5; font-style: italic; }
+.market-reference { min-height: 54px; padding: 8px 10px; display: grid; grid-template-columns: 1fr 20px 1fr; align-items: center; border: 1px solid var(--line); border-radius: 9px; }
+.market-reference > div { display: grid; gap: 2px; }
+.market-reference > div:nth-child(3) { text-align: right; }
+.market-reference span { color: var(--subtle); font-size: 6px; }
+.market-reference strong { font-size: 10px; }
+.market-reference > svg { color: var(--subtle); }
+.market-reference > small { grid-column: 1/4; padding-top: 4px; color: var(--subtle); font-size: 6px; text-align: center; border-top: 1px solid #efede8; margin-top: 5px; }
+.market-only { display: flex; align-items: center; gap: 5px; color: #89672a; font-size: 6px; margin-top: 6px; }
+.trade-card > footer { min-height: 45px; margin-top: 11px; padding-top: 10px; display: flex; align-items: center; justify-content: flex-end; gap: 7px; border-top: 1px solid var(--line); }
+.trade-card > footer > span { flex: 1; display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 7px; }
+.trade-form-notice { padding: 10px; display: flex; align-items: center; gap: 9px; color: #725b2d; background: var(--gold-soft); border-radius: 10px; }
+.trade-form-notice span { display: grid; }
+.trade-form-notice strong { font-size: 9px; }
+.trade-form-notice small { font-size: 7px; }
+.trade-form-grid { display: grid; grid-template-columns: 1fr 36px 1fr; gap: 10px; margin-top: 18px; }
+.trade-form-grid > section { min-width: 0; padding: 13px; border: 1px solid var(--line); border-radius: 11px; }
+.trade-form-arrow { width: 34px; height: 34px; align-self: center; display: grid; place-items: center; color: var(--coral); background: var(--coral-soft); border-radius: 50%; }
+.form-asset-preview { margin: 10px 0; padding: 9px; display: flex; gap: 8px; align-items: center; background: #f5f3ee; border-radius: 9px; }
+.form-asset-preview > span { display: grid; gap: 2px; min-width: 0; }
+.form-asset-preview strong { font-size: 8px; }
+.form-asset-preview small { color: var(--muted); font-size: 7px; }
+.form-asset-preview em { color: var(--green); font-size: 7px; font-style: normal; }
+.trade-form-grid .form-grid { gap: 8px; }
+.trade-form > label { margin-top: 13px; }
+.trade-form-reference { margin-top: 13px; padding: 9px 11px; display: flex; gap: 7px; color: var(--muted); background: var(--blue-soft); border-radius: 9px; font-size: 8px; line-height: 1.45; }
+.trade-form .form-error { margin-top: 11px; }
+.members-section { margin-top: 18px; }
+.member-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 15px; }
+.member-header h2 { font-size: 19px; margin-top: 5px; }
+.member-header p { color: var(--muted); font-size: 8px; margin-top: 3px; }
+.member-header .search-field { max-width: 300px; }
+.member-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
+.member-grid article { min-height: 80px; padding: 12px; display: flex; align-items: center; gap: 10px; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-sm); }
+.member-grid article > span { flex: 1; display: grid; gap: 2px; }
+.member-grid strong { font-size: 10px; }
+.member-grid small { color: var(--muted); font-size: 7px; }
+.member-grid em { display: flex; align-items: center; gap: 5px; color: var(--subtle); font-size: 7px; font-style: normal; margin-top: 3px; }
+.member-privacy { min-height: 57px; margin-top: 12px; padding: 10px 13px; display: flex; align-items: center; gap: 8px; color: var(--blue); background: var(--blue-soft); border-radius: 10px; }
+.member-privacy span { display: grid; }
+.member-privacy strong { font-size: 9px; }
+.member-privacy small { color: #5f7988; font-size: 7px; }
+.dm-privacy { min-height: 52px; margin-bottom: 12px; padding: 8px 12px; display: flex; align-items: center; gap: 8px; color: var(--blue); background: var(--blue-soft); border: 1px solid #c9dce6; border-radius: 11px; }
+.dm-privacy > span { flex: 1; display: grid; }
+.dm-privacy strong { font-size: 9px; }
+.dm-privacy small { color: #5c7787; font-size: 7px; }
+.messages-layout { height: calc(100vh - 190px); min-height: 590px; display: grid; grid-template-columns: 310px minmax(0,1fr); gap: 12px; }
+.conversation-list,.conversation { overflow: hidden; }
+.conversation-list > header { height: 62px; padding: 12px 14px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--line); }
+.conversation-list h2 { font-size: 15px; margin-top: 3px; }
+.conversation-list > .search-field { margin: 9px 11px; width: calc(100% - 22px); }
+.conversation-list > div { height: calc(100% - 175px); overflow-y: auto; border-top: 1px solid var(--line); }
+.conversation-list > div > button { width: 100%; min-height: 79px; padding: 10px 11px; display: flex; align-items: center; gap: 9px; background: transparent; text-align: left; border-bottom: 1px solid var(--line); }
+.conversation-list > div > button.active { background: #fff5ed; box-shadow: inset 3px 0 var(--coral); }
+.avatar-presence { position: relative; flex: 0 0 auto; }
+.avatar-presence > i { position: absolute; right: 0; bottom: 1px; width: 8px; height: 8px; border: 2px solid white; border-radius: 50%; background: #aeb4b0; }
+.avatar-presence > i.online { background: #4c9d77; }
+.conversation-list button > span:nth-child(2) { min-width: 0; flex: 1; display: grid; gap: 2px; }
+.conversation-list button > span:nth-child(2) > strong { display: flex; justify-content: space-between; font-size: 9px; }
+.conversation-list button > span:nth-child(2) > strong small { color: var(--subtle); font-size: 6px; font-family: 'DM Sans'; font-weight: 500; }
+.conversation-list button em { color: var(--coral); font-size: 6px; font-style: normal; }
+.conversation-list button p { color: var(--muted); font-size: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.conversation-list button > b { width: 17px; height: 17px; display: grid; place-items: center; border-radius: 50%; background: var(--coral); color: white; font-size: 7px; }
+.conversation-list > footer { height: 54px; padding: 9px 11px; display: flex; align-items: center; gap: 7px; color: var(--green); background: var(--green-soft); }
+.conversation-list > footer span { display: grid; }
+.conversation-list > footer strong { font-size: 7px; }
+.conversation-list > footer small { color: #5e7e70; font-size: 6px; }
+.conversation { display: flex; flex-direction: column; }
+.conversation > header { height: 62px; flex: 0 0 auto; padding: 10px 14px; display: flex; align-items: center; gap: 9px; border-bottom: 1px solid var(--line); }
+.conversation > header > div:nth-child(3) { flex: 1; display: grid; }
+.conversation > header strong { font-size: 10px; }
+.conversation > header small { color: var(--muted); font-size: 7px; }
+.conversation-actions { display: flex !important; flex-direction: row; }
+.mobile-back { display: none; }
+.shared-context { min-height: 36px; flex: 0 0 auto; display: flex; justify-content: center; align-items: center; gap: 6px; color: #5d7b6d; background: var(--green-soft); font-size: 7px; }
+.shared-context svg { width: 14px; }
+.dm-messages { flex: 1; min-height: 0; overflow-y: auto; padding: 13px 24px; background: linear-gradient(rgba(255,253,249,.92),rgba(255,253,249,.92)),radial-gradient(circle at 10% 20%,#d9e4e6,transparent 30%); }
+.dm-messages > .chat-date { margin: 3px 0 14px; }
+.dm-messages .chat-message > div > time { display: block; margin-top: 3px; text-align: right; }
+.dm-composer { flex: 0 0 auto; padding-left: 18px; }
+.blocked-composer { min-height: 66px; flex: 0 0 auto; padding: 9px 13px; display: flex; align-items: center; gap: 9px; color: var(--red); background: var(--red-soft); }
+.blocked-composer > span { flex: 1; display: grid; }
+.blocked-composer strong { font-size: 9px; }
+.blocked-composer small { font-size: 7px; }

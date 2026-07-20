@@ -1,0 +1,32 @@
+{
+  "name": "tcg-harbor",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "sync:data": "node scripts/sync-onepiece-data.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^4.4.1",
+    "@zxing/browser": "^0.1.5",
+    "@zxing/library": "^0.21.3",
+    "maplibre-gl": "^5.6.2",
+    "qrcode": "^1.5.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^18.3.20",
+    "@types/react-dom": "^18.3.7",
+    "typescript": "^5.8.3",
+    "vite": "^6.4.1",
+    "vitest": "^3.2.4"
+  }
+}

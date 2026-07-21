@@ -30,6 +30,7 @@
 .danger-zone { padding: 17px; display: flex; justify-content: space-between; align-items: center; gap: 20px; border-color: #e6ceca; }
 .danger-zone h2 { font-size: 12px; }
 .danger-zone p { color: var(--muted); font-size: 8px; margin-top: 3px; }
+.session-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 
 /* Store admin */
 .admin-banner { min-height: 58px; padding: 9px 13px; margin-bottom: 14px; display: flex; align-items: center; gap: 9px; color: #765d2d; background: var(--gold-soft); border: 1px solid #e6d3aa; border-radius: 11px; }

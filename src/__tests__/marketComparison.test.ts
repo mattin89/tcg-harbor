@@ -195,6 +195,32 @@ describe('compareCardMarkets', () => {
     );
   });
 
+  it('rebuilds both rankings from scratch when only a minimum price is set', () => {
+    const assets = Array.from({ length: 60 }, (_, index) => {
+      const cardmarketEur = index + 1;
+      const ratio = 61 - cardmarketEur;
+      return makeAsset(`minimum-${cardmarketEur}`, {
+        cardmarketProductId: 500_000 + cardmarketEur,
+        tcgplayerProductId: 600_000 + cardmarketEur,
+        quote: { cardmarket: cardmarketEur, tcgplayer: cardmarketEur * ratio },
+      });
+    });
+
+    const unfiltered = compareCardMarkets(assets, 1);
+    const filtered = compareCardMarkets(assets, 1, { minCardmarketEur: 21 });
+
+    expect(unfiltered.highest.map((row) => row.cardmarketEur)).toEqual(
+      Array.from({ length: 20 }, (_, index) => index + 1),
+    );
+    expect(filtered.summary.filteredEligiblePrintingCount).toBe(40);
+    expect(filtered.highest.map((row) => row.cardmarketEur)).toEqual(
+      Array.from({ length: 20 }, (_, index) => index + 21),
+    );
+    expect(filtered.lowest.map((row) => row.cardmarketEur)).toEqual(
+      Array.from({ length: 20 }, (_, index) => 60 - index),
+    );
+  });
+
   it('sanitizes empty and localized decimal bounds without mutating the inputs', () => {
     const filters = {
       minCardmarketEur: ' 1,25 ',

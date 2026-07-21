@@ -93,7 +93,13 @@
 .conversation-list > footer span { display: grid; }
 .conversation-list > footer strong { font-size: 7px; }
 .conversation-list > footer small { color: #5e7e70; font-size: 6px; }
+.conversation-list > .conversation-list-empty { height: calc(100% - 175px); padding: 24px; display: flex; align-items: center; justify-content: center; gap: 9px; color: var(--muted); text-align: left; }
+.conversation-list-empty > span { display: grid; gap: 3px; }
+.conversation-list-empty strong { color: var(--ink); font-size: 9px; }
+.conversation-list-empty small { font-size: 7px; line-height: 1.45; }
 .conversation { display: flex; flex-direction: column; }
+.conversation-empty { justify-content: center; padding: 24px; }
+.conversation-empty > .empty-state { width: 100%; border: 0; background: transparent; }
 .conversation > header { height: 62px; flex: 0 0 auto; padding: 10px 14px; display: flex; align-items: center; gap: 9px; border-bottom: 1px solid var(--line); }
 .conversation > header > div:nth-child(3) { flex: 1; display: grid; }
 .conversation > header strong { font-size: 10px; }

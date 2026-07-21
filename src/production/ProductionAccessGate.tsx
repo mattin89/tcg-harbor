@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Icon } from "../components/Icon";
+import { preferredPortalAreaV2, type PortalAreaV2 } from "../domain/portalAreaV2";
 import { ProductionAccessProvider, useProductionAccessContext } from "./ProductionAccessContext";
 import { ProductionAuthPanel } from "./ProductionAuthPanel";
 import { ProductionStoreJoinPage } from "./ProductionStoreJoinPage";
@@ -11,8 +12,6 @@ import {
 } from "./storeJoinRoute";
 import type { ProductionAccessSnapshot } from "./types";
 import "./production-access.css";
-
-type PortalArea = "player" | "store" | "approvals";
 
 export interface ProductionAccessGateProps {
   children: ReactNode;
@@ -29,10 +28,9 @@ export function ProductionAccessGate(props: ProductionAccessGateProps) {
 /** Use inside an existing ProductionAccessProvider when App also needs the context hook. */
 export function ProductionAccessBoundary({ children, renderPlayer, renderStoreWorkspace, renderPlatformApprovals }: ProductionAccessGateProps) {
   const access = useProductionAccessContext();
-  const [area, setArea] = useState<PortalArea>("player");
+  const [area, setArea] = useState<PortalAreaV2>("player");
   const [storeJoinIntent, setStoreJoinIntent] = useState(() => typeof window === "undefined" || !access.configured ? null : captureStoreJoinIntentFromBrowser());
   const [pathname, setPathname] = useState(() => typeof window === "undefined" ? "/" : window.location.pathname);
-  const initialized = useRef(false);
   const snapshot = access.snapshot;
   const storeJoinToken = storeJoinIntent?.token ?? null;
   const onCanonicalJoinRoute = /^\/join\/store\/?$/i.test(pathname);
@@ -59,17 +57,26 @@ export function ProductionAccessBoundary({ children, renderPlayer, renderStoreWo
     setPathname("/dashboard");
   }, [clearJoinStorage]);
 
-  useEffect(() => {
-    if (!snapshot || initialized.current) return;
-    initialized.current = true;
-    if (snapshot.profile.roles.includes("platform_administrator")) setArea("approvals");
-    else if (snapshot.profile.accountKind === "store") setArea("store");
-  }, [snapshot]);
+  const preferredArea = snapshot
+    ? preferredPortalAreaV2({
+      roles: snapshot.profile.roles,
+      accountKind: snapshot.profile.accountKind,
+      managedStoreCount: snapshot.managedStores.length,
+    })
+    : "player";
 
-  // The production layer is opt-in by environment. With no browser-safe key,
-  // preserve the current local demo exactly as it is.
+  useEffect(() => {
+    setArea(preferredArea);
+  }, [preferredArea, snapshot?.profile.id]);
+
   if (!access.configured || access.phase === "unconfigured") {
-    return <>{children}</>;
+    return (
+      <main className="production-loading-page">
+        <span className="production-status-icon"><Icon name="info" size={24} /></span>
+        <h1>Account service unavailable</h1>
+        <p>TCG Harbor is missing its public account-service configuration. Please try again after the deployment is repaired.</p>
+      </main>
+    );
   }
 
   if (access.phase === "loading") {
@@ -150,10 +157,10 @@ export function ProductionAccessBoundary({ children, renderPlayer, renderStoreWo
 
       <div className={area === "player" ? "production-player-outlet" : "production-portal-outlet"}>
         {area === "player" && playerContent}
-        {area === "store" && (snapshot.managedStores.length > 0
+        {area === "store" && canUseStoreArea && (snapshot.managedStores.length > 0
           ? renderStoreWorkspace?.(snapshot) ?? <StoreWorkspacePanel stores={snapshot.managedStores} access={access} />
           : <StoreApplicationPanel access={access} />)}
-        {area === "approvals" && (renderPlatformApprovals?.(snapshot) ?? <PlatformApprovalPanel access={access} />)}
+        {area === "approvals" && isPlatformAdmin && (renderPlatformApprovals?.(snapshot) ?? <PlatformApprovalPanel access={access} />)}
       </div>
     </div>
   );

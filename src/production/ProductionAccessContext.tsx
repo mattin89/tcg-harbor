@@ -39,5 +39,6 @@ export function useProductionIdentity() {
     registeredStores: access.snapshot?.registeredStores ?? [],
     storeApplication: access.snapshot?.application ?? null,
     signOut: access.signOut,
+    signOutEverywhere: access.signOutEverywhere,
   };
 }

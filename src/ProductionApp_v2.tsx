@@ -39,9 +39,8 @@ function toMapStore(store: RegisteredStore, index: number): Store {
 }
 
 /**
- * Production-aware root. Blank Supabase environment values intentionally keep
- * the existing offline demo available; configured values switch the same app
- * shell to server-verified sessions and capability-based account navigation.
+ * Production-aware root. The application shell is exposed only through a
+ * server-verified session; missing account configuration fails closed.
  */
 export default function ProductionAppV2() {
   return <ProductionAccessGate><ProductionIdentityBridge /></ProductionAccessGate>;
@@ -51,10 +50,11 @@ function ProductionIdentityBridge() {
   const identity = useProductionIdentity();
 
   if (!identity.configured || !identity.authenticated || !identity.profile) {
-    return <App />;
+    return <main className="production-loading-page" aria-busy="true"><h1>Opening your account</h1></main>;
   }
 
-  return <App identity={{
+  return <App key={identity.profile.id} identity={{
+    userId: identity.profile.id,
     username: identity.profile.username,
     displayName: identity.profile.displayName,
     email: identity.profile.email,
@@ -62,5 +62,6 @@ function ProductionIdentityBridge() {
     roles: identity.roles,
     registeredStores: identity.registeredStores.map(toMapStore),
     onSignOut: identity.signOut,
+    onSignOutEverywhere: identity.signOutEverywhere,
   }} />;
 }

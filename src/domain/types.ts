@@ -162,6 +162,7 @@ export interface AcquisitionLot {
   readonly addedAt: ISODateTime;
   readonly quantity: number;
   readonly marketReferences: readonly AcquisitionMarketReference[];
+  readonly purchasePricePerUnit?: Money;
 }
 
 interface CollectionItemBase {

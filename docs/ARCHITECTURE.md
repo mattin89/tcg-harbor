@@ -2,47 +2,48 @@
 
 ## Scope and design intent
 
-TCG Harbor is structured as a One Piece Card Game demo with boundaries that can support additional games later. The current deliverable prioritizes a cohesive browser experience while also supplying the domain, provider, repository, authentication, and database contracts needed for a production migration.
+TCG Harbor is structured as a One Piece Card Game application with an isolated demo mode and production Supabase accounts. The current runtime combines a cohesive browser experience with owner-scoped collection persistence, store approval/administration, and database-enforced authorization boundaries that can support additional games later.
 
 The key architectural rule is to distinguish demonstration behavior from enforceable production behavior:
 
-- React state and `localStorage` make the current single-browser walkthrough interactive.
+- React state and `localStorage` make only the labelled demo walkthrough interactive.
+- Production authentication and player collections use Supabase Auth, guarded RPCs, PostgreSQL constraints, and RLS.
 - Pure domain modules express important business rules independently of React.
 - Service interfaces separate consumers from local/demo and live-provider implementations.
 - PostgreSQL constraints, triggers, RPCs, grants, and RLS define the intended trusted authorization boundary.
 
-The browser demo is not itself a trusted authorization system.
+The demo mode is not a trusted authorization system and never shares collection state with a production account.
 
 ## System context
 
 ```mermaid
 flowchart LR
-  collector["Collector browser"] --> ui["Vite + React demo UI"]
+  collector["Collector browser"] --> ui["Vite + React UI"]
   storeAdmin["Store-admin browser"] --> ui
 
   ui --> fixtures["Seeded TypeScript fixtures"]
   ui --> browserState["React state + localStorage"]
 
-  ui -. "future repository wiring" .-> services["Domain + service interfaces"]
+  ui --> services["Domain + service interfaces"]
   services --> localAdapter["LocalDemoDataAdapter"]
   services --> mockPricing["MockPricingProvider"]
 
-  ui -. "future Supabase client" .-> supabase["Supabase Auth, Postgres, RLS, Realtime"]
+  ui --> supabase["Supabase Auth, Postgres, RLS, Realtime"]
   server["Trusted server routes / ingestion jobs"] --> supabase
   server --> livePricing["Authorized Cardmarket / TCGPlayer transports"]
 ```
 
-Solid arrows are used by the current browser demo. Dotted arrows are integration seams present in the repository but not yet connected in `App.tsx`.
+Solid arrows include retained fixture/test adapters, but the shipped entry is production-gated. Production collection ownership is always derived from the authenticated Supabase user; missing Supabase configuration fails closed.
 
 ## Runtime truth table
 
 | Capability | Current runnable UI | Reusable implementation | Production target |
 | --- | --- | --- | --- |
-| Authentication | Local session flag; email-shape validation | `AuthService` / `DemoAuthService` | Supabase Auth + server-verifiable session |
-| Collection persistence | `tcg-harbor-assets` in `localStorage` | `DemoDataAdapter` + generic repository | Owner-scoped collection tables under RLS |
+| Authentication | Supabase Auth, with no shared/demo-account fallback | `AuthService`; demo service retained only for isolated tests | Supabase Auth + server-verifiable session |
+| Collection persistence | Owner-scoped Supabase RPCs and daily valuation history | Production collection repository + isolated demo adapter | Collection/acquisition/daily-valuation tables under RLS |
 | Community/chat/trades/messages | React state for one browser | Pure domain authorization functions | Supabase tables, RPCs, RLS, Realtime |
-| Pricing | Explicit values in UI fixtures | Normalized mock/live provider classes | Server ingestion into raw responses, quotes, snapshots |
-| Store discovery | Fixture search + illustrative CSS map | Store/domain types | Geocoded store repository + MapLibre/OSM tiles |
+| Pricing | Generated official-release snapshot plus nullable verified references | Normalized mock/live provider classes | Daily trusted ingestion into provider mappings and price snapshots |
+| Store discovery | Approved store rows + Dresden fixtures on interactive MapLibre/OSM | Store/domain types | Geocoded store repository + MapLibre/OSM tiles |
 | QR generation | Real SVG generation with `qrcode` | Domain join validation | Hashed, revocable database token RPCs |
 | QR scanning | Permission-aware ZXing live-camera and uploaded-image decoding | Join-code domain rules | Server RPC redemption |
 | Charts | Deterministic inline SVG | Portfolio/history calculations | Snapshot queries and accessible charting adapter |
@@ -51,11 +52,11 @@ Solid arrows are used by the current browser demo. Dotted arrows are integration
 
 ### Entry and navigation
 
-`src/main.tsx` mounts `App`. `src/App.tsx` owns a lightweight history-based router and the main application state. It supports:
+`src/main.tsx` mounts `ProductionApp_v2`, which fails closed without Supabase and exposes `App` only after a verified session. `src/App.tsx` owns a lightweight history-based router and the main application state. It supports:
 
 | Route | Current responsibility |
 | --- | --- |
-| `/signin` | Sign-in, sign-up, and reset demo states |
+| `/signin` | Supabase sign-in, player/store sign-up, confirmation, and password reset |
 | `/dashboard` | Portfolio summary, period/source/type controls, chart, valuable holdings, gainers, and activity |
 | `/collection` | Card/sealed tabs, search/filter/sort, grid/table views, detail/edit/remove flows |
 | `/collection/add` | Catalog search, card/sealed forms, references, validation, and duplicate merge |
@@ -66,7 +67,7 @@ Solid arrows are used by the current browser demo. Dotted arrows are integration
 | `/communities/:communityId` | Member gate, chat, trades, members, and post creation |
 | `/messages` | Conversation list and responsive message workspace |
 | `/messages/:conversationId` | Selected private conversation |
-| `/settings` | Profile, market/currency, notifications, privacy, and sign-out demo controls |
+| `/settings` | Profile, market/currency, notifications, privacy, and account sign-out controls |
 | `/store-admin` | QR SVG/poster generation, download, activation, regeneration, and admin-boundary presentation |
 | `/scan` | Live camera decoding, uploaded-image decoding, manual code, and labelled demo simulation |
 | `/join/:storeCode` | Valid, invalid, expired, already-joined, and successful join states |
@@ -83,16 +84,16 @@ The desktop shell uses a sidebar and the mobile shell uses a compact bottom navi
 
 ### Current state ownership
 
-`App.tsx` currently owns:
+`App.tsx` currently owns session-local UI state for:
 
-- collection assets and market/period/type selections;
+- market/period/type selections (production collection assets come from the authenticated Supabase repository);
 - joined community IDs;
 - chat messages;
 - trade posts;
 - direct-message conversations;
 - toast and notification-panel state.
 
-The UI writes collection assets to `localStorage` under `tcg-harbor-assets`. It writes the demonstration session marker under `tcg-harbor-session`. A pending post-authentication join route is held temporarily in `sessionStorage` under `tcg-harbor-pending-join`.
+The shipped production entry never reads a local demo session as authorization. A production player loads and mutates only owner-scoped `collection_items` through guarded Supabase RPCs; additions are atomically bound to the initiating `auth.uid()`, automatically create acquisition lots/provider references, and daily valuation snapshots preserve account growth history. A pending post-authentication join route is held temporarily in `sessionStorage` under `tcg-harbor-pending-join`. Local collection/session storage remains reachable only through retained test/development adapters that are not mounted by `main.tsx`.
 
 Other mutations are intentionally session-local and reset when the page reloads. The service adapter described below can replace this direct ownership, but is not yet the state source for `App.tsx`.
 
@@ -409,13 +410,13 @@ Recommended production additions:
 
 ## Known architectural gaps
 
-- The UI, service graph, and Supabase layer are not yet connected end to end.
-- Browser auth is illustrative and not server verified.
-- The current store map has no map tiles, geocoding, clustering, or distance computation.
+- Authentication, account roles, store approval/administration, QR management, and owner-scoped collections are connected to Supabase; community, trade, direct-message, and notification repositories are not yet connected end to end.
+- The store map has MapLibre/OSM tiles and approved store coordinates, but no clustering or calculated route distance.
 - Camera and uploaded-image decoding are fully client-side and depend on browser media support and image quality; manual entry remains the universal fallback.
 - Community, trade, DM, and notification mutations do not persist across reloads.
 - Realtime and offline retry are presentation simulations.
 - The provider cache/rate limiter is process-local and the live transports are intentionally absent.
-- Store-admin code regeneration does not update the browser registry or database.
-- The current UI aggregates missing quotes with display-oriented logic; production portfolio queries should use the tested domain calculators and explicitly exclude unavailable values rather than imply zero.
+- Store-admin QR creation, regeneration, deactivation, and moderation use guarded database RPCs; the remaining fixture community presentation is not yet fully synchronized.
+- Portfolio valuation explicitly reports priced/unpriced coverage and falls back to current source-backed holdings when a daily snapshot is stale or incomplete.
+- Catalog ingestion has lock, status, continuity, and owner-reference guards, but its PostgREST batches still commit as separate transactions. A production-grade follow-up should stage an entire run and promote it atomically.
 - Seed stores, users, messages, prices, and card visuals are illustrative fixtures, not verified live data or licensed artwork.

@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { isBrowserSafeSupabaseKeyV3, supabaseAuthStorageKeyV3 } from "./authSessionIsolationV3";
 
 export interface SupabaseRuntimeConfig {
   url: string | null;
@@ -13,8 +14,9 @@ function readEnvironmentValue(name: "VITE_SUPABASE_URL" | "VITE_SUPABASE_PUBLISH
 
 export function getSupabaseRuntimeConfig(): SupabaseRuntimeConfig {
   const url = readEnvironmentValue("VITE_SUPABASE_URL");
-  const anonKey = readEnvironmentValue("VITE_SUPABASE_PUBLISHABLE_KEY")
+  const configuredKey = readEnvironmentValue("VITE_SUPABASE_PUBLISHABLE_KEY")
     ?? readEnvironmentValue("VITE_SUPABASE_ANON_KEY");
+  const anonKey = configuredKey && isBrowserSafeSupabaseKeyV3(configuredKey) ? configuredKey : null;
   return { url, anonKey, configured: Boolean(url && anonKey) };
 }
 
@@ -23,9 +25,8 @@ export const isProductionSupabaseConfigured = getSupabaseRuntimeConfig().configu
 let singleton: SupabaseClient | null | undefined;
 
 /**
- * Returns null when production credentials are intentionally absent. This lets
- * the existing local demo continue to run while a Supabase project is being
- * provisioned, without silently pretending that demo authentication is real.
+ * Returns null when production credentials are absent so the production access
+ * gate can fail closed instead of silently substituting a local identity.
  */
 export function getSupabaseClient(): SupabaseClient | null {
   if (singleton !== undefined) return singleton;
@@ -40,7 +41,9 @@ export function getSupabaseClient(): SupabaseClient | null {
     auth: {
       autoRefreshToken: true,
       detectSessionInUrl: true,
+      flowType: "pkce",
       persistSession: true,
+      storageKey: supabaseAuthStorageKeyV3(config.url),
     },
   });
 

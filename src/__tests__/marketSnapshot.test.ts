@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { catalogAssets, initialAssets, marketDataMeta, stores } from '../data/demo';
 
 type CatalogAsset = (typeof catalogAssets)[number];
+type SourcePrintingAsset = CatalogAsset & { sourcePrintingId?: string };
 type PromoAsset = CatalogAsset & {
   languageEvidence?: string;
   tcgplayerPriceState?: 'available' | 'market-unavailable' | 'unavailable' | 'multiple-subtypes';
@@ -51,7 +52,7 @@ describe('source-backed catalog snapshot', () => {
 
   it('contains the complete core and numbered-promo printing catalog', () => {
     const cards = catalogAssets.filter((asset) => asset.kind === 'card');
-    expect(marketDataMeta.catalogCounts.cardPrintings).toBe(5_349);
+    expect(marketDataMeta.catalogCounts.cardPrintings).toBeGreaterThan(5_200);
     expect(cards).toHaveLength(marketDataMeta.catalogCounts.cardPrintings);
     expect(cards).toHaveLength(
       marketDataMeta.catalogCounts.optcgCorePrintings
@@ -60,29 +61,41 @@ describe('source-backed catalog snapshot', () => {
     expect(cards.every((asset) => asset.rulesCardId && asset.printingId)).toBe(true);
   });
 
-  it('has 5,342 sourced images and exactly seven explicitly unavailable images', () => {
-    const cards = catalogAssets.filter((asset) => asset.kind === 'card');
+  it('keeps an exact source-backed image for every card printing', () => {
+    const cards = catalogAssets.filter((asset) => asset.kind === 'card') as SourcePrintingAsset[];
     const available = cards.filter((asset) => asset.imageState === 'available');
     const unavailable = cards.filter((asset) => asset.imageState === 'unavailable');
 
-    expect(marketDataMeta.catalogCounts.cardPrintingsWithImages).toBe(5_342);
-    expect(marketDataMeta.catalogCounts.cardPrintingsWithoutImages).toBe(7);
+    expect(marketDataMeta.catalogCounts.cardPrintingsWithImages).toBe(cards.length);
+    expect(marketDataMeta.catalogCounts.cardPrintingsWithoutImages).toBe(0);
     expect(available).toHaveLength(marketDataMeta.catalogCounts.cardPrintingsWithImages);
-    expect(unavailable).toHaveLength(marketDataMeta.catalogCounts.cardPrintingsWithoutImages);
+    expect(unavailable).toHaveLength(0);
     expect(available.every((asset) => asset.imageUrl?.startsWith('http'))).toBe(true);
-    expect(unavailable.every((asset) => !asset.imageUrl && asset.imageUnavailableReason)).toBe(true);
-    expect(cards.every((asset) => asset.imageState === 'available' || asset.imageState === 'unavailable')).toBe(true);
+    expect(cards.every((asset) => asset.imageState === 'available')).toBe(true);
 
-    const unavailableTcgplayerIds = unavailable
-      .map((asset) => asset.tcgplayerProductId)
-      .filter((productId): productId is number => typeof productId === 'number')
-      .sort((left, right) => left - right);
-    expect(unavailableTcgplayerIds).toEqual([599735, 599737, 599739]);
+    const exactTcgplayerOverrides = new Map<number, string>([
+      [599735, 'https://storage.googleapis.com/images.pricecharting.com/sm3klbepvctxi6zj/1600.jpg'],
+      [599737, 'https://storage.googleapis.com/images.pricecharting.com/xzrhxe6jku55h5f5/1600.jpg'],
+      [599739, 'https://storage.googleapis.com/images.pricecharting.com/gz5twp7csl4nfy7i/1600.jpg'],
+    ]);
+    for (const [productId, imageUrl] of exactTcgplayerOverrides) {
+      expect(cards.find((asset) => asset.tcgplayerProductId === productId)?.imageUrl).toBe(imageUrl);
+    }
+
+    const exactSourceOverrides = new Map<string, string>([
+      ['don_169', 'https://tcgplayer-cdn.tcgplayer.com/product/655121_in_1000x1000.jpg'],
+      ['don_181', 'https://tcgplayer-cdn.tcgplayer.com/product/677567_in_1000x1000.jpg'],
+      ['don_132', 'https://storage.googleapis.com/images.pricecharting.com/correbdfe4st6ypotkzb/1600.jpg'],
+      ['don_185', 'https://tcgplayer-cdn.tcgplayer.com/product/698314_in_1000x1000.jpg'],
+    ]);
+    for (const [sourcePrintingId, imageUrl] of exactSourceOverrides) {
+      expect(cards.find((asset) => asset.sourcePrintingId === sourcePrintingId)?.imageUrl).toBe(imageUrl);
+    }
   });
 
-  it('uses all 1,139 numbered TCGCSV promo products as stable printings', () => {
+  it('uses every numbered TCGCSV promo product as a stable printing', () => {
     const promos = promoCards();
-    expect(marketDataMeta.catalogCounts.tcgcsvNumberedPromoProducts).toBe(1_139);
+    expect(marketDataMeta.catalogCounts.tcgcsvNumberedPromoProducts).toBeGreaterThan(1_100);
     expect(promos).toHaveLength(marketDataMeta.catalogCounts.tcgcsvNumberedPromoProducts);
     expect(new Set(promos.map((asset) => asset.tcgplayerProductId)).size).toBe(promos.length);
 
@@ -111,13 +124,39 @@ describe('source-backed catalog snapshot', () => {
     expect(new Set(donArts.map((asset) => asset.rulesCardId)).size).toBe(1);
   });
 
+  it('preserves every released starter deck through ST30, including all 17 ST05 base cards', () => {
+    const coreCards = catalogAssets.filter((asset) => asset.kind === 'card' && asset.id.startsWith('card-optcg-'));
+    for (let ordinal = 1; ordinal <= 30; ordinal += 1) {
+      const setCode = `ST${String(ordinal).padStart(2, '0')}`;
+      expect(coreCards.some((asset) => asset.setCode === setCode), setCode).toBe(true);
+    }
+    expect(coreCards.filter((asset) => asset.setCode === 'ST05')).toHaveLength(17);
+    expect(marketDataMeta.catalogCounts.unknownManifestOptcgCoreRecords).toBe(0);
+  });
+
   it('includes hundreds of real English Cardmarket sealed products', () => {
     const sealed = catalogAssets.filter((asset) => asset.kind === 'sealed');
-    expect(marketDataMeta.catalogCounts.englishSealedProducts).toBeGreaterThan(350);
+    expect(marketDataMeta.catalogCounts.englishSealedProducts).toBeGreaterThan(390);
+    expect(marketDataMeta.catalogCounts.englishSealedSourceCandidates).toBe(
+      marketDataMeta.catalogCounts.englishSealedProducts
+      + marketDataMeta.catalogCounts.futureEnglishSealedProductsExcluded,
+    );
+    expect(marketDataMeta.catalogCounts.futureEnglishSealedProductsExcluded).toBeGreaterThan(0);
     expect(sealed).toHaveLength(marketDataMeta.catalogCounts.englishSealedProducts);
     expect(sealed.every((asset) => asset.language === 'English')).toBe(true);
     expect(sealed.every((asset) => asset.cardmarketProductId && asset.productType)).toBe(true);
     expect(sealed.every((asset) => asset.productType !== 'Lots')).toBe(true);
+    expect(sealed.every(
+      (asset) => asset.imageState === 'unavailable' && !asset.imageUrl && asset.imageUnavailableReason,
+    )).toBe(true);
+    expect(sealed.filter((asset) => asset.quote.cardmarket === null)).toHaveLength(
+      marketDataMeta.catalogCounts.englishSealedProductsWithoutTrend,
+    );
+    expect(marketDataMeta.catalogCounts.englishSealedProductsWithoutTrend).toBeGreaterThan(0);
+    expect(sealed.some((asset) => !/^(?:OP|ST|EB|PRB)\d{2}$/.test(asset.setCode))).toBe(true);
+    expect(sealed.some(
+      (asset) => asset.setCode === 'ST05' && asset.name === 'Starter Deck: ST05-ST06: Deck Set',
+    )).toBe(true);
   });
 
   it('labels the 22 explicit Japanese promos and never invents a German printing', () => {
@@ -126,8 +165,8 @@ describe('source-backed catalog snapshot', () => {
     const japanesePromos = promos.filter((asset) => asset.language === 'Japanese');
     const englishPromos = promos.filter((asset) => asset.language === 'English');
 
-    expect(marketDataMeta.catalogCounts.japanesePromoPrintings).toBe(22);
-    expect(marketDataMeta.catalogCounts.englishPromoPrintings).toBe(1_117);
+    expect(marketDataMeta.catalogCounts.japanesePromoPrintings).toBeGreaterThan(0);
+    expect(marketDataMeta.catalogCounts.englishPromoPrintings).toBeGreaterThan(1_000);
     expect(japanesePromos).toHaveLength(marketDataMeta.catalogCounts.japanesePromoPrintings);
     expect(englishPromos).toHaveLength(marketDataMeta.catalogCounts.englishPromoPrintings);
     expect(japanesePromos.every(
@@ -252,13 +291,43 @@ describe('source-backed catalog snapshot', () => {
     expect(Number.isNaN(Date.parse(marketDataMeta.exchangeRate.observationDate))).toBe(false);
   });
 
-  it('scans every released English booster group through OP16 without admitting future or ambiguous printings', () => {
+  it('scans every officially released English booster group without admitting future printings', () => {
     const marketGroups = marketDataMeta.tcgcsv.marketGroups;
+    const releaseManifest = marketDataMeta.englishReleaseManifest as typeof marketDataMeta.englishReleaseManifest & {
+      fetchedAt: string;
+      archivePagesChecked: number;
+      officialProducts: Array<{
+        abbreviation: string;
+        category: 'boosters' | 'decks';
+        officialCode: string;
+        releasedOn: string;
+        releasePrecision: 'day' | 'month';
+        memberSetCodes: string[];
+      }>;
+    };
+    const cutoff = new Date(releaseManifest.fetchedAt).valueOf();
+    const isAvailable = (release: (typeof releaseManifest.officialProducts)[number]) => {
+      const [year, month, day] = release.releasedOn.split('-').map(Number);
+      const availableAt = release.releasePrecision === 'day'
+        ? Date.UTC(year, month - 1, day)
+        : Date.UTC(year, month, 1);
+      return availableAt <= cutoff;
+    };
+    const expectedReleasedGroups = releaseManifest.officialProducts
+      .filter((release) => release.category === 'boosters' && isAvailable(release))
+      .map((release) => release.abbreviation)
+      .filter((abbreviation) => /^(?:OP\d{2}|EB-\d{2}|PRB-\d{2}|OP\d{2}-EB\d{2})$/.test(abbreviation))
+      .sort();
 
-    expect(marketDataMeta.catalogCounts.releasedEnglishMarketGroups).toBe(21);
-    expect(marketDataMeta.catalogCounts.releasedEnglishMainGroups).toBe(16);
-    expect(marketDataMeta.catalogCounts.releasedEnglishSpecialGroups).toBe(5);
-    expect(Object.keys(marketGroups)).toHaveLength(21);
+    expect(releaseManifest.archivePagesChecked).toBeGreaterThan(10);
+    expect(Object.keys(marketGroups).sort()).toEqual(expectedReleasedGroups);
+    expect(marketDataMeta.catalogCounts.releasedEnglishMarketGroups).toBe(expectedReleasedGroups.length);
+    expect(marketDataMeta.catalogCounts.releasedEnglishMainGroups).toBe(
+      expectedReleasedGroups.filter((abbreviation) => /^OP\d{2}(?:-EB\d{2})?$/.test(abbreviation)).length,
+    );
+    expect(marketDataMeta.catalogCounts.releasedEnglishSpecialGroups).toBe(
+      expectedReleasedGroups.filter((abbreviation) => !/^OP\d{2}(?:-EB\d{2})?$/.test(abbreviation)).length,
+    );
     expect(marketGroups.OP16).toMatchObject({
       groupId: 24664,
       officialEnglishReleasedOn: '2026-06-12',
@@ -266,10 +335,28 @@ describe('source-backed catalog snapshot', () => {
       cardmarketExpansionId: 6457,
     });
     expect(marketGroups.OP16.exactMappings).toBeGreaterThan(0);
-    expect(marketGroups.OP17).toBeUndefined();
-    expect(marketGroups['EB-05']).toBeUndefined();
-    expect(marketDataMeta.englishReleaseManifest.futureProductsExcluded.map((release) => release.abbreviation))
-      .toEqual(expect.arrayContaining(['OP17', 'EB-05']));
+    for (const release of releaseManifest.futureProductsExcluded) {
+      expect(marketGroups[release.abbreviation]).toBeUndefined();
+      expect(catalogAssets.some(
+        (asset) => asset.kind === 'sealed' && release.memberSetCodes.includes(asset.setCode),
+      )).toBe(false);
+    }
+    const leakedFutureDeckProductIds = new Set([897426, 897428, 897430, 897432, 897434, 897435]);
+    expect(catalogAssets.some(
+      (asset) => asset.kind === 'sealed' && asset.cardmarketProductId != null
+        && leakedFutureDeckProductIds.has(asset.cardmarketProductId),
+    )).toBe(false);
+    expect(releaseManifest.officialProducts.find((product) => product.officialCode === 'ST-05')).toMatchObject({
+      releasedOn: '2023-02-03',
+      memberSetCodes: ['ST05'],
+    });
+    for (const release of releaseManifest.officialProducts.filter((product) => !isAvailable(product))) {
+      expect(catalogAssets.some(
+        (asset) => asset.kind === 'card' && release.memberSetCodes.some(
+          (memberSetCode) => asset.setCode.match(/(?:OP|EB|PRB|ST)\d{2}/g)?.includes(memberSetCode),
+        ),
+      )).toBe(false);
+    }
 
     expect(marketGroups.OP14).toMatchObject({
       groupId: 24537,

@@ -1,0 +1,260 @@
+/*
+ * Contrast pass v2
+ *
+ * Loaded after the existing theme so these narrowly scoped accessibility
+ * corrections preserve the established visual system and component layout.
+ */
+
+:root {
+  /* Both tokens are used for supporting copy on the light paper/canvas. */
+  --muted: #4f5e6b;
+  --subtle: #5f6d77;
+  /* Accent tokens remain on-brand while meeting AA for normal text on paper. */
+  --coral: #ad4b2d;
+  --gold: #7b5a1d;
+  --blue: #2f6f92;
+  --green: #2f6f59;
+  --red: #a83f3f;
+}
+
+/* The original warm gradient was visually attractive but too light for white
+ * button labels. This pair clears AA while preserving the coral direction. */
+.button-primary {
+  color: #fff;
+  background: linear-gradient(135deg, #b65332, #914027);
+  box-shadow: 0 5px 15px rgba(145, 64, 39, .24);
+}
+
+.button-primary:hover {
+  box-shadow: 0 7px 20px rgba(145, 64, 39, .3);
+}
+
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline-color: #9c3f22;
+}
+
+/* The production portal is dark, but the embedded player application is light. */
+.production-player-outlet {
+  color: var(--ink);
+  background: var(--canvas);
+}
+
+/* Readability floor for dense collection and market views. Decorative text
+ * inside card artwork is excluded so genuine card imagery is not distorted. */
+.app-shell small {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.app-shell .card-art small {
+  font-size: 6px;
+  line-height: 1.1;
+}
+
+.app-shell .art-xs .art-unavailable small {
+  display: none;
+}
+
+.app-shell :is(.eyebrow, .chip, .trend, .segmented button, .button-sm) {
+  font-size: 11px;
+}
+
+.app-shell label {
+  font-size: 12px;
+}
+
+.app-shell :is(.asset-table, .comparison-table) th {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.app-shell :is(.asset-table, .comparison-table) td {
+  font-size: 12px;
+}
+
+/* Raise small navigation/supporting copy above the dark-shell contrast floor. */
+.sidebar nav button,
+.side-utility {
+  color: #a8b8c2;
+}
+
+.brand small,
+.profile-card small {
+  color: #9dafba;
+}
+
+.profile-card svg {
+  color: #92a5b1;
+}
+
+.unofficial {
+  color: #8fa2ae;
+}
+
+.chip-neutral {
+  color: #5f6970;
+}
+
+.market-comparison-hero .eyebrow {
+  color: #f1a273;
+}
+
+/* Keep dark production chrome legible without changing its visual hierarchy. */
+.production-portal-identity small,
+.production-portal-bar nav button,
+.production-signout {
+  color: #9eb0b4;
+}
+
+.production-security-note,
+.production-field-hint,
+.production-form-actions > p {
+  color: #9aadb1;
+}
+
+.production-application-summary dt,
+.production-approval-list dt,
+.production-field > span small,
+.production-store-heading p,
+.production-community-card small,
+.production-muted-action,
+.production-management-grid small,
+.production-channel-manager header p,
+.production-channel-list small,
+.production-qr-manager header p,
+.production-moderation-manager header p,
+.production-qr-summary small,
+.production-moderation-toolbar small,
+.production-moderation-list article small,
+.production-moderation-empty {
+  color: #9eb0b4;
+}
+
+.production-field input::placeholder,
+.production-field textarea::placeholder {
+  color: #9eb0b4;
+  opacity: 1;
+}
+
+.production-qr-canvas > span {
+  color: #806750;
+}
+
+.comparison-price-input input::placeholder {
+  color: var(--subtle);
+  opacity: 1;
+}
+
+/* The range result is the primary feedback for market-filter interaction. */
+.comparison-price-filter-status {
+  min-height: 52px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  background: #f0f4f5;
+  border: 1px solid #d5e0e3;
+  border-radius: 10px;
+}
+
+.comparison-price-filter-status > span:first-child {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: #315e78;
+  background: #dcebf1;
+  border-radius: 8px;
+}
+
+.comparison-price-filter-status > span:last-child {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.comparison-price-filter-status strong {
+  font-size: 12px;
+}
+
+.comparison-price-filter-status small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.comparison-price-filter-status.is-active {
+  background: #e9f4ef;
+  border-color: #c5ddd1;
+  box-shadow: inset 3px 0 #397c65;
+}
+
+.comparison-price-filter-status.is-active > span:first-child {
+  color: #2e6d57;
+  background: #d3e9de;
+}
+
+.comparison-price-filter-status.is-invalid {
+  background: var(--red-soft);
+  border-color: #e8c6c1;
+  box-shadow: inset 3px 0 var(--red);
+}
+
+.comparison-price-filter-status.is-invalid > span:first-child {
+  color: var(--red);
+  background: #f3d9d5;
+}
+
+.collection-sync-banner {
+  margin: 18px 22px 0;
+  padding: 11px 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #214c61;
+  background: #e8f2f5;
+  border: 1px solid #c8dce2;
+  border-radius: 11px;
+}
+
+.collection-sync-banner > span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.collection-sync-banner strong { font-size: 12px; }
+.collection-sync-banner small { color: #4f6874; font-size: 11px; }
+.collection-sync-banner .button { margin-left: auto; }
+
+.collection-sync-banner.is-error {
+  color: #8b332d;
+  background: #faece9;
+  border-color: #e8c6c1;
+}
+
+.portfolio-change.incomplete {
+  color: #704f16;
+  background: #fff4d9;
+}
+
+.catalog-search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(145px, .35fr);
+  gap: 9px;
+  align-items: stretch;
+}
+
+.catalog-search-row .catalog-search { margin: 0; }
+.catalog-set-filter { min-width: 145px; }
+
+@media (max-width: 720px) {
+  .collection-sync-banner { margin: 12px 12px 0; }
+  .catalog-search-row { grid-template-columns: 1fr; }
+}

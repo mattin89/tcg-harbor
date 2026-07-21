@@ -10,6 +10,8 @@ export interface AcquisitionLot {
   addedAt: string;
   quantity: number;
   quoteAtAdd: { cardmarket: number | null; tcgplayer: number | null };
+  purchasePrice?: number;
+  purchaseCurrency?: Currency;
   sourceUpdatedAt?: { cardmarket: string; optcg: string; tcgcsv?: string };
 }
 
@@ -89,6 +91,8 @@ interface MarketSnapshot {
 
 export interface DemoAsset {
   id: string;
+  /** Production-only owner-scoped row identifier. */
+  collectionItemId?: string;
   catalogId?: string;
   kind: AssetKind;
   name: string;
@@ -102,6 +106,7 @@ export interface DemoAsset {
   condition: string;
   quantity: number;
   purchasePrice?: number;
+  purchaseCurrency?: Currency;
   note?: string;
   addedAt: string;
   color: string;
@@ -184,103 +189,6 @@ export interface Conversation {
   online: boolean;
   unread: number;
   messages: CommunityMessage[];
-}
-
-const sets = [
-  ['Romance Dawn', 'OP01'],
-  ['Paramount War', 'OP02'],
-  ['Pillars of Strength', 'OP03'],
-  ['Kingdoms of Intrigue', 'OP04'],
-  ['Awakening of the New Era', 'OP05'],
-  ['Wings of the Captain', 'OP06'],
-  ['500 Years in the Future', 'OP07'],
-] as const;
-
-const cardNames = [
-  'Monkey D. Luffy', 'Roronoa Zoro', 'Nami', 'Trafalgar Law', 'Boa Hancock',
-  'Portgas D. Ace', 'Shanks', 'Sanji', 'Nico Robin', 'Donquixote Doflamingo',
-  'Edward Newgate', 'Yamato', 'Sabo', 'Eustass “Captain” Kid', 'Tony Tony Chopper',
-  'Vinsmoke Reiju', 'Charlotte Katakuri', 'Kaido', 'Brook', 'Usopp',
-  'Dracule Mihawk', 'Perona', 'Marco', 'Kuzan', 'Borsalino',
-  'Rebecca', 'Jewelry Bonney', 'Gecko Moria', 'Rob Lucci', 'Franky',
-  'Charlotte Linlin', 'Koby', 'Killer', 'Vivi', 'Crocodile', 'Enel',
-  'Carrot', 'Donquixote Rosinante', 'Kikunojo', 'Bartolomeo',
-] as const;
-
-const gradients = [
-  'coral', 'gold', 'violet', 'azure', 'jade', 'rose', 'indigo', 'amber',
-] as const;
-
-function makeCard(name: string, index: number): DemoAsset {
-  const set = sets[index % sets.length];
-  const base = Number((3.6 + ((index * 17) % 74) * 0.84 + (index % 7 === 0 ? 58 : 0)).toFixed(2));
-  const noPrice = index === 17 || index === 33;
-  const eu = noPrice ? null : base;
-  const us = noPrice ? null : Number((base * (1.07 + (index % 5) * 0.018)).toFixed(2));
-  const direction = index % 6 === 0 ? -1 : 1;
-  const d = Number((direction * (0.35 + (index % 5) * 0.22)).toFixed(2));
-  const w = Number((direction * (1.2 + (index % 7) * 0.73)).toFixed(2));
-  const m = Number((direction * (2.9 + (index % 9) * 1.21)).toFixed(2));
-  return {
-    id: `card-${index + 1}`,
-    kind: 'card',
-    name,
-    set: set[0],
-    setCode: set[1],
-    number: `${set[1]}-${String(((index * 7) % 119) + 1).padStart(3, '0')}`,
-    rarity: index % 11 === 0 ? 'Secret Rare' : index % 5 === 0 ? 'Leader' : index % 3 === 0 ? 'Super Rare' : 'Rare',
-    variant: index % 9 === 0 ? 'Manga-style parallel' : index % 4 === 0 ? 'Alternate art' : index % 3 === 0 ? 'Parallel' : 'Standard',
-    language: index % 8 === 0 ? 'Japanese' : 'English',
-    condition: index % 10 === 0 ? 'Excellent' : 'Near Mint',
-    quantity: 1 + (index % 4 === 0 ? 2 : index % 6 === 0 ? 1 : 0),
-    purchasePrice: index % 3 === 0 ? Number((base * 0.74).toFixed(2)) : undefined,
-    note: index % 7 === 0 ? 'Binder copy — inspect edges before trading.' : undefined,
-    addedAt: new Date(Date.now() - (index + 2) * 86400000).toISOString(),
-    color: gradients[index % gradients.length],
-    quote: { cardmarket: eu, tcgplayer: us },
-    change: {
-      cardmarket: { '1D': noPrice ? null : d, '1W': noPrice ? null : w, '1M': noPrice ? null : m },
-      tcgplayer: { '1D': noPrice ? null : Number((d * 0.82).toFixed(2)), '1W': noPrice ? null : Number((w * 1.13).toFixed(2)), '1M': noPrice ? null : Number((m * 0.91).toFixed(2)) },
-    },
-  };
-}
-
-const sealedNames = [
-  ['Romance Dawn Booster Box', 'Booster box'],
-  ['Paramount War Booster Box', 'Booster box'],
-  ['Three Captains Ultra Deck', 'Starter deck'],
-  ['Devil Fruits Collection Vol. 1', 'Special collection'],
-  ['500 Years in the Future Booster Box', 'Booster box'],
-  ['Wings of the Captain Booster Case', 'Case'],
-  ['Memorial Collection Display', 'Promotional product'],
-] as const;
-
-function makeSealed(entry: (typeof sealedNames)[number], index: number): DemoAsset {
-  const set = sets[index % sets.length];
-  const base = [122, 149, 54, 38, 98, 1140, 76][index];
-  const changes = [4.8, -2.4, 7.1, 1.9, -4.2, 8.6, 3.4];
-  return {
-    id: `sealed-${index + 1}`,
-    kind: 'sealed',
-    name: entry[0],
-    set: set[0],
-    setCode: set[1],
-    rarity: 'Sealed',
-    variant: 'Factory sealed',
-    productType: entry[1],
-    language: index % 4 === 0 ? 'Japanese' : 'English / EU',
-    condition: 'Factory sealed',
-    quantity: index === 1 ? 2 : 1,
-    purchasePrice: Number((base * 0.81).toFixed(2)),
-    note: index === 5 ? 'Case stored in climate-controlled cabinet.' : undefined,
-    addedAt: new Date(Date.now() - (index + 18) * 86400000).toISOString(),
-    color: gradients[(index + 2) % gradients.length],
-    quote: { cardmarket: base, tcgplayer: Number((base * 1.09).toFixed(2)) },
-    change: {
-      cardmarket: { '1D': Number((changes[index] * 0.13).toFixed(2)), '1W': Number((changes[index] * 0.54).toFixed(2)), '1M': changes[index] },
-      tcgplayer: { '1D': Number((changes[index] * 0.1).toFixed(2)), '1W': Number((changes[index] * 0.61).toFixed(2)), '1M': Number((changes[index] * 1.12).toFixed(2)) },
-    },
-  };
 }
 
 const marketSnapshot = JSON.parse(marketSnapshotRaw) as MarketSnapshot;

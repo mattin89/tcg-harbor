@@ -70,17 +70,32 @@ export function MarketComparisonPage() {
   const filteredCount = comparison.summary.filteredEligiblePrintingCount;
   const eligibleCount = comparison.summary.eligiblePrintingCount;
   const displayedRankingCount = Math.min(filteredCount, comparison.limit);
+  const releasedMarketGroupCodes = Object.keys(marketDataMeta.tcgcsv.marketGroups);
   const releasedGroupCount = marketDataMeta.catalogCounts.releasedEnglishMarketGroups
-    ?? Object.keys(marketDataMeta.tcgcsv.mainSetGroups).length;
-  const releasedMainGroupCount = marketDataMeta.catalogCounts.releasedEnglishMainGroups ?? 16;
-  const releasedSpecialGroupCount = marketDataMeta.catalogCounts.releasedEnglishSpecialGroups ?? 5;
+    ?? releasedMarketGroupCodes.length;
+  const releasedMainGroupCount = marketDataMeta.catalogCounts.releasedEnglishMainGroups
+    ?? releasedMarketGroupCodes.filter((code) => /^OP\d{2}(?:-EB\d{2})?$/.test(code)).length;
+  const releasedSpecialGroupCount = marketDataMeta.catalogCounts.releasedEnglishSpecialGroups
+    ?? releasedGroupCount - releasedMainGroupCount;
+  const latestReleasedMainSet = releasedMarketGroupCodes
+    .map((code) => code.match(/^OP(\d{2})/)?.[1] ?? null)
+    .filter((value): value is string => value !== null)
+    .sort((left, right) => Number(right) - Number(left))[0];
+  const latestReleasedMainSetCode = latestReleasedMainSet ? `OP${latestReleasedMainSet}` : 'the current set';
+  const appliedPriceRange = priceFilterError
+    ? 'Range not applied'
+    : `${comparison.priceFilter.minCardmarketEur === null
+      ? 'No minimum'
+      : formatMoney(comparison.priceFilter.minCardmarketEur, 'EUR')} – ${comparison.priceFilter.maxCardmarketEur === null
+      ? 'No maximum'
+      : formatMoney(comparison.priceFilter.maxCardmarketEur, 'EUR')}`;
   const priceFilterStatus = priceFilterError
     ? 'Correct the price range to update the ranking.'
     : hasActivePriceFilter
       ? filteredCount >= comparison.limit
-        ? `${filteredCount.toLocaleString()} of ${eligibleCount.toLocaleString()} exact price pairs match. Both rankings are recalculated from all matches and show 20 cards.`
-        : `${filteredCount.toLocaleString()} of ${eligibleCount.toLocaleString()} exact price pairs match. Both rankings are recalculated from all matches; only ${filteredCount.toLocaleString()} cards exist in this range.`
-      : `${eligibleCount.toLocaleString()} exact price pairs available.`;
+        ? `${filteredCount.toLocaleString()} of ${eligibleCount.toLocaleString()} exact price pairs match. The highest 20 and lowest 20 were rebuilt from the complete filtered pool.`
+        : `${filteredCount.toLocaleString()} of ${eligibleCount.toLocaleString()} exact price pairs match. Both rankings were rebuilt; only ${filteredCount.toLocaleString()} cards exist in this range.`
+      : `${eligibleCount.toLocaleString()} exact price pairs available. Rankings use the complete eligible catalog.`;
   const emptyStateTitle = priceFilterError
     ? 'Check the Cardmarket price range'
     : hasActivePriceFilter
@@ -103,7 +118,7 @@ export function MarketComparisonPage() {
         <div>
           <div className="market-comparison-kicker"><p className="eyebrow">Cross-market signal</p><MarketDataBadge compact/></div>
           <h2>Compare the same printing, not just the same card.</h2>
-          <p>TCGplayer market prices are divided by Cardmarket trend prices after converting EUR to USD with the dated ECB reference rate. Every released English main and special booster group through OP16 is scanned; ambiguous provider versions stay out.</p>
+          <p>TCGplayer market prices are divided by Cardmarket trend prices after converting EUR to USD with the dated ECB reference rate. Every released English main and special booster group through {latestReleasedMainSetCode} is scanned; ambiguous provider versions stay out.</p>
         </div>
       </div>
       <dl className="market-comparison-stats">
@@ -115,7 +130,7 @@ export function MarketComparisonPage() {
 
     <section className="comparison-method panel" aria-label="Market comparison method">
       <div><span><Icon name="shield"/></span><div><strong>Exact-match policy</strong><small>Cardmarket product ID + TCGplayer product ID + one unambiguous standard printing.</small></div></div>
-      <div><span><Icon name="refresh"/></span><div><strong>Current English release window</strong><small>OP01–OP16 plus EB / PRB; EB04 follows its split OP14 and OP15 releases.</small></div></div>
+      <div><span><Icon name="refresh"/></span><div><strong>Current English release window</strong><small>OP01–{latestReleasedMainSetCode} plus EB / PRB; combined releases follow their official Bandai grouping.</small></div></div>
       <div><span><Icon name="info"/></span><div><strong>Relative signal, not profit</strong><small>Fees, tax, shipping, liquidity, and card condition are not included.</small></div></div>
     </section>
 
@@ -180,7 +195,19 @@ export function MarketComparisonPage() {
           </label>
           <Button type="button" variant="ghost" size="sm" onClick={clearPriceFilters} disabled={!hasPriceFilterInput}>Clear filters</Button>
         </fieldset>
-        <p id="comparison-price-filter-help" className="comparison-price-filter-status" aria-live="polite">{priceFilterStatus}</p>
+        <div
+          id="comparison-price-filter-help"
+          className={`comparison-price-filter-status ${priceFilterError ? 'is-invalid' : hasActivePriceFilter ? 'is-active' : ''}`}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <span aria-hidden="true"><Icon name={priceFilterError ? 'info' : hasActivePriceFilter ? 'check' : 'refresh'} size={16}/></span>
+          <span>
+            <strong>{hasActivePriceFilter ? `Applied Cardmarket range: ${appliedPriceRange}` : priceFilterError ? appliedPriceRange : 'Applied Cardmarket range: all prices'}</strong>
+            <small>{priceFilterStatus}</small>
+          </span>
+        </div>
         {priceFilterErrorText && <p id="comparison-price-filter-error" className="comparison-price-filter-error" role="alert"><Icon name="info" size={14}/>{priceFilterErrorText}</p>}
       </div>
 

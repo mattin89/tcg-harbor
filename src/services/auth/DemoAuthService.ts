@@ -19,15 +19,6 @@ interface DemoCredentialRecord {
 const CREDENTIALS_KEY = "auth.credentials";
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
-/** Credentials are public because this is an offline fixture, never a real account. */
-export const DEMO_LOGIN_CREDENTIALS = Object.freeze({
-  email: "mario@tcgharbor.demo",
-  password: "HarborDemo!2026",
-});
-
-const DEMO_USER_ID = "user-demo-collector";
-const DEMO_PASSWORD_SALT = "tcg-harbor-explicit-demo-fixture-v1";
-
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
@@ -75,8 +66,6 @@ function publicUser(record: DemoCredentialRecord): AuthUser {
  * substitute for server-authenticated sessions, HttpOnly cookies, or RLS.
  */
 export class DemoAuthService implements AuthService {
-  private seedPromise: Promise<void> | null = null;
-
   constructor(private readonly adapter: DemoDataAdapter) {}
 
   async getSession(): Promise<AuthSession | null> {
@@ -90,7 +79,6 @@ export class DemoAuthService implements AuthService {
   }
 
   async signIn(input: SignInInput): Promise<AuthSession> {
-    await this.ensureDemoAccount();
     const email = normalizeEmail(input.email);
     const records = (await this.adapter.read<DemoCredentialRecord[]>(CREDENTIALS_KEY)) ?? [];
     const record = records.find((candidate) => candidate.user.email === email);
@@ -105,7 +93,6 @@ export class DemoAuthService implements AuthService {
   }
 
   async signUp(input: SignUpInput): Promise<AuthSession> {
-    await this.ensureDemoAccount();
     validateEmail(input.email);
     validatePassword(input.password);
     const username = input.username.trim();
@@ -201,36 +188,5 @@ export class DemoAuthService implements AuthService {
     };
     await this.adapter.setSession(session);
     return session;
-  }
-
-  private ensureDemoAccount(): Promise<void> {
-    if (this.seedPromise) return this.seedPromise;
-    this.seedPromise = (async () => {
-      const passwordDigest = await digestDemoPassword(DEMO_LOGIN_CREDENTIALS.password, DEMO_PASSWORD_SALT);
-      const now = new Date().toISOString();
-      await this.adapter.update<DemoCredentialRecord[]>(CREDENTIALS_KEY, (current) => {
-        const records = current ?? [];
-        if (records.some((record) => record.user.email === DEMO_LOGIN_CREDENTIALS.email)) return records;
-        const user: AuthUser = {
-          id: DEMO_USER_ID,
-          email: DEMO_LOGIN_CREDENTIALS.email,
-          username: "GrandLineCollector",
-          avatarUrl: null,
-          role: "collector",
-          primaryMarket: "cardmarket",
-          preferredCurrency: "EUR",
-          approximateLocation: "Berlin, Germany",
-          onboardingComplete: true,
-          isDemoAccount: true,
-          createdAt: now,
-          updatedAt: now,
-        };
-        return [...records, { user, passwordSalt: DEMO_PASSWORD_SALT, passwordDigest }];
-      });
-    })().catch((error) => {
-      this.seedPromise = null;
-      throw error;
-    });
-    return this.seedPromise;
   }
 }

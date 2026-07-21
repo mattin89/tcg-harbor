@@ -6,7 +6,7 @@ preserved as the design record for the preceding authentication slice.
 
 ## Current deployment state
 
-As of 2026-07-21, all seven migrations and the reviewed Auth configuration have
+As of 2026-07-21, all twelve migrations and the reviewed Auth configuration have
 been applied to the linked hosted project. The frontend release remains tied to
 the Git commit deployed by Render. Always verify the current migration list,
 advisor results, deployed commit, and administrator role in each environment;

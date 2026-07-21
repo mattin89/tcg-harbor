@@ -1,7 +1,21 @@
 import { createHash } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createClient } from '@supabase/supabase-js';
+import {
+  activeManagedRowsMissingFromPlan,
+  activeCatalogRemovalApprovalIds,
+  assertManagedCatalogContinuity,
+  assertSnapshotCanAdvanceProviders,
+  catalogSetCodeIsReleased,
+  officialMemberSetCodesFromLabel,
+  officialProductCodeFromTitle,
+  officialSetCodeReleaseState,
+  pricingConditionForAsset,
+  productLevelMappingMetadata,
+  providerMappingStableSeed,
+} from './lib/catalog-ingestion-plan.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // v7 preserves the v6 snapshot while extending exact cross-market coverage to
@@ -18,35 +32,28 @@ const TCGCSV_GROUPS = `https://tcgcsv.com/tcgplayer/${TCGCSV_CATEGORY_ID}/groups
 // starter, promo, and Japanese groups therefore cannot enter by substring.
 const TCGCSV_MARKET_GROUP_ABBREVIATION = /^(?:OP\d{2}|EB-\d{2}|PRB-\d{2}|OP\d{2}-EB\d{2})$/;
 const MINIMUM_RELEASED_ENGLISH_MAIN_SET = 16;
-const BANDAI_ENGLISH_PRODUCTS = 'https://en.onepiece-cardgame.com/products/?tags=boosters';
-// TCGCSV's publishedOn is a group-publication timestamp, not a retail-release
-// guarantee. Gate exact source abbreviations with audited Bandai English retail
-// dates so a presale group (notably OP17) cannot appear early.
-const ENGLISH_MARKET_RELEASES = new Map([
-  ['OP01', { releasedOn: '2022-12-02', memberSetCodes: ['OP01'] }],
-  ['OP02', { releasedOn: '2023-03-10', memberSetCodes: ['OP02'] }],
-  ['OP03', { releasedOn: '2023-06-30', memberSetCodes: ['OP03'] }],
-  ['OP04', { releasedOn: '2023-09-22', memberSetCodes: ['OP04'] }],
-  ['OP05', { releasedOn: '2023-12-08', memberSetCodes: ['OP05'] }],
-  ['OP06', { releasedOn: '2024-03-15', memberSetCodes: ['OP06'] }],
-  ['EB-01', { releasedOn: '2024-05-03', memberSetCodes: ['EB01'] }],
-  ['OP07', { releasedOn: '2024-06-28', memberSetCodes: ['OP07'] }],
-  ['OP08', { releasedOn: '2024-09-13', memberSetCodes: ['OP08'] }],
-  ['PRB-01', { releasedOn: '2024-11-08', memberSetCodes: ['PRB01'] }],
-  ['OP09', { releasedOn: '2024-12-13', memberSetCodes: ['OP09'] }],
-  ['OP10', { releasedOn: '2025-03-21', memberSetCodes: ['OP10'] }],
-  ['EB-02', { releasedOn: '2025-05-09', memberSetCodes: ['EB02'] }],
-  ['OP11', { releasedOn: '2025-06-06', memberSetCodes: ['OP11'] }],
-  ['OP12', { releasedOn: '2025-08-22', memberSetCodes: ['OP12'] }],
-  ['PRB-02', { releasedOn: '2025-10-03', memberSetCodes: ['PRB02'] }],
-  ['OP13', { releasedOn: '2025-11-07', memberSetCodes: ['OP13'] }],
-  ['OP14', { releasedOn: '2026-01-16', memberSetCodes: ['OP14', 'EB04'] }],
-  ['EB-03', { releasedOn: '2026-02-20', memberSetCodes: ['EB03'] }],
-  ['OP15-EB04', { releasedOn: '2026-04-03', memberSetCodes: ['OP15', 'EB04'] }],
-  ['OP16', { releasedOn: '2026-06-12', memberSetCodes: ['OP16'] }],
-  ['OP17', { releasedOn: '2026-08-28', memberSetCodes: ['OP17'] }],
-  ['EB-05', { releasedOn: '2026-10-30', memberSetCodes: ['EB05'] }],
-]);
+const BANDAI_ENGLISH_PRODUCTS = 'https://en.onepiece-cardgame.com/products/';
+const BANDAI_PRODUCTS_MAX_PAGES = 40;
+// ST-05 uses Bandai's older standalone deck page and can disappear from the
+// paginated archive markup even though its official product page remains live.
+// Keep that exact first-party release evidence as a continuity record so a
+// transient archive omission can never retire user-held cards.
+const OFFICIAL_RELEASE_CONTINUITY = [{
+  category: 'decks',
+  officialCode: 'ST-05',
+  title: 'STARTER DECK ONE PIECE FILM edition [ST-05]',
+  releasedOn: '2023-02-03',
+  releaseLabel: 'February 3, 2023',
+  releasePrecision: 'day',
+  productUrl: 'https://en.onepiece-cardgame.com/products/decks/st05.php',
+  page: 0,
+  continuityEvidence: 'Official Bandai standalone product page',
+}];
+const REQUIRED_RELEASED_SPECIAL_GROUPS = ['EB-01', 'EB-02', 'EB-03', 'PRB-01', 'PRB-02'];
+// Bandai calls the January 2026 product OP14-EB04, while TCGCSV identifies the
+// exact English market group as OP14. Keep the one audited alias explicit; all
+// other current/future codes are derived without a hand-maintained release list.
+const OFFICIAL_TO_TCGCSV_GROUP_OVERRIDES = new Map([['OP14-EB04', 'OP14']]);
 const TCGCSV_PROMO_GROUP_ID = 17675;
 const TCGCSV_PROMO_PRODUCTS = `https://tcgcsv.com/tcgplayer/${TCGCSV_CATEGORY_ID}/${TCGCSV_PROMO_GROUP_ID}/products`;
 const TCGCSV_PROMO_PRICES = `https://tcgcsv.com/tcgplayer/${TCGCSV_CATEGORY_ID}/${TCGCSV_PROMO_GROUP_ID}/prices`;
@@ -67,7 +74,30 @@ const TCGCSV_STARTER_SOURCES = [
   },
 ];
 const TCGCSV_STARTER_GROUP_IDS = [...new Set(TCGCSV_STARTER_SOURCES.map((source) => source.groupId))];
-const BROKEN_TCGPLAYER_IMAGE_PRODUCT_IDS = new Set([599735, 599737, 599739]);
+// Exact fallback artwork is allowlisted only where the public product record
+// proves the printed card/product identity and the image endpoint is stable.
+const EXACT_TCGPLAYER_IMAGE_OVERRIDES = new Map([
+  [599735, 'https://storage.googleapis.com/images.pricecharting.com/sm3klbepvctxi6zj/1600.jpg'],
+  [599737, 'https://storage.googleapis.com/images.pricecharting.com/xzrhxe6jku55h5f5/1600.jpg'],
+  [599739, 'https://storage.googleapis.com/images.pricecharting.com/gz5twp7csl4nfy7i/1600.jpg'],
+]);
+const EXACT_OPTCG_IMAGE_OVERRIDES = new Map([
+  ['don_169', 'https://tcgplayer-cdn.tcgplayer.com/product/655121_in_1000x1000.jpg'],
+  ['don_181', 'https://tcgplayer-cdn.tcgplayer.com/product/677567_in_1000x1000.jpg'],
+  ['don_132', 'https://storage.googleapis.com/images.pricecharting.com/correbdfe4st6ypotkzb/1600.jpg'],
+  ['don_185', 'https://tcgplayer-cdn.tcgplayer.com/product/698314_in_1000x1000.jpg'],
+]);
+// These Cardmarket presale rows entered a prior snapshot without an explicit
+// ST code in their titles. They are now matched to Bandai's future ST31-ST36
+// products and are the only reviewed removals allowed by the continuity gate.
+const APPROVED_CATALOG_REMOVALS = new Map([
+  ['sealed-cardmarket-897426', { reason: 'Unreleased ST31 presale leaked through generic DECK fallback', expiresAt: '2026-07-31T00:00:00.000Z' }],
+  ['sealed-cardmarket-897428', { reason: 'Unreleased ST32 presale leaked through generic DECK fallback', expiresAt: '2026-07-31T00:00:00.000Z' }],
+  ['sealed-cardmarket-897430', { reason: 'Unreleased ST33 presale leaked through generic DECK fallback', expiresAt: '2026-07-31T00:00:00.000Z' }],
+  ['sealed-cardmarket-897432', { reason: 'Unreleased ST34 presale leaked through generic DECK fallback', expiresAt: '2026-07-31T00:00:00.000Z' }],
+  ['sealed-cardmarket-897434', { reason: 'Unreleased ST35 presale leaked through generic DECK fallback', expiresAt: '2026-07-31T00:00:00.000Z' }],
+  ['sealed-cardmarket-897435', { reason: 'Unreleased ST36 presale leaked through generic DECK fallback', expiresAt: '2026-07-31T00:00:00.000Z' }],
+]);
 // These promo products and the two starter products were individually checked
 // against TCGplayer's documented 1000px derivative on 2026-07-16. Other
 // products retain TCGCSV's source-provided 200px URL rather than assuming that
@@ -94,9 +124,6 @@ const OPTCG_FEEDS = [
   { kind: 'don', url: 'https://optcgapi.com/api/allDonCards/' },
 ];
 
-// The representative demo holdings intentionally remain the original 40-card
-// OP01-OP07 sample. They are independent from the now-complete market coverage.
-const INITIAL_SET_CODES = Array.from({ length: 7 }, (_, index) => `OP${String(index + 1).padStart(2, '0')}`);
 const GRADIENTS = ['coral', 'gold', 'violet', 'azure', 'jade', 'rose', 'indigo', 'amber'];
 const RARITIES = {
   C: 'Common',
@@ -143,6 +170,75 @@ async function fetchJson(url) {
 
 async function fetchText(url) {
   return (await fetchSource(url)).text();
+}
+
+function decodeHtmlText(value) {
+  const namedEntities = new Map([
+    ['amp', '&'], ['apos', "'"], ['gt', '>'], ['lt', '<'], ['nbsp', ' '], ['quot', '"'],
+  ]);
+  return String(value ?? '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&#x([0-9a-f]+);/gi, (_match, hex) => String.fromCodePoint(Number.parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_match, digits) => String.fromCodePoint(Number.parseInt(digits, 10)))
+    .replace(/&([a-z]+);/gi, (match, name) => namedEntities.get(name.toLowerCase()) ?? match)
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function parseBandaiProductsPage(html, page) {
+  const products = [];
+  const blocks = String(html).matchAll(/<li class="linkListColBox" data-cat="(boosters|decks)">([\s\S]*?)<\/li>/gi);
+  for (const blockMatch of blocks) {
+    const category = blockMatch[1].toLowerCase();
+    const block = blockMatch[2];
+    const title = decodeHtmlText(block.match(/<h4 class="linkListColTitle">([\s\S]*?)<\/h4>/i)?.[1]);
+    const dateMatch = block.match(/<time class="newsDate" datetime="([^"]+)">([\s\S]*?)<\/time>/i);
+    const productUrl = block.match(/<a href="([^"]+)"[^>]*class="linkListColItem"/i)?.[1] ?? null;
+    if (!title || !dateMatch) {
+      throw new Error(`Bandai booster markup on products page ${page} is missing a title or release date.`);
+    }
+    const releaseLabel = decodeHtmlText(dateMatch[2]);
+    const releasePrecision = /^[A-Za-z]+ \d{1,2}, \d{4}$/.test(releaseLabel) ? 'day' : 'month';
+    const officialCode = officialProductCodeFromTitle(title);
+    const releasedOn = dateMatch[1];
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(releasedOn) || Number.isNaN(Date.parse(`${releasedOn}T00:00:00Z`))) {
+      throw new Error(`Bandai product ${officialCode ?? title} has an invalid release date: ${releasedOn}.`);
+    }
+    products.push({ category, officialCode, title, releasedOn, releaseLabel, releasePrecision, productUrl, page });
+  }
+  return products;
+}
+
+async function fetchBandaiEnglishProducts() {
+  const firstPageHtml = await fetchText(`${BANDAI_ENGLISH_PRODUCTS}?page=1`);
+  const pageCount = Number(firstPageHtml.match(/<span class="pageMax">\s*(\d+)\s*<\/span>/i)?.[1]);
+  if (!Number.isInteger(pageCount) || pageCount < 1 || pageCount > BANDAI_PRODUCTS_MAX_PAGES) {
+    throw new Error(`Bandai products archive returned an unsafe page count: ${pageCount || 'missing'}.`);
+  }
+
+  const products = parseBandaiProductsPage(firstPageHtml, 1);
+  for (let page = 2; page <= pageCount; page += 1) {
+    await delay(110);
+    products.push(...parseBandaiProductsPage(
+      await fetchText(`${BANDAI_ENGLISH_PRODUCTS}?page=${page}`),
+      page,
+    ));
+  }
+
+  const archivedCodes = new Set(products.map((product) => product.officialCode).filter(Boolean));
+  for (const continuityProduct of OFFICIAL_RELEASE_CONTINUITY) {
+    if (!archivedCodes.has(continuityProduct.officialCode)) products.push(continuityProduct);
+  }
+
+  const codedProducts = products.filter((product) => product.officialCode);
+  if (codedProducts.length < 20) {
+    throw new Error(`Bandai products archive returned only ${codedProducts.length} coded booster products.`);
+  }
+  const codes = codedProducts.map((product) => product.officialCode);
+  if (new Set(codes).size !== codes.length) {
+    throw new Error('Bandai products archive returned a duplicate coded booster product.');
+  }
+  return { pageCount, fetchedAt: new Date().toISOString(), products };
 }
 
 function parseEcbUsdPerEur(csvText) {
@@ -213,43 +309,75 @@ function mainSetOrdinalForGroup(group) {
   return match ? Number(match[1]) : null;
 }
 
-function isReleasedEnglishMarketGroup(group, cutoff = new Date()) {
-  const abbreviation = tcgcsvGroupAbbreviation(group);
-  const release = ENGLISH_MARKET_RELEASES.get(abbreviation);
-  const releasedOn = Date.parse(`${release?.releasedOn ?? ''}T00:00:00Z`);
-  return Number(group?.categoryId) === TCGCSV_CATEGORY_ID
-    && TCGCSV_MARKET_GROUP_ABBREVIATION.test(abbreviation)
-    && release != null
-    && Number.isFinite(releasedOn)
-    && releasedOn <= cutoff.valueOf();
+function tcgcsvAbbreviationForOfficialCode(officialCode) {
+  const override = OFFICIAL_TO_TCGCSV_GROUP_OVERRIDES.get(officialCode);
+  if (override) return override;
+  return /^OP-\d{2}$/.test(officialCode) ? officialCode.replace('-', '') : officialCode;
 }
 
-function selectReleasedEnglishMarketGroups(groups, cutoff = new Date()) {
-  const releasedManifestEntries = [...ENGLISH_MARKET_RELEASES.entries()]
-    .filter(([, release]) => Date.parse(`${release.releasedOn}T00:00:00Z`) <= cutoff.valueOf());
-  const selected = releasedManifestEntries.map(([abbreviation]) => {
+function officialMemberSetCodes(officialCode) {
+  return officialMemberSetCodesFromLabel(officialCode);
+}
+
+function officialProductAvailableAt(product, cutoff = new Date()) {
+  const [year, month, day] = product.releasedOn.split('-').map(Number);
+  // Month-only announcements use the first of the month in Bandai's datetime
+  // attribute. Treat them as available only after that month, unless Bandai
+  // publishes a day-level date, so a future product cannot leak into the app.
+  const availableAt = product.releasePrecision === 'day'
+    ? Date.UTC(year, month - 1, day)
+    : Date.UTC(year, month, 1);
+  return availableAt <= cutoff.valueOf();
+}
+
+function releaseMetadataForOfficialProduct(product) {
+  const abbreviation = tcgcsvAbbreviationForOfficialCode(product.officialCode);
+  return {
+    abbreviation,
+    category: product.category,
+    officialCode: product.officialCode,
+    releasedOn: product.releasedOn,
+    releaseLabel: product.releaseLabel,
+    releasePrecision: product.releasePrecision,
+    memberSetCodes: officialMemberSetCodes(product.officialCode),
+    title: product.title,
+    productUrl: product.productUrl,
+    continuityEvidence: product.continuityEvidence ?? null,
+  };
+}
+
+function selectReleasedEnglishMarketGroups(groups, bandaiCatalog, cutoff = new Date()) {
+  const releasedManifestEntries = bandaiCatalog.products
+    .filter((product) => product.category === 'boosters')
+    .filter((product) => product.officialCode)
+    .filter((product) => TCGCSV_MARKET_GROUP_ABBREVIATION.test(
+      tcgcsvAbbreviationForOfficialCode(product.officialCode),
+    ))
+    .filter((product) => officialProductAvailableAt(product, cutoff))
+    .map(releaseMetadataForOfficialProduct);
+
+  const selected = releasedManifestEntries.map((release) => {
+    const { abbreviation } = release;
     const matches = groups.filter((group) =>
       tcgcsvGroupAbbreviation(group) === abbreviation && Number(group.categoryId) === TCGCSV_CATEGORY_ID,
     );
     if (matches.length !== 1) {
-      throw new Error(`Expected one TCGCSV group for released English product ${abbreviation}, found ${matches.length}.`);
+      throw new Error(
+        `Official Bandai product ${release.officialCode} is released, but expected one TCGCSV group ${abbreviation}; found ${matches.length}.`,
+      );
     }
-    if (!isReleasedEnglishMarketGroup(matches[0], cutoff)) {
-      throw new Error(`TCGCSV group ${abbreviation} failed the exact released-English group policy.`);
-    }
-    return matches[0];
+    return { group: matches[0], release };
   }).sort((left, right) => {
-    const leftRelease = ENGLISH_MARKET_RELEASES.get(tcgcsvGroupAbbreviation(left)).releasedOn;
-    const rightRelease = ENGLISH_MARKET_RELEASES.get(tcgcsvGroupAbbreviation(right)).releasedOn;
-    return leftRelease.localeCompare(rightRelease) || Number(left.groupId) - Number(right.groupId);
+    return left.release.releasedOn.localeCompare(right.release.releasedOn)
+      || Number(left.group.groupId) - Number(right.group.groupId);
   });
-  const abbreviations = selected.map(tcgcsvGroupAbbreviation);
+  const abbreviations = selected.map(({ release }) => release.abbreviation);
   if (new Set(abbreviations).size !== abbreviations.length) {
-    throw new Error('TCGCSV returned duplicate released market-group abbreviations.');
+    throw new Error('Bandai products mapped to duplicate released TCGCSV market-group abbreviations.');
   }
 
   const mainOrdinals = selected
-    .map(mainSetOrdinalForGroup)
+    .map(({ group }) => mainSetOrdinalForGroup(group))
     .filter((ordinal) => ordinal != null)
     .sort((left, right) => left - right);
   const latestMainOrdinal = mainOrdinals.at(-1) ?? 0;
@@ -259,7 +387,7 @@ function selectReleasedEnglishMarketGroups(groups, cutoff = new Date()) {
     || mainOrdinals.some((ordinal, index) => ordinal !== expectedMainOrdinals[index])) {
     throw new Error(`Released English main-set groups are incomplete: ${mainOrdinals.join(', ') || 'none'}.`);
   }
-  for (const requiredSpecial of ['EB-01', 'EB-02', 'EB-03', 'PRB-01', 'PRB-02']) {
+  for (const requiredSpecial of REQUIRED_RELEASED_SPECIAL_GROUPS) {
     if (!abbreviations.includes(requiredSpecial)) {
       throw new Error(`Released English special group ${requiredSpecial} is missing from TCGCSV.`);
     }
@@ -338,6 +466,14 @@ function hash(value, length = 20) {
   return createHash('sha256').update(String(value)).digest('hex').slice(0, length);
 }
 
+function stableUuid(namespace, value) {
+  const bytes = createHash('sha256').update(`${namespace}:${value}`).digest().subarray(0, 16);
+  bytes[6] = (bytes[6] & 0x0f) | 0x50;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = bytes.toString('hex');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 function colorFor(stableId) {
   return GRADIENTS[Number.parseInt(hash(stableId, 8), 16) % GRADIENTS.length];
 }
@@ -389,7 +525,8 @@ function tcgcsvCardNumber(product) {
 
 function tcgcsvImageUrl(product) {
   const productId = Number(product.productId);
-  if (BROKEN_TCGPLAYER_IMAGE_PRODUCT_IDS.has(productId)) return null;
+  const exactOverride = EXACT_TCGPLAYER_IMAGE_OVERRIDES.get(productId);
+  if (exactOverride) return exactOverride;
   const sourceUrl = canonicalImageUrl(product.imageUrl);
   if (!sourceUrl || !isTrustedTcgplayerImage(sourceUrl)) return null;
   if (!VERIFIED_HIGH_RES_TCGPLAYER_PRODUCT_IDS.has(productId)) return sourceUrl;
@@ -675,18 +812,46 @@ function promoStableId(product) {
   return `card-tcgplayer-${Number(product.productId)}`;
 }
 
-function sealedSetCode(product, category) {
+function normalizedDeckProductTitle(value) {
+  return String(value ?? '')
+    .replace(/\[(?:ST)-?\d{2}\]/gi, '')
+    .replace(/^\s*starter deck(?:\s+ex)?\s*[:\-]?\s*/i, '')
+    .replace(/[^a-z0-9]+/gi, '')
+    .toLowerCase();
+}
+
+function officialDeckSetCodeIndex(products) {
+  const index = new Map();
+  for (const product of products.filter((candidate) => candidate.category === 'decks' && /^ST-?\d{2}$/.test(candidate.officialCode ?? ''))) {
+    const normalizedTitle = normalizedDeckProductTitle(product.title);
+    const setCode = normalizeSetCode(product.officialCode);
+    if (!normalizedTitle) continue;
+    if (index.has(normalizedTitle) && index.get(normalizedTitle) !== setCode) {
+      throw new Error(`Official Bandai deck title maps to multiple set codes: ${product.title}.`);
+    }
+    index.set(normalizedTitle, setCode);
+  }
+  return index;
+}
+
+function sealedSetCode(product, category, officialDeckSetCodesByTitle = new Map()) {
   const match = product.name.match(/\b(OP|ST|EB|PRB)[-\s]?(\d{1,2})\b/i);
-  return match ? `${match[1].toUpperCase()}${match[2].padStart(2, '0')}` : category.setCode;
+  if (match) return `${match[1].toUpperCase()}${match[2].padStart(2, '0')}`;
+  if (category.productType === 'Preconstructed deck') {
+    const titleMatch = officialDeckSetCodesByTitle.get(normalizedDeckProductTitle(product.name));
+    if (titleMatch) return titleMatch;
+  }
+  return category.setCode;
 }
 
 async function fetchTcgcsvBundle() {
-  const updatedText = await fetchText(TCGCSV_UPDATED_AT);
-  await delay(110);
-  const groupsPayload = await fetchJson(TCGCSV_GROUPS);
-  await delay(110);
+  const [updatedText, groupsPayload, bandaiCatalog] = await Promise.all([
+    fetchText(TCGCSV_UPDATED_AT),
+    fetchJson(TCGCSV_GROUPS),
+    fetchBandaiEnglishProducts(),
+  ]);
   const groups = tcgcsvResults(groupsPayload, TCGCSV_GROUPS);
-  const marketGroups = selectReleasedEnglishMarketGroups(groups);
+  const marketGroups = selectReleasedEnglishMarketGroups(groups, bandaiCatalog);
   const promoGroup = groups.find((group) => tcgcsvGroupAbbreviation(group) === 'OP-PR');
   if (!promoGroup || Number(promoGroup.groupId) !== TCGCSV_PROMO_GROUP_ID) {
     throw new Error('TCGCSV promotion-group identity changed; refusing to fetch an unverified group.');
@@ -705,7 +870,7 @@ async function fetchTcgcsvBundle() {
   }
 
   const marketGroupSources = [];
-  for (const group of marketGroups) {
+  for (const { group, release } of marketGroups) {
     const groupId = Number(group.groupId);
     const productsUrl = `https://tcgcsv.com/tcgplayer/${TCGCSV_CATEGORY_ID}/${groupId}/products`;
     const pricesUrl = `https://tcgcsv.com/tcgplayer/${TCGCSV_CATEGORY_ID}/${groupId}/prices`;
@@ -713,9 +878,34 @@ async function fetchTcgcsvBundle() {
     await delay(110);
     const prices = await fetchJson(pricesUrl);
     await delay(110);
-    marketGroupSources.push({ group, groupId, productsUrl, pricesUrl, products, prices });
+    marketGroupSources.push({ group, release, groupId, productsUrl, pricesUrl, products, prices });
   }
-  return { updatedText, groups, marketGroupSources, promoProducts, promoPrices, starterPayloads };
+  return {
+    updatedText,
+    groups,
+    bandaiCatalog,
+    marketGroupSources,
+    promoProducts,
+    promoPrices,
+    starterPayloads,
+  };
+}
+
+if (process.argv.includes('--ingest-existing')) {
+  const snapshot = JSON.parse(await readFile(OUTPUT, 'utf8'));
+  const manifest = snapshot?.provenance?.englishReleaseManifest;
+  if (!Array.isArray(manifest?.officialProducts) || manifest.officialProducts.length === 0) {
+    throw new Error('The existing snapshot has no official Bandai release metadata; run the full sync first.');
+  }
+  await ingestSnapshotToSupabase(snapshot, { products: manifest.officialProducts }, { required: true });
+  process.exit(0);
+}
+
+let previousSnapshot = null;
+try {
+  previousSnapshot = JSON.parse(await readFile(OUTPUT, 'utf8'));
+} catch (error) {
+  if (error?.code !== 'ENOENT') throw error;
 }
 
 const [marketSources, tcgcsvBundle, feedResponses, ecbCsv] = await Promise.all([
@@ -733,6 +923,7 @@ const [productCatalog, nonSinglesCatalog, priceGuide] = marketSources;
 const {
   updatedText: tcgcsvUpdatedText,
   groups: tcgcsvGroups,
+  bandaiCatalog,
   promoProducts: tcgcsvPromoPayload,
   promoPrices: tcgcsvPromoPricePayload,
   starterPayloads: tcgcsvStarterPayloads,
@@ -751,10 +942,10 @@ const exchangeRate = parseEcbUsdPerEur(ecbCsv);
 
 const tcgcsvMarketSources = tcgcsvMarketGroupSources.map((source) => ({
   ...source,
-  abbreviation: tcgcsvGroupAbbreviation(source.group),
+  abbreviation: source.release.abbreviation,
   primarySetCode: primarySetCodeForGroup(source.group),
-  releasedOn: ENGLISH_MARKET_RELEASES.get(tcgcsvGroupAbbreviation(source.group)).releasedOn,
-  memberSetCodes: ENGLISH_MARKET_RELEASES.get(tcgcsvGroupAbbreviation(source.group)).memberSetCodes,
+  releasedOn: source.release.releasedOn,
+  memberSetCodes: source.release.memberSetCodes,
   products: tcgcsvResults(source.products, source.productsUrl),
   priceIndex: uniquePriceIndex(tcgcsvResults(source.prices, source.pricesUrl)),
 }));
@@ -775,7 +966,37 @@ const rawPromoCards = rawCards.filter((card) => card.__source === 'promo');
 const rawCoreCards = rawCards.filter((card) => card.__source !== 'promo');
 const trustedImageRecords = rawCards.filter((card) => trustedCardImage(card));
 const uniqueOptcgCards = dedupePrintings(rawCards);
-const uniqueCoreCards = dedupePrintings(rawCoreCards);
+const officialReleaseCutoff = new Date(bandaiCatalog.fetchedAt);
+const releasedOfficialCardSetCodes = new Set(bandaiCatalog.products
+  .filter((product) => product.officialCode && officialProductAvailableAt(product, officialReleaseCutoff))
+  .flatMap((product) => officialMemberSetCodes(product.officialCode)));
+const futureOfficialCardSetCodes = new Set(bandaiCatalog.products
+  .filter((product) => product.officialCode && !officialProductAvailableAt(product, officialReleaseCutoff))
+  .flatMap((product) => officialMemberSetCodes(product.officialCode)));
+const isReleasedOfficialCoreCard = (card) => {
+  if (card.__source === 'don') return true;
+  const number = rulesCardId(card);
+  const setCode = setCodeForCard(card, number);
+  return catalogSetCodeIsReleased(setCode, releasedOfficialCardSetCodes);
+};
+const releasedRawCoreCards = rawCoreCards.filter(isReleasedOfficialCoreCard);
+const unreleasedRawCoreCards = rawCoreCards.filter((card) => !isReleasedOfficialCoreCard(card));
+const futureRawCoreCardsExcluded = unreleasedRawCoreCards.filter((card) => {
+  const number = rulesCardId(card);
+  return catalogSetCodeIsReleased(setCodeForCard(card, number), futureOfficialCardSetCodes);
+});
+const unknownManifestRawCoreCards = unreleasedRawCoreCards.filter((card) => {
+  const number = rulesCardId(card);
+  return !catalogSetCodeIsReleased(setCodeForCard(card, number), futureOfficialCardSetCodes);
+});
+if (unknownManifestRawCoreCards.length > 0) {
+  const samples = unknownManifestRawCoreCards.slice(0, 10).map((card) => ({
+    number: rulesCardId(card),
+    setCode: setCodeForCard(card, rulesCardId(card)),
+  }));
+  throw new Error(`OPTCG returned ${unknownManifestRawCoreCards.length} recognized core records missing from both released and future official manifests: ${JSON.stringify(samples)}.`);
+}
+const uniqueCoreCards = dedupePrintings(releasedRawCoreCards);
 const nameByRulesCard = canonicalNames(uniqueOptcgCards);
 const optcgPromoByNumber = groupBy(rawPromoCards, regularRulesCardId);
 const optcgRulesByNumber = groupBy(rawCards.filter((card) => card.__source !== 'don'), regularRulesCardId);
@@ -925,7 +1146,10 @@ const coreCardAssets = uniqueCoreCards.map((card) => {
   const starterEnrichment = card.__source === 'starter'
     ? starterEnrichments.get(`${number}|${card.card_name}`) ?? null
     : null;
-  const imageUrl = trustedCardImage(card) ?? starterEnrichment?.imageUrl ?? null;
+  const imageUrl = trustedCardImage(card)
+    ?? starterEnrichment?.imageUrl
+    ?? EXACT_OPTCG_IMAGE_OVERRIDES.get(String(card.card_image_id ?? ''))
+    ?? null;
   const tcgplayerPrice = baseTcgplayerMatch?.price ?? starterEnrichment?.price ?? null;
   const stableId = cardStableId(card);
   const optcgDate = String(card.date_scraped ?? generatedAt);
@@ -1043,9 +1267,7 @@ const promoAssets = numberedTcgcsvPromoProducts.map((product) => {
     ...(imageUrl ? { imageUrl } : {}),
     imageState: imageUrl ? 'available' : 'unavailable',
     ...(imageUrl ? {} : {
-      imageUnavailableReason: BROKEN_TCGPLAYER_IMAGE_PRODUCT_IDS.has(Number(product.productId))
-        ? 'The source catalog URL was verified to return HTTP 403, and no exact source-backed replacement was found.'
-        : 'TCGCSV does not provide a trusted artwork URL for this exact product.',
+      imageUnavailableReason: 'TCGCSV does not provide a trusted artwork URL for this exact product.',
     }),
     rulesMetadataMatch,
     usPriceSource: 'TCGplayer via TCGCSV',
@@ -1078,11 +1300,30 @@ const promoAssets = numberedTcgcsvPromoProducts.map((product) => {
 
 const cardAssets = [...coreCardAssets, ...promoAssets];
 
-const sealedAssets = nonSinglesCatalog.products
+const englishSealedCatalogCandidates = nonSinglesCatalog.products
   .filter((product) => SEALED_CATEGORIES.has(product.categoryName))
-  .filter((product) => !NON_ENGLISH_SEALED.test(product.name))
+  .filter((product) => !NON_ENGLISH_SEALED.test(product.name));
+const officialDeckSetCodesByTitle = officialDeckSetCodeIndex(bandaiCatalog.products);
+const officialSealedProductReleaseState = (product) => {
+  const category = SEALED_CATEGORIES.get(product.categoryName);
+  const setCode = sealedSetCode(product, category, officialDeckSetCodesByTitle);
+  return officialSetCodeReleaseState(
+    setCode,
+    releasedOfficialCardSetCodes,
+    futureOfficialCardSetCodes,
+  );
+};
+const englishSealedSourceProducts = englishSealedCatalogCandidates
+  .filter((product) => {
+    const state = officialSealedProductReleaseState(product);
+    return state === 'released' || state === 'unmanaged';
+  });
+const futureEnglishSealedProductsExcluded = englishSealedCatalogCandidates
+  .filter((product) => officialSealedProductReleaseState(product) === 'future');
+const unknownManifestEnglishSealedProductsExcluded = englishSealedCatalogCandidates
+  .filter((product) => officialSealedProductReleaseState(product) === 'unknown');
+const sealedAssets = englishSealedSourceProducts
   .map((product) => ({ product, price: cardmarketPricesByProduct.get(product.idProduct) }))
-  .filter(({ price }) => price?.trend != null)
   .map(({ product, price }) => {
     const category = SEALED_CATEGORIES.get(product.categoryName);
     const stableId = `sealed-cardmarket-${product.idProduct}`;
@@ -1091,7 +1332,7 @@ const sealedAssets = nonSinglesCatalog.products
       kind: 'sealed',
       name: product.name,
       set: product.categoryName.replace(/^One Piece\s+/, ''),
-      setCode: sealedSetCode(product, category),
+      setCode: sealedSetCode(product, category, officialDeckSetCodesByTitle),
       rarity: 'Sealed',
       variant: 'English release',
       productType: category.productType,
@@ -1100,17 +1341,24 @@ const sealedAssets = nonSinglesCatalog.products
       quantity: 1,
       addedAt: generatedAt,
       color: colorFor(stableId),
+      imageState: 'unavailable',
+      imageUnavailableReason: 'The Cardmarket public non-single catalog does not provide a trusted product-image URL.',
       cardmarketProductId: product.idProduct,
       cardmarketExpansionId: product.idExpansion,
+      cardmarketPriceState: price?.trend != null
+        ? 'available'
+        : price
+          ? 'trend-unavailable'
+          : 'unavailable',
       quote: {
-        cardmarket: round(price.trend),
+        cardmarket: round(price?.trend),
         tcgplayer: null,
       },
       change: {
         cardmarket: {
-          '1D': percentAgainst(price.trend, price.avg1),
-          '1W': percentAgainst(price.trend, price.avg7),
-          '1M': percentAgainst(price.trend, price.avg30),
+          '1D': percentAgainst(price?.trend, price?.avg1),
+          '1W': percentAgainst(price?.trend, price?.avg7),
+          '1M': percentAgainst(price?.trend, price?.avg30),
         },
         tcgplayer: emptyChanges(),
       },
@@ -1127,6 +1375,19 @@ const sealedAssets = nonSinglesCatalog.products
     };
   });
 
+const approvedCatalogRemovals = previousSnapshot?.assets
+  ? assertManagedCatalogContinuity(
+    previousSnapshot.assets,
+    [...cardAssets, ...sealedAssets],
+    activeCatalogRemovalApprovalIds(APPROVED_CATALOG_REMOVALS, generatedAt),
+  )
+  : [];
+for (const removed of approvedCatalogRemovals) {
+  if (!APPROVED_CATALOG_REMOVALS.has(removed.id)) {
+    throw new Error(`Catalog removal ${removed.id} passed continuity without a recorded review reason.`);
+  }
+}
+
 cardAssets.sort((left, right) =>
   left.setCode.localeCompare(right.setCode)
   || left.number.localeCompare(right.number)
@@ -1139,13 +1400,19 @@ sealedAssets.sort((left, right) =>
   || left.id.localeCompare(right.id),
 );
 
-const initialBaseMatches = INITIAL_SET_CODES.flatMap((code, setIndex) => {
-  const wanted = setIndex < 5 ? 6 : 5;
-  return [...baseCardmarketMatches.values()]
-    .filter((match) => setCodeFromNumber(match.number) === code)
-    .sort((left, right) => right.price.trend - left.price.trend)
-    .slice(0, wanted);
-});
+const releasedRepresentativeSetCodes = [...new Set(tcgcsvMarketSources
+  .flatMap((source) => source.memberSetCodes))]
+  .sort((left, right) => left.localeCompare(right, 'en-US', { numeric: true }));
+const allRepresentativeCandidates = [...baseCardmarketMatches.values()]
+  .filter((match) => releasedRepresentativeSetCodes.includes(setCodeFromNumber(match.number)))
+  .sort((left, right) => right.price.trend - left.price.trend || left.number.localeCompare(right.number));
+const onePerReleasedSet = releasedRepresentativeSetCodes.flatMap((code) =>
+  allRepresentativeCandidates.filter((match) => setCodeFromNumber(match.number) === code).slice(0, 1));
+const selectedRepresentativeIds = new Set(onePerReleasedSet.map((match) => cardStableId(match.card)));
+const initialBaseMatches = [
+  ...onePerReleasedSet,
+  ...allRepresentativeCandidates.filter((match) => !selectedRepresentativeIds.has(cardStableId(match.card))),
+].slice(0, 40);
 const initialAssetIds = initialBaseMatches.map((match) => cardStableId(match.card));
 
 if (initialAssetIds.length !== 40 || new Set(initialAssetIds).size !== 40) {
@@ -1161,6 +1428,22 @@ if (emittedIds.size !== cardAssets.length + sealedAssets.length) {
 if (coreCardAssets.length !== uniqueCoreCards.length) {
   throw new Error('A set, starter, or DON!! printing was lost while building assets.');
 }
+if (coreCardAssets.some((asset) => !catalogSetCodeIsReleased(
+  asset.setCode,
+  releasedOfficialCardSetCodes,
+))) {
+  throw new Error('An announced-but-unreleased Bandai set or deck leaked into the core card catalog.');
+}
+if (sealedAssets.length !== englishSealedSourceProducts.length) {
+  throw new Error('An eligible English Cardmarket sealed catalog row was lost while building assets.');
+}
+if (sealedAssets.some((asset) =>
+  asset.imageState !== 'unavailable'
+  || !asset.imageUnavailableReason
+  || asset.quote.cardmarket !== asset.pricing.cardmarket.trend
+)) {
+  throw new Error('Sealed catalog image/nullable-price provenance invariant failed.');
+}
 if (promoAssets.length !== numberedTcgcsvPromoProducts.length) {
   throw new Error('A numbered TCGCSV promo product was lost while building assets.');
 }
@@ -1170,9 +1453,17 @@ if (promoAssets.some((asset) => asset.language !== 'English' && asset.language !
 if ([...cardAssets, ...sealedAssets].some((asset) => asset.language === 'German')) {
   throw new Error('German must never be emitted without a source-backed product.');
 }
-const brokenPromoAssets = promoAssets.filter((asset) => BROKEN_TCGPLAYER_IMAGE_PRODUCT_IDS.has(asset.tcgplayerProductId));
-if (brokenPromoAssets.length !== BROKEN_TCGPLAYER_IMAGE_PRODUCT_IDS.size || brokenPromoAssets.some((asset) => asset.imageState !== 'unavailable')) {
-  throw new Error('The three verified-broken Welcome Pack images must remain explicitly unavailable.');
+for (const [productId, expectedImageUrl] of EXACT_TCGPLAYER_IMAGE_OVERRIDES) {
+  const asset = promoAssets.find((candidate) => candidate.tcgplayerProductId === productId);
+  if (!asset || asset.imageState !== 'available' || asset.imageUrl !== expectedImageUrl) {
+    throw new Error(`Exact promotional image override ${productId} was not emitted correctly.`);
+  }
+}
+for (const [sourcePrintingId, expectedImageUrl] of EXACT_OPTCG_IMAGE_OVERRIDES) {
+  const asset = coreCardAssets.find((candidate) => candidate.sourcePrintingId === sourcePrintingId);
+  if (!asset || asset.imageState !== 'available' || asset.imageUrl !== expectedImageUrl) {
+    throw new Error(`Exact OPTCG image override ${sourcePrintingId} was not emitted correctly.`);
+  }
 }
 for (const source of TCGCSV_STARTER_SOURCES) {
   const asset = coreCardAssets.find((candidate) => candidate.tcgplayerProductId === source.productId);
@@ -1212,13 +1503,646 @@ if (requiredGroupsWithoutExactMappings.length > 0) {
 if (baseTcgplayerMatches.size < 800 || exactCrossMarketAssets.length < 750) {
   throw new Error(`Exact cross-market coverage unexpectedly fell to ${baseTcgplayerMatches.size} mappings / ${exactCrossMarketAssets.length} priced cards.`);
 }
+
+function databaseSetCode(value) {
+  const normalized = String(value ?? '').trim().toUpperCase().replace(/\s+/g, '');
+  if (normalized.length >= 2 && normalized.length <= 24) return normalized;
+  if (normalized === 'P') return 'PROMO';
+  return `SET-${hash(normalized || 'UNKNOWN', 12).toUpperCase()}`;
+}
+
+function databaseLanguage(value) {
+  if (value === 'English') return 'EN';
+  if (value === 'Japanese') return 'JP';
+  throw new Error(`Supabase ingestion refuses unsupported language ${value}.`);
+}
+
+function databaseSealedProductType(value) {
+  const types = new Map([
+    ['Booster', 'booster_pack'],
+    ['Booster box', 'booster_box'],
+    ['Preconstructed deck', 'starter_deck'],
+    ['Promo product', 'promotional_product'],
+  ]);
+  return types.get(value) ?? 'other';
+}
+
+function mergeExternalIdentifiers(existing, additions) {
+  return Object.fromEntries(Object.entries({ ...(existing ?? {}), ...additions })
+    .filter(([, value]) => value !== null && value !== undefined && value !== ''));
+}
+
+function preferActiveByKey(rows, keyFor, inactiveField) {
+  const result = new Map();
+  for (const row of rows) {
+    const key = keyFor(row);
+    const current = result.get(key);
+    if (!current || (current[inactiveField] != null && row[inactiveField] == null)) result.set(key, row);
+  }
+  return result;
+}
+
+async function fetchAllSupabaseRows(queryFactory) {
+  const pageSize = 1_000;
+  const rows = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await queryFactory().range(from, from + pageSize - 1);
+    if (error) throw new Error(`Supabase catalog read failed: ${error.message}`);
+    rows.push(...(data ?? []));
+    if ((data ?? []).length < pageSize) return rows;
+  }
+}
+
+async function upsertSupabaseRows(supabase, table, rows, onConflict = 'id') {
+  const batchSize = 250;
+  for (let offset = 0; offset < rows.length; offset += batchSize) {
+    const { error } = await supabase
+      .from(table)
+      .upsert(rows.slice(offset, offset + batchSize), { onConflict });
+    if (error) throw new Error(`Supabase ${table} ingestion failed: ${error.message}`);
+  }
+}
+
+async function updateSupabaseRowsById(supabase, table, ids, values) {
+  const batchSize = 250;
+  const orderedIds = [...ids].sort((left, right) => String(left).localeCompare(String(right)));
+  for (let offset = 0; offset < orderedIds.length; offset += batchSize) {
+    const { error } = await supabase
+      .from(table)
+      .update(values)
+      .in('id', orderedIds.slice(offset, offset + batchSize));
+    if (error) throw new Error(`Supabase ${table} retirement failed: ${error.message}`);
+  }
+}
+
+async function acquireProviderSyncLock(supabase, providerRows) {
+  // PostgREST commits each request independently, so a client-side sequence
+  // cannot be one database transaction. These existing provider columns form
+  // the publish barrier: one writer owns both providers, last_sync_at changes
+  // only after the complete idempotent plan succeeds, and failures are counted.
+  const startedAt = new Date().toISOString();
+  const lockUntil = new Date(Date.now() + (30 * 60 * 1_000)).toISOString();
+  const providerIds = providerRows.map((provider) => provider.id);
+  const { data, error } = await supabase
+    .from('pricing_providers')
+    .update({ sync_lock_until: lockUntil })
+    .in('id', providerIds)
+    .or(`sync_lock_until.is.null,sync_lock_until.lt.${startedAt}`)
+    .select('id,consecutive_failures');
+  if (error) throw new Error(`Supabase catalog sync lock failed: ${error.message}`);
+
+  const lockedRows = data ?? [];
+  if (lockedRows.length !== providerIds.length) {
+    const { error: releaseError } = await supabase
+      .from('pricing_providers')
+      .update({ sync_lock_until: null })
+      .in('id', providerIds)
+      .eq('sync_lock_until', lockUntil);
+    if (releaseError) {
+      throw new Error(`Another catalog sync is active, and the partial lock could not be released: ${releaseError.message}`);
+    }
+    throw new Error('Another catalog sync is active; refusing to interleave provider writes.');
+  }
+
+  return {
+    startedAt,
+    lockUntil,
+    failuresByProviderId: new Map(lockedRows.map((row) => [row.id, row.consecutive_failures ?? 0])),
+  };
+}
+
+async function markProviderSyncSucceeded(supabase, providerRows, syncLock, completedAt) {
+  const providerIds = providerRows.map((provider) => provider.id);
+  const { data, error } = await supabase
+    .from('pricing_providers')
+    .update({
+      last_sync_at: completedAt,
+      next_sync_allowed_at: null,
+      sync_lock_until: null,
+      consecutive_failures: 0,
+    })
+    .in('id', providerIds)
+    .eq('sync_lock_until', syncLock.lockUntil)
+    .select('id');
+  if (error) throw new Error(`Supabase provider success status failed: ${error.message}`);
+  if ((data ?? []).length !== providerIds.length) {
+    throw new Error('Supabase provider sync lock expired or changed before success could be published.');
+  }
+}
+
+async function markProviderSyncFailed(supabase, providerRows, syncLock) {
+  const statusErrors = [];
+  for (const provider of providerRows) {
+    const { data, error } = await supabase
+      .from('pricing_providers')
+      .update({
+        sync_lock_until: null,
+        consecutive_failures: (syncLock.failuresByProviderId.get(provider.id) ?? 0) + 1,
+      })
+      .eq('id', provider.id)
+      .eq('sync_lock_until', syncLock.lockUntil)
+      .select('id');
+    if (error) statusErrors.push(`${provider.slug}: ${error.message}`);
+    else if ((data ?? []).length !== 1) statusErrors.push(`${provider.slug}: sync lock ownership changed`);
+  }
+  if (statusErrors.length > 0) {
+    throw new Error(`Supabase provider failure status could not be recorded (${statusErrors.join('; ')}).`);
+  }
+}
+
+async function ingestSnapshotToSupabase(snapshot, officialCatalog, { required = false } = {}) {
+  const supabaseUrl = process.env.SUPABASE_URL?.trim();
+  const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY?.trim()
+    || process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!supabaseUrl && !supabaseSecretKey) {
+    if (required) {
+      throw new Error('Supabase ingestion was requested, but SUPABASE_URL and SUPABASE_SECRET_KEY are not configured.');
+    }
+    console.log('Supabase ingestion skipped (SUPABASE_URL and SUPABASE_SECRET_KEY are not configured).');
+    return;
+  }
+  if (!supabaseUrl || !supabaseSecretKey) {
+    throw new Error('Supabase ingestion requires both SUPABASE_URL and SUPABASE_SECRET_KEY (legacy SUPABASE_SERVICE_ROLE_KEY is also accepted).');
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseSecretKey, {
+    auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+  });
+  const gameRows = await fetchAllSupabaseRows(() => supabase
+    .from('games')
+    .select('id,slug,archived_at')
+    .eq('slug', 'one-piece-card-game')
+    .order('id'));
+  if (gameRows.length > 1) throw new Error('Supabase contains duplicate One Piece game rows.');
+  const gameId = gameRows[0]?.id ?? '10000000-0000-4000-8000-000000000001';
+  await upsertSupabaseRows(supabase, 'games', [{
+    id: gameId,
+    slug: 'one-piece-card-game',
+    name: 'One Piece Card Game',
+    publisher: 'Bandai',
+    is_active: true,
+    archived_at: null,
+  }]);
+
+  const providerDefinitions = [
+    { slug: 'cardmarket', name: 'Cardmarket', market_region: 'europe', native_currency: 'EUR' },
+    { slug: 'tcgplayer', name: 'TCGplayer', market_region: 'united_states', native_currency: 'USD' },
+  ];
+  const existingProviders = await fetchAllSupabaseRows(() => supabase
+    .from('pricing_providers')
+    .select('id,slug,last_sync_at')
+    .in('slug', providerDefinitions.map((provider) => provider.slug))
+    .order('id'));
+  assertSnapshotCanAdvanceProviders(snapshot.generatedAt, existingProviders);
+  const existingProviderBySlug = new Map(existingProviders.map((row) => [row.slug.toLowerCase(), row]));
+  const providerRows = providerDefinitions.map((provider) => ({
+    id: existingProviderBySlug.get(provider.slug)?.id ?? stableUuid('tcg-harbor-provider', provider.slug),
+    ...provider,
+    data_mode: 'live',
+    is_enabled: true,
+    requests_per_minute: 30,
+    min_refresh_interval_seconds: 86_400,
+  }));
+  await upsertSupabaseRows(supabase, 'pricing_providers', providerRows);
+  const providerBySlug = new Map(providerRows.map((row) => [row.slug, row]));
+  const syncRunId = hash(JSON.stringify({
+    generatedAt: snapshot.generatedAt,
+    assets: snapshot.assets.map((asset) => asset.id).sort(),
+  }), 32);
+  const activeApprovedCatalogRemovalIds = activeCatalogRemovalApprovalIds(
+    APPROVED_CATALOG_REMOVALS,
+    snapshot.generatedAt,
+  );
+  const syncLock = await acquireProviderSyncLock(supabase, providerRows);
+
+  try {
+
+  const releaseBySetCode = new Map();
+  const releaseByFullOfficialCode = new Map();
+  for (const product of officialCatalog.products.filter((candidate) => candidate.officialCode)) {
+    const fullCode = normalizeSetCode(product.officialCode);
+    const existingFullRelease = releaseByFullOfficialCode.get(fullCode);
+    if (existingFullRelease && existingFullRelease.officialCode !== product.officialCode) {
+      throw new Error(`Official release code ${fullCode} is ambiguous between ${existingFullRelease.officialCode} and ${product.officialCode}.`);
+    }
+    releaseByFullOfficialCode.set(fullCode, product);
+    for (const code of officialMemberSetCodes(product.officialCode)) {
+      const current = releaseBySetCode.get(code);
+      if (!current || product.releasedOn < current.releasedOn) {
+        releaseBySetCode.set(code, product);
+      }
+    }
+  }
+  // Combined products such as OP14-EB04 and OP15-EB04 keep their own official
+  // release metadata while member codes retain the earliest applicable date.
+  for (const [code, product] of releaseByFullOfficialCode) releaseBySetCode.set(code, product);
+
+  const setAssets = new Map();
+  for (const asset of snapshot.assets) {
+    const code = databaseSetCode(asset.setCode);
+    const bucket = setAssets.get(code) ?? [];
+    bucket.push(asset);
+    setAssets.set(code, bucket);
+  }
+  const existingSets = await fetchAllSupabaseRows(() => supabase
+    .from('card_sets')
+    .select('id,code,external_identifiers,archived_at')
+    .eq('game_id', gameId)
+    .order('id'));
+  const existingSetByCode = preferActiveByKey(
+    existingSets,
+    (row) => row.code.toUpperCase(),
+    'archived_at',
+  );
+  const setRows = [...setAssets.entries()].map(([code, assets]) => {
+    const existing = existingSetByCode.get(code);
+    const officialRelease = releaseBySetCode.get(code);
+    const representative = assets.find((asset) => asset.kind === 'card') ?? assets[0];
+    return {
+      id: existing?.id ?? stableUuid('tcg-harbor-set', code),
+      game_id: gameId,
+      code,
+      name: representative.set || code,
+      release_date: officialRelease?.releasedOn ?? null,
+      external_identifiers: mergeExternalIdentifiers(existing?.external_identifiers, {
+        tcg_harbor_set_code: code,
+        tcg_harbor_game_slug: 'one-piece-card-game',
+        catalog_sync_run_id: syncRunId,
+        catalog_sync_generated_at: snapshot.generatedAt,
+        bandai_official_code: officialRelease?.officialCode,
+      }),
+      archived_at: null,
+    };
+  });
+  await upsertSupabaseRows(supabase, 'card_sets', setRows);
+  const setIdByCode = new Map(setRows.map((row) => [row.code, row.id]));
+
+  const cardAssets = snapshot.assets.filter((asset) => asset.kind === 'card');
+  const cardAssetGroups = new Map();
+  for (const asset of cardAssets) {
+    const setCode = databaseSetCode(asset.setCode);
+    const key = `${setCode}|${String(asset.number).toUpperCase()}`;
+    const bucket = cardAssetGroups.get(key) ?? [];
+    bucket.push(asset);
+    cardAssetGroups.set(key, bucket);
+  }
+  const existingCards = await fetchAllSupabaseRows(() => supabase
+    .from('cards')
+    .select('id,card_set_id,card_number,external_identifiers,archived_at')
+    .eq('game_id', gameId)
+    .order('id'));
+  const existingCardByNaturalKey = preferActiveByKey(
+    existingCards,
+    (row) => `${row.card_set_id}|${row.card_number.toUpperCase()}`,
+    'archived_at',
+  );
+  const cardRows = [...cardAssetGroups.entries()].map(([key, assets]) => {
+    const [setCode] = key.split('|');
+    const representative = assets.find((asset) => asset.variant === 'Standard') ?? assets[0];
+    const cardSetId = setIdByCode.get(setCode);
+    const naturalKey = `${cardSetId}|${String(representative.number).toUpperCase()}`;
+    const existing = existingCardByNaturalKey.get(naturalKey);
+    return {
+      id: existing?.id ?? stableUuid('tcg-harbor-card', key),
+      game_id: gameId,
+      card_set_id: cardSetId,
+      card_number: representative.number,
+      name: representative.name,
+      rarity: representative.rarity,
+      card_type: representative.rarity === 'DON!!' ? 'DON!!' : 'Card',
+      colors: [],
+      image_url: representative.imageUrl ?? null,
+      release_date: releaseBySetCode.get(setCode)?.releasedOn ?? null,
+      external_identifiers: mergeExternalIdentifiers(existing?.external_identifiers, {
+        tcg_harbor_rules_card_id: representative.rulesCardId ?? representative.number,
+        tcg_harbor_game_slug: 'one-piece-card-game',
+        catalog_sync_run_id: syncRunId,
+        catalog_sync_generated_at: snapshot.generatedAt,
+      }),
+      archived_at: null,
+    };
+  });
+  await upsertSupabaseRows(supabase, 'cards', cardRows);
+  const cardIdByNaturalKey = new Map(cardRows.map((row) => [
+    `${databaseSetCode(setRows.find((set) => set.id === row.card_set_id)?.code)}|${row.card_number.toUpperCase()}`,
+    row.id,
+  ]));
+
+  const existingVariants = await fetchAllSupabaseRows(() => supabase
+    .from('card_variants')
+    .select('id,card_id,variant_identifier,language,external_identifiers,archived_at')
+    .order('id'));
+  const existingVariantByNaturalKey = preferActiveByKey(
+    existingVariants,
+    (row) => `${row.card_id}|${row.variant_identifier.toLowerCase()}|${row.language}`,
+    'archived_at',
+  );
+  const variantRows = cardAssets.map((asset) => {
+    const setCode = databaseSetCode(asset.setCode);
+    const cardId = cardIdByNaturalKey.get(`${setCode}|${String(asset.number).toUpperCase()}`);
+    const language = databaseLanguage(asset.language);
+    const naturalKey = `${cardId}|${asset.id.toLowerCase()}|${language}`;
+    const existing = existingVariantByNaturalKey.get(naturalKey);
+    return {
+      id: existing?.id ?? stableUuid('tcg-harbor-variant', asset.id),
+      card_id: cardId,
+      variant_identifier: asset.id,
+      variant_name: asset.variant,
+      language,
+      image_url: asset.imageUrl ?? null,
+      external_identifiers: mergeExternalIdentifiers(existing?.external_identifiers, {
+        tcg_harbor_asset_id: asset.id,
+        tcg_harbor_game_slug: 'one-piece-card-game',
+        catalog_sync_run_id: syncRunId,
+        catalog_sync_generated_at: snapshot.generatedAt,
+        source_printing_id: asset.sourcePrintingId,
+        cardmarket_product_id: asset.cardmarketProductId,
+        tcgplayer_product_id: asset.tcgplayerProductId,
+      }),
+      archived_at: null,
+    };
+  });
+  if (variantRows.some((row) => !row.card_id)) throw new Error('Supabase variant ingestion lost a parent card ID.');
+  await upsertSupabaseRows(supabase, 'card_variants', variantRows);
+  const variantIdByAssetId = new Map(variantRows.map((row) => [
+    row.external_identifiers.tcg_harbor_asset_id,
+    row.id,
+  ]));
+
+  const sealedAssets = snapshot.assets.filter((asset) => asset.kind === 'sealed');
+  const existingSealed = await fetchAllSupabaseRows(() => supabase
+    .from('sealed_products')
+    .select('id,name,product_type,language,external_identifiers,archived_at')
+    .eq('game_id', gameId)
+    .order('id'));
+  const existingSealedByNaturalKey = preferActiveByKey(
+    existingSealed,
+    (row) => `${row.name.toLowerCase()}|${row.product_type}|${row.language}`,
+    'archived_at',
+  );
+  const sealedRows = sealedAssets.map((asset) => {
+    const language = databaseLanguage(asset.language);
+    const productType = databaseSealedProductType(asset.productType);
+    const naturalKey = `${asset.name.toLowerCase()}|${productType}|${language}`;
+    const existing = existingSealedByNaturalKey.get(naturalKey);
+    const setCode = databaseSetCode(asset.setCode);
+    return {
+      id: existing?.id ?? stableUuid('tcg-harbor-sealed', asset.id),
+      game_id: gameId,
+      card_set_id: setIdByCode.get(setCode) ?? null,
+      name: asset.name,
+      product_type: productType,
+      language,
+      region: 'Europe',
+      image_url: asset.imageUrl ?? null,
+      release_date: releaseBySetCode.get(setCode)?.releasedOn ?? null,
+      external_identifiers: mergeExternalIdentifiers(existing?.external_identifiers, {
+        tcg_harbor_asset_id: asset.id,
+        tcg_harbor_game_slug: 'one-piece-card-game',
+        catalog_sync_run_id: syncRunId,
+        catalog_sync_generated_at: snapshot.generatedAt,
+        cardmarket_product_id: asset.cardmarketProductId,
+      }),
+      archived_at: null,
+    };
+  });
+  await upsertSupabaseRows(supabase, 'sealed_products', sealedRows);
+  const sealedIdByAssetId = new Map(sealedRows.map((row) => [
+    row.external_identifiers.tcg_harbor_asset_id,
+    row.id,
+  ]));
+
+  const existingMappings = await fetchAllSupabaseRows(() => supabase
+    .from('provider_catalog_mappings')
+    .select('id,provider_id,card_variant_id,sealed_product_id,condition,language,variant_key,mapping_metadata,disabled_at')
+    .in('provider_id', providerRows.map((provider) => provider.id))
+    .order('id'));
+  const existingMappingByNaturalKey = preferActiveByKey(
+    existingMappings,
+    (row) => `${row.provider_id}|${row.card_variant_id ?? row.sealed_product_id}|${row.condition}|${row.language}|${row.variant_key}`,
+    'disabled_at',
+  );
+  const mappingPlans = [];
+  for (const asset of snapshot.assets) {
+    const isCard = asset.kind === 'card';
+    const targetId = isCard ? variantIdByAssetId.get(asset.id) : sealedIdByAssetId.get(asset.id);
+    if (!targetId) throw new Error(`Supabase mapping ingestion lost catalog target ${asset.id}.`);
+    const condition = pricingConditionForAsset(asset.kind);
+    const language = databaseLanguage(asset.language);
+    const providers = [
+      asset.cardmarketProductId != null ? ['cardmarket', String(asset.cardmarketProductId)] : null,
+      asset.tcgplayerProductId != null ? ['tcgplayer', String(asset.tcgplayerProductId)] : null,
+    ].filter(Boolean);
+    for (const [providerSlug, providerProductId] of providers) {
+      const provider = providerBySlug.get(providerSlug);
+      const variantKey = isCard ? asset.id : 'sealed';
+      const naturalKey = `${provider.id}|${targetId}|${condition}|${language}|${variantKey}`;
+      const existing = existingMappingByNaturalKey.get(naturalKey);
+      const mapping = {
+        id: existing?.id ?? stableUuid(
+          'tcg-harbor-mapping',
+          providerMappingStableSeed(providerSlug, asset.id, condition),
+        ),
+        provider_id: provider.id,
+        card_variant_id: isCard ? targetId : null,
+        sealed_product_id: isCard ? null : targetId,
+        provider_product_id: providerProductId,
+        condition,
+        language,
+        variant_key: variantKey,
+        mapping_metadata: mergeExternalIdentifiers(
+          existing?.mapping_metadata,
+          productLevelMappingMetadata({
+            assetId: asset.id,
+            syncRunId,
+            syncGeneratedAt: snapshot.generatedAt,
+            source: providerSlug === 'cardmarket'
+              ? (asset.kind === 'sealed' ? CARDMARKET_NONSINGLES : CARDMARKET_PRODUCTS)
+              : 'TCGCSV / TCGplayer',
+          }),
+        ),
+        verified_at: snapshot.generatedAt,
+        disabled_at: null,
+      };
+      mappingPlans.push({ asset, providerSlug, provider, mapping });
+    }
+  }
+  await upsertSupabaseRows(supabase, 'provider_catalog_mappings', mappingPlans.map((plan) => plan.mapping));
+
+  const priceSnapshotRows = mappingPlans.map(({ asset, providerSlug, provider, mapping }) => ({
+    mapping_id: mapping.id,
+    provider_id: provider.id,
+    card_variant_id: mapping.card_variant_id,
+    sealed_product_id: mapping.sealed_product_id,
+    currency: provider.native_currency,
+    market_value: providerSlug === 'cardmarket' ? asset.quote.cardmarket : asset.quote.tcgplayer,
+    condition: mapping.condition,
+    language: mapping.language,
+    observed_at: providerSlug === 'cardmarket'
+      ? asset.sourceUpdatedAt?.cardmarket ?? snapshot.generatedAt
+      : asset.sourceUpdatedAt?.tcgcsv ?? snapshot.generatedAt,
+    data_mode: 'live',
+  }));
+  await upsertSupabaseRows(
+    supabase,
+    'price_snapshots',
+    priceSnapshotRows,
+    'mapping_id,observed_at',
+  );
+
+  // Retire importer-owned rows only after every current row and price snapshot
+  // has been written. Manual/admin-created catalog data is never touched.
+  const onePieceCardIds = new Set(existingCards.map((row) => row.id));
+  const onePieceVariantIds = new Set(existingVariants
+    .filter((row) => onePieceCardIds.has(row.card_id))
+    .map((row) => row.id));
+  const onePieceSealedIds = new Set(existingSealed.map((row) => row.id));
+  const staleMappings = activeManagedRowsMissingFromPlan(
+    existingMappings,
+    new Set(mappingPlans.map((plan) => plan.mapping.id)),
+    {
+      inactiveField: 'disabled_at',
+      managedAssetId: (row) => (
+        row.mapping_metadata?.tcg_harbor_asset_id
+        && (
+          onePieceVariantIds.has(row.card_variant_id)
+          || onePieceSealedIds.has(row.sealed_product_id)
+        )
+      ),
+    },
+  );
+  const staleVariants = activeManagedRowsMissingFromPlan(
+    existingVariants,
+    new Set(variantRows.map((row) => row.id)),
+    {
+      inactiveField: 'archived_at',
+      managedAssetId: (row) => (
+        row.external_identifiers?.tcg_harbor_asset_id
+        && onePieceCardIds.has(row.card_id)
+      ),
+    },
+  );
+  const staleSealed = activeManagedRowsMissingFromPlan(
+    existingSealed,
+    new Set(sealedRows.map((row) => row.id)),
+    {
+      inactiveField: 'archived_at',
+      managedAssetId: (row) => row.external_identifiers?.tcg_harbor_asset_id,
+    },
+  );
+  const staleCards = activeManagedRowsMissingFromPlan(
+    existingCards,
+    new Set(cardRows.map((row) => row.id)),
+    {
+      inactiveField: 'archived_at',
+      managedAssetId: (row) => row.external_identifiers?.tcg_harbor_rules_card_id,
+    },
+  );
+  const staleSets = activeManagedRowsMissingFromPlan(
+    existingSets,
+    new Set(setRows.map((row) => row.id)),
+    {
+      inactiveField: 'archived_at',
+      managedAssetId: (row) => row.external_identifiers?.tcg_harbor_set_code,
+    },
+  );
+  const unapprovedStaleCatalogRows = [
+    ...staleVariants.map((row) => ({
+      kind: 'card variant',
+      id: row.id,
+      assetId: row.external_identifiers?.tcg_harbor_asset_id,
+    })),
+    ...staleSealed.map((row) => ({
+      kind: 'sealed product',
+      id: row.id,
+      assetId: row.external_identifiers?.tcg_harbor_asset_id,
+    })),
+  ].filter((row) => !activeApprovedCatalogRemovalIds.has(row.assetId));
+  if (unapprovedStaleCatalogRows.length > 0) {
+    throw new Error(
+      `Supabase catalog retirement rejected ${unapprovedStaleCatalogRows.length} unreviewed managed rows: ${JSON.stringify(unapprovedStaleCatalogRows.slice(0, 20))}.`,
+    );
+  }
+
+  const activeCollectionItems = await fetchAllSupabaseRows(() => supabase
+    .from('collection_items')
+    .select('id,card_variant_id,sealed_product_id')
+    .is('deleted_at', null)
+    .order('id'));
+  const heldVariantIds = new Set(activeCollectionItems.map((item) => item.card_variant_id).filter(Boolean));
+  const heldSealedIds = new Set(activeCollectionItems.map((item) => item.sealed_product_id).filter(Boolean));
+  const heldRowsMarkedStale = [
+    ...staleVariants.filter((row) => heldVariantIds.has(row.id)).map((row) => ({ kind: 'card variant', id: row.id })),
+    ...staleSealed.filter((row) => heldSealedIds.has(row.id)).map((row) => ({ kind: 'sealed product', id: row.id })),
+  ];
+  if (heldRowsMarkedStale.length > 0) {
+    throw new Error(
+      `Supabase catalog retirement refused to archive ${heldRowsMarkedStale.length} rows referenced by active collection holdings: ${JSON.stringify(heldRowsMarkedStale.slice(0, 20))}.`,
+    );
+  }
+  await updateSupabaseRowsById(
+    supabase,
+    'provider_catalog_mappings',
+    staleMappings.map((row) => row.id),
+    { disabled_at: syncLock.startedAt },
+  );
+  await updateSupabaseRowsById(
+    supabase,
+    'card_variants',
+    staleVariants.map((row) => row.id),
+    { archived_at: syncLock.startedAt },
+  );
+  await updateSupabaseRowsById(
+    supabase,
+    'sealed_products',
+    staleSealed.map((row) => row.id),
+    { archived_at: syncLock.startedAt },
+  );
+  await updateSupabaseRowsById(
+    supabase,
+    'cards',
+    staleCards.map((row) => row.id),
+    { archived_at: syncLock.startedAt },
+  );
+  await updateSupabaseRowsById(
+    supabase,
+    'card_sets',
+    staleSets.map((row) => row.id),
+    { archived_at: syncLock.startedAt },
+  );
+
+  const { data: valuationCapture, error: valuationCaptureError } = await supabase
+    .rpc('run_collection_daily_valuation_capture');
+  if (valuationCaptureError) {
+    throw new Error(`Supabase daily collection valuation capture failed: ${valuationCaptureError.message}`);
+  }
+
+  await markProviderSyncSucceeded(supabase, providerRows, syncLock, snapshot.generatedAt);
+
+  console.log(`Supabase ingestion: ${setRows.length} sets, ${cardRows.length} rules cards, ${variantRows.length} variants, ${sealedRows.length} sealed products, ${mappingPlans.length} provider mappings/snapshots.`);
+  console.log(`Supabase retirement: ${staleMappings.length} mappings, ${staleVariants.length} variants, ${staleSealed.length} sealed products, ${staleCards.length} rules cards, ${staleSets.length} sets.`);
+  console.log(`Supabase daily collection valuation capture: ${JSON.stringify(valuationCapture)}.`);
+  } catch (error) {
+    try {
+      await markProviderSyncFailed(supabase, providerRows, syncLock);
+    } catch (statusError) {
+      const originalMessage = error instanceof Error ? error.message : String(error);
+      const statusMessage = statusError instanceof Error ? statusError.message : String(statusError);
+      throw new Error(`${originalMessage} Additionally, ${statusMessage}`);
+    }
+    throw error;
+  }
+}
+
 const output = {
   generatedAt,
   provenance: {
-    matchingPolicy: 'OPTCG remains printing truth for sets, starter decks, and DON!! cards. Numbered TCGCSV/TCGplayer products are printing truth for promotional cards and join to OPTCG by printed card number only for rules metadata. Cross-market comparisons cover every Bandai-confirmed released English OP, EB, and PRB booster group available in TCGCSV. A row requires one exact OPTCG standard printing in that release, one unique unqualified Cardmarket product in an English expansion proven by exact lot-code or English sealed-title evidence, and one unique unqualified TCGplayer product in the exact group. Combined OP14-EB04 and OP15-EB04 releases explicitly accept both member card-number families. PRB reprints without exact cross-provider art identity remain excluded. Promo identity, artwork, and USD price stay bound to the same TCGplayer productId; ambiguous rows are never guessed. Explicit Japanese Anniversary/Version products are Japanese, other TCGplayer English-market products are English, and German is never invented.',
+    matchingPolicy: 'OPTCG remains printing truth for Bandai-confirmed released sets, starter decks, and DON!! cards; recognizable future OP/EB/PRB/ST records are excluded until their official English release. Numbered TCGCSV/TCGplayer products are printing truth for promotional cards and join to OPTCG by printed card number only for rules metadata. Cross-market comparisons cover every Bandai-confirmed released English OP, EB, and PRB booster group available in TCGCSV. A row requires one exact OPTCG standard printing in that release, one unique unqualified Cardmarket product in an English expansion proven by exact lot-code or English sealed-title evidence, and one unique unqualified TCGplayer product in the exact group. Combined OP14-EB04 and OP15-EB04 releases explicitly accept both member card-number families. PRB reprints without exact cross-provider art identity remain excluded. Promo identity, artwork, and USD price stay bound to the same TCGplayer productId; ambiguous rows are never guessed. Explicit Japanese Anniversary/Version products are Japanese, other TCGplayer English-market products are English, and German is never invented.',
     englishExpansionIds,
     englishExpansionEvidence: tcgcsvMarketSources.map((source) => ({
       tcgcsvAbbreviation: source.abbreviation,
+      officialBandaiCode: source.release.officialCode,
+      officialReleasePrecision: source.release.releasePrecision,
       tcgcsvGroupId: source.groupId,
       officialEnglishReleasedOn: source.releasedOn,
       memberSetCodes: source.memberSetCodes,
@@ -1228,11 +2152,17 @@ const output = {
     })),
     englishReleaseManifest: {
       source: BANDAI_ENGLISH_PRODUCTS,
-      auditedAt: '2026-07-19',
-      policy: 'Exact TCGCSV abbreviation must exist in this Bandai English retail-date manifest and its retail date must be on or before generation time.',
-      futureProductsExcluded: [...ENGLISH_MARKET_RELEASES.entries()]
-        .filter(([, release]) => Date.parse(`${release.releasedOn}T00:00:00Z`) > Date.parse(generatedAt))
-        .map(([abbreviation, release]) => ({ abbreviation, ...release })),
+      auditedAt: bandaiCatalog.fetchedAt.slice(0, 10),
+      fetchedAt: bandaiCatalog.fetchedAt,
+      archivePagesChecked: bandaiCatalog.pageCount,
+      policy: 'Every official Bandai English product archive page is checked on each sync, including full-width legacy code brackets; a vetted first-party continuity record protects historical products if archive markup omits them. Exact released booster codes must map one-to-one to a TCGCSV English group. Day-level dates unlock on that day and month-only announcements unlock only after the announced month. Unknown core set codes and missing mappings fail the sync instead of retiring released cards or leaking presale data.',
+      futureProductsExcluded: bandaiCatalog.products
+        .filter((product) => product.officialCode)
+        .filter((product) => !officialProductAvailableAt(product, new Date(generatedAt)))
+        .map((product) => releaseMetadataForOfficialProduct(product)),
+      officialProducts: bandaiCatalog.products
+        .filter((product) => product.officialCode)
+        .map((product) => releaseMetadataForOfficialProduct(product)),
     },
     crossMarketCoverage: {
       exactMappingsByGroup: Object.fromEntries(exactMappingsByGroup),
@@ -1247,6 +2177,10 @@ const output = {
       rawOptcgRecords: rawCards.length,
       rawOptcgPromoRecords: rawPromoCards.length,
       rawOptcgCoreRecords: rawCoreCards.length,
+      releasedOptcgCoreRecords: releasedRawCoreCards.length,
+      futureOptcgCoreRecordsExcluded: futureRawCoreCardsExcluded.length,
+      unknownManifestOptcgCoreRecords: unknownManifestRawCoreCards.length,
+      releasedOfficialCardSetCodes: releasedOfficialCardSetCodes.size,
       sourceRecordsWithoutTrustedImage: rawCards.length - trustedImageRecords.length,
       deduplicatedOptcgPrintingRecords: rawCards.length - uniqueOptcgCards.length,
       optcgCorePrintings: coreCardAssets.length,
@@ -1282,8 +2216,16 @@ const output = {
       ambiguousTcgplayerBaseMappingsExcluded: ambiguousBaseTcgplayerNumbers.length,
       missingOrAmbiguousOptcgBaseCandidatesExcluded: optcgBaseCandidatesMissingOrAmbiguous.length,
       englishSealedProducts: sealedAssets.length,
+      englishSealedSourceCandidates: englishSealedCatalogCandidates.length,
+      futureEnglishSealedProductsExcluded: futureEnglishSealedProductsExcluded.length,
+      unknownManifestEnglishSealedProductsExcluded: unknownManifestEnglishSealedProductsExcluded.length,
+      englishSealedProductsWithTrend: sealedAssets.filter((asset) => asset.quote.cardmarket != null).length,
+      englishSealedProductsWithoutTrend: sealedAssets.filter((asset) => asset.quote.cardmarket == null).length,
+      englishSealedProductsWithImages: 0,
+      englishSealedProductsWithoutImages: sealedAssets.length,
       totalAssets: cardAssets.length + sealedAssets.length,
       representativeInitialHoldings: initialAssetIds.length,
+      approvedCatalogRemovals: approvedCatalogRemovals.length,
     },
     cardmarket: {
       source: CARDMARKET_PRICES,
@@ -1295,6 +2237,22 @@ const output = {
       expansionEvidencePolicy: 'Exact Cardmarket lot suffix for OP/EB releases; exact packaging-free English booster plus booster-box title for PRB releases. Multiple expansion IDs fail the sync.',
       sealedCategories: [...SEALED_CATEGORIES.keys()],
       sealedExclusions: ['Lots', 'Non-English', 'Japanese', 'Asia Region'],
+      sealedReleasePolicy: 'Recognizable OP, ST, EB, and PRB codes are included only after Bandai confirms their English release. Known future and unknown-manifest codes are excluded. Code-less Cardmarket deck titles are normalized and matched to unique official Bandai deck titles before the release gate; generic unmatched legacy products remain eligible.',
+      futureSealedProductsExcluded: futureEnglishSealedProductsExcluded.map((product) => ({
+        cardmarketProductId: product.idProduct,
+        name: product.name,
+        setCode: sealedSetCode(product, SEALED_CATEGORIES.get(product.categoryName), officialDeckSetCodesByTitle),
+      })),
+      unknownManifestSealedProductsExcluded: unknownManifestEnglishSealedProductsExcluded.map((product) => ({
+        cardmarketProductId: product.idProduct,
+        name: product.name,
+        setCode: sealedSetCode(product, SEALED_CATEGORIES.get(product.categoryName), officialDeckSetCodesByTitle),
+      })),
+      approvedCatalogRemovalReviews: Object.fromEntries(approvedCatalogRemovals.map((asset) => [
+        asset.id,
+        APPROVED_CATALOG_REMOVALS.get(asset.id),
+      ])),
+      sealedImagePolicy: 'The public Cardmarket non-single feed has no trusted image URL, so every sealed product is explicitly marked unavailable instead of guessing an image.',
     },
     tcgcsv: {
       source: 'https://tcgcsv.com/docs',
@@ -1319,9 +2277,12 @@ const output = {
       priceField: 'marketPrice',
       currency: 'USD',
       role: 'Direct TCGplayer product identity and product-specific USD price for every exactly mapped released English OP/EB/PRB standard printing and promotional printing; exact enrichment for two missing starter images',
-      imagePolicy: 'Use the source imageUrl. Upgrade only the audited productId allowlist to TCGplayer’s documented _in_1000x1000 derivative. Keep verified HTTP 403 products explicitly unavailable.',
+      imagePolicy: 'Use the source imageUrl. Upgrade only the audited productId allowlist to TCGplayer’s documented _in_1000x1000 derivative. Seven exact product/printing overrides use independently verified public records when the source URL is missing or returns HTTP 403; ambiguous artwork remains unavailable.',
       usagePolicy: 'Backend snapshot sync with a custom User-Agent; no browser-side polling.',
-      verifiedBrokenImageProductIds: [...BROKEN_TCGPLAYER_IMAGE_PRODUCT_IDS],
+      exactImageOverrides: {
+        tcgplayerProductIds: Object.fromEntries(EXACT_TCGPLAYER_IMAGE_OVERRIDES),
+        optcgSourcePrintingIds: Object.fromEntries(EXACT_OPTCG_IMAGE_OVERRIDES),
+      },
     },
     optcg: {
       source: 'https://optcgapi.com/documentation',
@@ -1343,6 +2304,7 @@ const output = {
 
 await mkdir(dirname(OUTPUT), { recursive: true });
 await writeFile(OUTPUT, `${JSON.stringify(output, null, 2)}\n`, 'utf8');
+await ingestSnapshotToSupabase(output, bandaiCatalog);
 console.log(`Wrote ${cardAssets.length} card printings (${output.provenance.catalogCounts.cardPrintingsWithImages} with images, ${output.provenance.catalogCounts.cardPrintingsWithoutImages} explicitly unavailable) and ${sealedAssets.length} English sealed products to ${OUTPUT}`);
 console.log(`TCGCSV promo printings: ${promoAssets.length} (${promoAssetsWithPrices.length} headline market prices, ${promoAssetsWithMultiplePriceSubtypes.length} multi-subtype price sets, ${promoAssetsWithoutPriceRows.length} without price rows, ${japanesePromoAssets.length} explicitly Japanese)`);
 console.log(`Representative initial holdings: ${initialAssetIds.length}`);

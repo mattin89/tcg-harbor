@@ -8,12 +8,12 @@ This project is not affiliated with Bandai, Cardmarket, TCGPlayer, or any local 
 
 The repository contains four complementary layers:
 
-1. A polished, runnable Vite/React browser demo in `src/App.tsx`, with a generated card/market snapshot plus seeded community fixtures and browser state.
+1. A production-gated Vite/React application shell in `src/App.tsx`, with a generated card/market snapshot plus temporary community fixtures while those repositories are migrated.
 2. Framework-neutral domain and service modules for business rules, local persistence, authentication boundaries, repositories, and normalized pricing providers.
 3. A production-oriented PostgreSQL/Supabase migration, RLS policies, RPCs, triggers, and seed data.
 4. An environment-activated Supabase account layer with real player/store signup, session restoration, password reset, store applications, platform approval, per-store QR invitations, and store-owned chat/moderation tools.
 
-With no Supabase values configured, the original local demo remains available. With a project URL and browser-safe publishable key, `ProductionApp_v2.tsx` replaces the demo login gate with Supabase Auth and protected account areas. Collection and message repositories are still being migrated from local fixtures, so the production transition is intentionally incremental.
+`ProductionApp_v2.tsx` is the only shipped entry and requires a project URL plus browser-safe publishable key. Missing account configuration fails closed; there is no shared live/demo account or authentication bypass. Player collections are owner-scoped in Supabase. Community, trade, direct-message, and notification repositories are still being migrated from fixtures, so the production transition remains incremental.
 
 ## Quick start
 
@@ -29,18 +29,7 @@ npm ci
 npm run dev
 ```
 
-Open [http://127.0.0.1:4173](http://127.0.0.1:4173). The port is fixed in `vite.config.ts` for both development and preview.
-
-The browser demo needs no environment variables. `.env.example` documents the values that activate real Supabase accounts and the separate server-only values reserved for authorized live-provider transports.
-
-### Demo-fallback login
-
-- Email: `mario@tcgharbor.demo`
-- Password: `HarborDemo!2026`
-
-The first browser visit may open directly on the populated dashboard. To exercise sign-in, go to **Settings**, sign out, and use the prefilled credentials or **Continue with demo account**.
-
-This credential is available only while Supabase configuration is blank. Once Supabase is configured, the account screen uses Supabase Auth and the demo credential no longer bypasses authentication.
+Copy `.env.example` to the gitignored `.env`, configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`, then open [http://127.0.0.1:4173](http://127.0.0.1:4173). The port is fixed in `vite.config.ts` for both development and preview. Use an account created through Supabase Auth; the repository contains no reusable login credential.
 
 ## Available commands
 
@@ -68,17 +57,17 @@ npm run preview
 
 ## Market data and card images
 
-`scripts/sync-onepiece-data.mjs` performs a build-time/server-side ingestion and writes the versioned `src/data/generated/onepiece-market-v7.json`; the browser never polls provider APIs. The prior v6 snapshot remains preserved. The current searchable snapshot contains 5,349 distinct card printings and 380 priced English sealed products. The demo-owned collection remains a separate 40-card subset and never expands merely because the catalog does.
+`scripts/sync-onepiece-data.mjs` performs a build-time/server-side ingestion and writes the versioned `src/data/generated/onepiece-market-v7.json`; the browser never polls provider APIs. The prior v6 snapshot remains preserved. The snapshot refreshed on 21 July 2026 contains 5,349 distinct card printings and 394 released English sealed products. A user's owner-scoped collection remains separate and never expands merely because the catalog does.
 
 - Cardmarket EUR values come from its public [One Piece product catalog](https://downloads.s3.cardmarket.com/productCatalog/productList/products_singles_18.json) and [daily price guide](https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_18.json). Portfolio value uses `trend`; comparisons use the real `avg1`, `avg7`, and `avg30` fields.
 - The Cardmarket card join is deliberately conservative: the sync scans all 21 Bandai-confirmed released English main and special booster groups through OP16, including EB01–EB03, PRB01–PRB02, and both EB04 halves inside OP14/OP15. A standard printing receives a value only when the Cardmarket product identity is unique; alternate, promo, reprint, or ambiguous products remain `null`, and the app never uses price to guess identity.
 - OPTCG API supplies set, starter-deck, and DON!! printing metadata/art plus non-promo USD references. All 187 DON!! designs share one rules identity while retaining distinct printing IDs.
 - [TCGCSV](https://tcgcsv.com/docs) supplies direct TCGplayer product IDs and USD market prices. The current snapshot has 1,655 exact standard-printing mappings, of which 1,650 have positive prices from both markets. All 21 released groups are fetched and audited; PRB01/PRB02 correctly contribute no comparison rows because Cardmarket's public export gives their base and alternate versions indistinguishable titles and numbers. The sync reports these zero-row groups explicitly instead of guessing. It also includes numbered promotional products and exact promo artwork. Explicit Japanese anniversary/version products are labelled Japanese; all other included promo records are source-defensible English. German is not offered.
 - Cross-market ratios use the official [ECB daily USD-per-EUR reference rate](https://data.ecb.europa.eu/help/api/data) embedded at sync time. The comparison is `TCGplayer USD / (Cardmarket EUR × USD per EUR)` and always displays the observation date.
-- Of 5,349 card printings, 5,342 have exact source-backed images. Seven remain in the catalog with an explicit “art unavailable” state because no exact trusted image exists; the app never reuses a different printing's artwork.
+- All 5,349 card printings have an exact source-backed image. Seven formerly missing records use individually audited product/printing overrides; the sync asserts every override and never substitutes a different printing's artwork.
 - Card numbers are rules identities, not unique collectible variants. The model therefore keeps `rulesCardId`, `printingId`, Cardmarket/TCGplayer product IDs, language evidence, source timestamps, and image state separately.
 
-Run `npm run sync:data` at most once daily from a trusted server/build job. TCGCSV explicitly requires backend ingestion, a custom User-Agent, and no more than daily polling. Review provider terms and obtain the necessary commercial data/art rights before production redistribution.
+Run `npm run sync:data` at most once daily from a trusted server/build job. The checked-in GitHub workflow discovers Bandai's released English groups, excludes future release dates, refreshes the snapshot daily, ingests verified catalog/prices, and then captures each account's daily valuation. TCGCSV explicitly requires backend ingestion, a custom User-Agent, and no more than daily polling. Review provider terms and obtain the necessary commercial data/art rights before production redistribution.
 
 ## What to try
 
@@ -138,7 +127,8 @@ The detailed design is in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 - `qrcode` for standards-compliant SVG generation
 - Lazy-loaded ZXing for live-camera and uploaded-image QR decoding
 - Seeded data from `src/data/demo.ts`
-- Browser `localStorage` for the collection and demo session flag
+- Retained local fixture adapters for isolated development tests; the production entry never falls back to their session
+- Owner-scoped Supabase collection rows, acquisition captures, and daily valuation history for signed-in production players
 - In-memory React state for memberships, chat, trades, messages, and notifications
 - Inline SVG portfolio charts and a custom illustrative store map
 
@@ -182,6 +172,11 @@ The target database is defined by:
 - [`supabase/migrations/20260720180849_physical_store_qr_invites.sql`](supabase/migrations/20260720180849_physical_store_qr_invites.sql)
 - [`supabase/migrations/20260721093251_fix_store_join_redemption_ambiguity.sql`](supabase/migrations/20260721093251_fix_store_join_redemption_ambiguity.sql)
 - [`supabase/migrations/20260721093619_set_community_member_profiles_security_invoker.sql`](supabase/migrations/20260721093619_set_community_member_profiles_security_invoker.sql)
+- [`supabase/migrations/20260721111856_secure_collection_crud_fifo_daily_valuations.sql`](supabase/migrations/20260721111856_secure_collection_crud_fifo_daily_valuations.sql)
+- [`supabase/migrations/20260721115011_harden_portfolio_valuation_lot_purchase_v2.sql`](supabase/migrations/20260721115011_harden_portfolio_valuation_lot_purchase_v2.sql)
+- [`supabase/migrations/20260721124718_bind_collection_add_to_expected_owner.sql`](supabase/migrations/20260721124718_bind_collection_add_to_expected_owner.sql)
+- [`supabase/migrations/20260721131143_collection_owner_archived_catalog_read_v2.sql`](supabase/migrations/20260721131143_collection_owner_archived_catalog_read_v2.sql)
+- [`supabase/migrations/20260721153100_clear_collection_lot_purchase_context_v2.sql`](supabase/migrations/20260721153100_clear_collection_lot_purchase_context_v2.sql)
 - [`supabase/config.toml`](supabase/config.toml)
 - [`supabase/seed.sql`](supabase/seed.sql)
 - [`supabase/SECURITY.md`](supabase/SECURITY.md)
@@ -191,11 +186,21 @@ The target database is defined by:
 
 The migrations model users and profiles, extensible games/catalogs, collections and quantity history, provider mappings/raw responses/quotes/snapshots, reviewed store applications, approved stores, store-owned chat channels, revocable join codes, communities, trades, direct messages, notifications, blocks, reports, moderation evidence, and activity logs. RLS and guarded RPCs make approval and store/community capabilities server-enforced.
 
-The frontend now installs `@supabase/supabase-js`, reads only the browser-safe project URL/publishable key, and connects Auth plus account/store-administration workflows. Durable collection/chat-message repositories and message Realtime subscriptions remain a subsequent integration phase.
+The frontend installs `@supabase/supabase-js`, reads only the browser-safe project URL/publishable key, and connects Auth plus account/store-administration workflows. Signed-in player collections use owner-scoped Supabase RPCs and RLS instead of shared browser storage. Each addition creates a timestamped acquisition lot and captures the then-current provider reference; the daily catalog workflow appends current price snapshots and refreshes per-account valuation/growth history. Legacy fixture adapters remain isolated development utilities and are not an authentication fallback. Durable chat-message repositories and message Realtime subscriptions remain a subsequent integration phase.
+
+### Production collection storage and growth
+
+- `collection_items` stores one owner-only holding identity and current quantity.
+- `collection_acquisition_lots` records every quantity addition at the server timestamp; users cannot backdate it.
+- `collection_acquisition_market_references` preserves the Cardmarket/TCGplayer reference available when that lot was added.
+- FIFO disposal allocations preserve the correct remaining acquisition basis when quantity is reduced.
+- `collection_daily_valuation_snapshots` stores daily market value, acquisition value, growth, and priced/unpriced coverage per owner and provider.
+- RLS plus narrow `SECURITY DEFINER` RPCs derive ownership from `auth.uid()`; production users cannot read or mutate another user's collection.
+- `.github/workflows/sync-onepiece-catalog.yml` refreshes official release coverage, market data, database price snapshots, and account valuations daily. The trusted job requires encrypted `SUPABASE_URL` and `SUPABASE_SECRET_KEY` repository secrets; neither belongs in Vite variables.
 
 ## Optional Supabase setup
 
-Supabase is not required to run the browser demo. To inspect or adopt the database design:
+Supabase configuration is required by the shipped application entry. To inspect or adopt the database design:
 
 1. Create a PostgreSQL 15+/Supabase project in an EU region appropriate for the deployment. The current hosted project uses `eu-west-1`; a future region change requires a planned database migration.
 2. Apply every file in `supabase/migrations/` in filename order. A linked Supabase CLI can use `supabase db push`.
@@ -335,16 +340,16 @@ tcg-harbor/
 
 ## Honest limitations
 
-- Real Supabase authentication, player/store onboarding, store approval, protected roles, and chat-channel administration are connected when environment values are present. The no-configuration demo fallback remains intentionally available.
-- Collection holdings, trade posts, community message bodies, direct messages, and most notification changes are still managed by the existing browser UI rather than Supabase repositories.
-- Only collection assets and the simple demo session flag persist directly in the UI. Joined communities, chats, trades, conversations, and notification changes reset on refresh.
+- Real Supabase authentication, player/store onboarding, store approval, protected roles, owner-scoped collections, and chat-channel administration are connected. Missing Supabase configuration fails closed.
+- Trade posts, community message bodies, direct messages, and most notification changes are still managed by the existing browser UI rather than durable Supabase repositories.
+- Joined-community presentation, chats, trades, conversations, and notification changes still reset on refresh; collection holdings and daily growth history do not.
 - The database publishes protected application, channel, message, and notification changes, but the current client does not yet provide full multi-user chat delivery, offline queueing, or server retry behavior.
-- The store map uses interactive MapLibre with OpenStreetMap raster tiles. It shows approved Supabase store rows in production and six Dresden fixtures in demo fallback; the distance selector is still presentational and does not yet calculate geospatial distance or clustering.
+- The store map uses interactive MapLibre with OpenStreetMap raster tiles. It shows approved Supabase store rows in production and six Dresden fixtures only in the local development adapter; the distance selector is still presentational and does not yet calculate geospatial distance or clustering.
 - Live camera and uploaded-image QR decoding depend on browser media support and image quality; manual code entry remains the guaranteed accessible fallback.
 - Production QR token hashes and lifecycle metadata are persisted in Supabase; raw tokens are returned only once and remain in short-lived browser join intent storage.
 - Portfolio and item charts show only the two source-backed endpoints (Cardmarket current trend versus the selected rolling average), not an invented transaction history. The SQL seed still includes 31 days of database snapshots for a future adapter.
 - Cardmarket, OPTCG, and TCGCSV data are generated daily snapshots, not streaming quotes. The Dresden stores remain illustrative registered app records, not verified real businesses.
 - Cross-market ratios cover only exact English base printings with both provider identities and positive daily prices. They exclude alternate arts without a two-provider match, and do not include fees, tax, shipping, condition adjustments, liquidity, or executable sale prices.
-- No publisher artwork is bundled locally. Remote art loads from its recorded OPTCG or TCGplayer source; seven unresolved exact printings show a clearly labelled unavailable state rather than a misleading substitute.
-- Account creation and password reset are connected through Supabase Auth. Avatar upload, durable collection/message adapters, notification delivery, and parts of the report/block UI remain to be connected.
+- No publisher artwork is bundled locally. Every card printing loads exact remote art from its recorded/audited source; redistribution and hotlink permission still require deployment review.
+- Account creation, password reset, and durable owner-scoped collections are connected through Supabase. Avatar upload, durable message adapters, notification delivery, and parts of the report/block UI remain to be connected.
 - No email, push, payment, sale, auction, escrow, shipping, or store inventory integration is included.

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getSupabaseClient } from "../services/supabase/client";
+import { LatestRequestGateV2 } from "../domain/latestRequestGateV2";
+import { authFailurePhaseV2 } from "../domain/authRecoveryV2";
 import { SupabaseProductionAccess } from "./supabaseProductionAccess";
 import type {
   CommunityChannel,
@@ -66,26 +68,31 @@ export function useProductionAccess(): ProductionAccessController {
   const [snapshot, setSnapshot] = useState<ProductionAccessSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [passwordRecovery, setPasswordRecovery] = useState(false);
+  const sessionRequestGate = useMemo(() => new LatestRequestGateV2(), []);
 
   const loadSession = useCallback(async () => {
     if (!service) return;
+    const isCurrentRequest = sessionRequestGate.begin();
     setPhase("loading");
     try {
       const session = await service.getSession();
+      if (!isCurrentRequest()) return;
       if (!session) {
         setSnapshot(null);
         setPhase("signed-out");
         return;
       }
       const next = await service.loadSnapshot(session);
+      if (!isCurrentRequest()) return;
       setSnapshot(next);
       setError(null);
       setPhase("ready");
     } catch (nextError) {
+      if (!isCurrentRequest()) return;
       setError(errorMessage(nextError));
       setPhase("error");
     }
-  }, [service]);
+  }, [service, sessionRequestGate]);
 
   useEffect(() => {
     if (!service) return;
@@ -102,9 +109,10 @@ export function useProductionAccess(): ProductionAccessController {
     });
     return () => {
       active = false;
+      sessionRequestGate.invalidate();
       unsubscribe();
     };
-  }, [loadSession, service]);
+  }, [loadSession, service, sessionRequestGate]);
 
   const subscribedUserId = snapshot?.profile.id;
   useEffect(() => {
@@ -132,12 +140,20 @@ export function useProductionAccess(): ProductionAccessController {
     passwordRecovery,
     async signIn(email, password) {
       if (!service) return;
-      await run(async () => {
-        const session = await service.signIn(email.trim(), password);
-        const next = await service.loadSnapshot(session);
-        setSnapshot(next);
-        setPhase("ready");
-      });
+      sessionRequestGate.invalidate();
+      setSnapshot(null);
+      setPhase("loading");
+      setError(null);
+      try {
+        await service.signIn(email.trim(), password);
+        await loadSession();
+      } catch (nextError) {
+        sessionRequestGate.invalidate();
+        setSnapshot(null);
+        setError(errorMessage(nextError));
+        setPhase(authFailurePhaseV2("sign_in", false));
+        throw nextError;
+      }
     },
     async signUp(draft) {
       if (!service) return { session: null, emailConfirmationRequired: true };
@@ -145,20 +161,33 @@ export function useProductionAccess(): ProductionAccessController {
       await run(async () => {
         result = await service.signUp(draft);
         if (result.session) {
-          const next = await service.loadSnapshot(result.session);
-          setSnapshot(next);
-          setPhase("ready");
+          sessionRequestGate.invalidate();
+          setSnapshot(null);
+          setPhase("loading");
+          await loadSession();
         }
       });
       return result;
     },
     async signOut() {
       if (!service) return;
-      await run(async () => {
+      const previousSnapshot = snapshot;
+      sessionRequestGate.invalidate();
+      setSnapshot(null);
+      setPhase("loading");
+      setError(null);
+      try {
         await service.signOut();
+        sessionRequestGate.invalidate();
         setSnapshot(null);
         setPhase("signed-out");
-      });
+      } catch (nextError) {
+        sessionRequestGate.invalidate();
+        setSnapshot(previousSnapshot);
+        setError(errorMessage(nextError));
+        setPhase(authFailurePhaseV2("sign_out", Boolean(previousSnapshot)));
+        throw nextError;
+      }
     },
     async requestPasswordReset(email) {
       if (!service) return;

@@ -23,9 +23,8 @@ export const isProductionSupabaseConfigured = getSupabaseRuntimeConfig().configu
 let singleton: SupabaseClient | null | undefined;
 
 /**
- * Returns null when production credentials are intentionally absent. This lets
- * the existing local demo continue to run while a Supabase project is being
- * provisioned, without silently pretending that demo authentication is real.
+ * Returns null when production credentials are absent so the production access
+ * gate can fail closed instead of silently substituting a local identity.
  */
 export function getSupabaseClient(): SupabaseClient | null {
   if (singleton !== undefined) return singleton;

@@ -7,6 +7,12 @@ import { MarketComparisonPage } from './components/MarketComparisonPage';
 import { StoreMap } from './components/StoreMap';
 import { Avatar, Button, CardArt, Chip, DemoBadge, EmptyState, MarketDataBadge, Modal, PriceChart, Segmented, Toggle, Trend } from './components/ui';
 import { clearStoredStoreJoinIntent, peekStoreJoinIntent } from './production/storeJoinRoute';
+import { summarizePortfolioGrowth } from './domain/acquisitionGrowthV2';
+import { resolvePrivateNoteForAddV2 } from './domain/collectionDraftV2';
+import { resolvePortfolioValuationV2 } from './domain/portfolioValuationV2';
+import { resolveActiveNavPathV2 } from './domain/navigationV2';
+import { useProductionCollectionV2, type ProductionCollectionRuntimeV2 } from './services/supabase/useProductionCollectionV2';
+import type { PortfolioDailySnapshotV2 } from './services/supabase/collectionRepositoryV2';
 import {
   assetById,
   catalogAssets,
@@ -34,6 +40,7 @@ import {
 type ViewMode = 'grid' | 'table';
 
 export interface AppRuntimeIdentity {
+  userId: string;
   username: string;
   displayName: string | null;
   email: string;
@@ -123,8 +130,10 @@ export default function App({ identity }: AppProps = {}) {
   const { path, navigate } = usePath();
   const sanitizedJoinToken = path === '/join/store' ? peekStoreJoinIntent(window.sessionStorage)?.token ?? '' : '';
   const storeDirectory = identity?.registeredStores ?? stores;
-  const [demoAuthenticated, setDemoAuthenticated] = useState(() => localStorage.getItem('tcg-harbor-session') !== 'signed-out');
-  const [assets, setAssets] = useState<DemoAsset[]>(safeAssets);
+  const [demoAuthenticated, setDemoAuthenticated] = useState(() => localStorage.getItem('tcg-harbor-session') === 'signed-in');
+  const [demoAssets, setDemoAssets] = useState<DemoAsset[]>(safeAssets);
+  const productionCollection = useProductionCollectionV2(Boolean(identity), identity?.userId);
+  const assets = identity ? productionCollection.assets : demoAssets;
   const [market, setMarket] = useState<Market>('cardmarket');
   const [period, setPeriod] = useState<Period>('1M');
   const [kind, setKind] = useState<AssetKind | 'all'>('all');
@@ -135,7 +144,9 @@ export default function App({ identity }: AppProps = {}) {
   const [toast, setToast] = useState('');
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
-  useEffect(() => { localStorage.setItem('tcg-harbor-assets-source-backed-v5', JSON.stringify(assets)); }, [assets]);
+  useEffect(() => {
+    if (!identity) localStorage.setItem('tcg-harbor-assets-source-backed-v5', JSON.stringify(demoAssets));
+  }, [demoAssets, identity]);
   useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(''), 3500);
@@ -144,7 +155,7 @@ export default function App({ identity }: AppProps = {}) {
 
   const notify = (message: string) => setToast(message);
   const authenticated = Boolean(identity) || demoAuthenticated;
-  const profileName = identity?.displayName || identity?.username || 'Mario Delor';
+  const profileName = identity?.displayName || identity?.username || 'Player';
   const profileInitials = profileName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'P';
   const isPlatformAdministrator = identity?.roles.includes('platform_administrator') ?? false;
   const isApprovedStoreAdministrator = identity?.roles.includes('store_administrator') ?? false;
@@ -175,7 +186,7 @@ export default function App({ identity }: AppProps = {}) {
     return <AuthPage onSignIn={signIn} />;
   }
 
-  const activeNavPath = navItems.find((item) => path === item.path || (item.path !== '/dashboard' && path.startsWith(`${item.path}/`)))?.path ?? '/dashboard';
+  const activeNavPath = resolveActiveNavPathV2(path, navItems.map((item) => item.path), '/dashboard');
   const title = path.startsWith('/collection/add') ? ['Add to collection', 'Search the catalog or add a sealed product']
     : path.startsWith('/collection') ? ['Your collection', 'Private by default · only you can see portfolio details']
     : path === '/market-comparison' ? ['Market comparison', 'Find the largest exact-printing price ratios across Cardmarket and TCGplayer']
@@ -191,9 +202,9 @@ export default function App({ identity }: AppProps = {}) {
     : ['Portfolio overview', `Welcome back, ${profileName} — your collection moved today`];
 
   const page = path.startsWith('/collection/add')
-    ? <AddItemsPage assets={assets} setAssets={setAssets} market={market} navigate={navigate} notify={notify} />
+    ? <AddItemsPage key={`add-items:${identity?.userId ?? 'demo'}`} assets={assets} setAssets={setDemoAssets} productionCollection={identity ? productionCollection : undefined} market={market} navigate={navigate} notify={notify} />
     : path === '/collection'
-      ? <CollectionPage assets={assets} setAssets={setAssets} market={market} navigate={navigate} notify={notify} />
+      ? <CollectionPage key={`collection:${identity?.userId ?? 'demo'}`} assets={assets} setAssets={setDemoAssets} productionCollection={identity ? productionCollection : undefined} market={market} navigate={navigate} notify={notify} />
       : path === '/market-comparison'
         ? <MarketComparisonPage />
       : path === '/stores'
@@ -218,7 +229,7 @@ export default function App({ identity }: AppProps = {}) {
                         ? <JoinPage code={sanitizedJoinToken} joinedIds={joinedIds} setJoinedIds={setJoinedIds} navigate={navigate} notify={notify} />
                       : path.startsWith('/join/')
                         ? <JoinPage code={decodeURIComponent(path.split('/')[2] ?? '')} joinedIds={joinedIds} setJoinedIds={setJoinedIds} navigate={navigate} notify={notify} />
-                        : <DashboardPage assets={assets} market={market} setMarket={setMarket} period={period} setPeriod={setPeriod} kind={kind} setKind={setKind} navigate={navigate} />;
+                        : <DashboardPage assets={assets} dailySnapshots={identity ? productionCollection.dailySnapshots : []} market={market} setMarket={setMarket} period={period} setPeriod={setPeriod} kind={kind} setKind={setKind} navigate={navigate} />;
 
   return <div className="app-shell">
     <aside className="sidebar">
@@ -232,9 +243,16 @@ export default function App({ identity }: AppProps = {}) {
     <div className="app-main">
       <header className="topbar">
         <div><p className="eyebrow mobile-only">TCG Harbor</p><h1>{title[0]}</h1><p>{title[1]}</p></div>
-        <div className="top-actions">{identity ? <Chip tone="positive"><Icon name="shield" size={13}/>Live account</Chip> : <DemoBadge compact />}<button className="icon-button notification-button" onClick={() => setNotificationsOpen((open) => !open)} aria-label="Notifications"><Icon name="bell" /><span>2</span></button><Avatar initials={profileInitials} size="sm" /></div>
+        <div className="top-actions">{!identity && <DemoBadge compact />}<button className="icon-button notification-button" onClick={() => setNotificationsOpen((open) => !open)} aria-label="Notifications"><Icon name="bell" /><span>2</span></button><Avatar initials={profileInitials} size="sm" /></div>
       </header>
-      <main id="main-content">{page}</main>
+      <main id="main-content">
+        {identity && (productionCollection.loading || productionCollection.error) && <div className={`collection-sync-banner ${productionCollection.error ? 'is-error' : ''}`} role={productionCollection.error ? 'alert' : 'status'}>
+          <Icon name={productionCollection.error ? 'info' : 'refresh'} size={16}/>
+          <span><strong>{productionCollection.error ? 'Collection sync needs attention' : 'Loading your private collection'}</strong><small>{productionCollection.error ?? 'Retrieving account-owned holdings and valuation history…'}</small></span>
+          {productionCollection.error && <Button type="button" variant="ghost" size="sm" onClick={() => void productionCollection.refresh()}>Try again</Button>}
+        </div>}
+        {page}
+      </main>
     </div>
     <nav className="bottom-nav" aria-label="Mobile navigation">{navItems.filter((item) => item.path !== '/collection/add').map((item) => <button key={item.path} className={activeNavPath === item.path ? 'active' : ''} onClick={() => navigate(item.path)}><Icon name={item.icon} size={20}/><span>{item.path === '/market-comparison' ? 'Markets' : item.label === 'Communities' ? 'Community' : item.label}</span>{item.path === '/messages' && <em>2</em>}</button>)}</nav>
     {notificationsOpen && <div className="notification-panel"><header><div><p className="eyebrow">Activity</p><h2>Notifications</h2></div><Button variant="ghost" size="icon" onClick={() => setNotificationsOpen(false)} aria-label="Close notifications"><Icon name="close" /></Button></header><div className="notification-list">{notifications.map((note) => <button key={note.id} className={note.unread ? 'unread' : ''} onClick={() => { setNotificationsOpen(false); if (note.type === 'message') navigate('/messages/lena'); }}><span className={`notification-icon ${note.type}`}><Icon name={note.type === 'message' ? 'message' : note.type === 'trade' ? 'trade' : note.type === 'community' ? 'users' : 'check'} /></span><span><strong>{note.title}</strong><small>{note.detail}</small><time>{note.time}</time></span></button>)}</div><footer><Button variant="secondary" onClick={() => notify('All notifications marked as read')}><Icon name="check"/>Mark all read</Button></footer></div>}
@@ -257,22 +275,30 @@ function AuthPage({ onSignIn }: { onSignIn: () => void }) {
     <section className="auth-story">
       <div className="auth-brand"><span className="brand-mark"><span /></span><strong>TCG Harbor</strong></div>
       <div className="auth-copy"><DemoBadge /><p className="eyebrow">Your collection, in its element</p><h1>Know what you hold.<br /><em>Trade where you belong.</em></h1><p>Track your One Piece Card Game portfolio, discover local game stores, and trade within verified store communities.</p><div className="auth-proof"><span><Icon name="chart" /><strong>30 days</strong><small>price history</small></span><span><Icon name="store" /><strong>6 stores</strong><small>demo communities</small></span><span><Icon name="lock" /><strong>Private</strong><small>by default</small></span></div></div>
-      <p className="auth-disclaimer">Unofficial collector/community demo. EU values use Cardmarket’s daily public feed; card metadata, art, and US references use OPTCG API and TCGCSV. Not affiliated with Bandai or any data provider.</p>
+      <p className="auth-disclaimer">Unofficial collector/community preview. EU values use Cardmarket’s daily public feed; card metadata, art, and US references use OPTCG API and TCGCSV. Not affiliated with Bandai or any data provider.</p>
     </section>
-    <section className="auth-form-wrap"><form className="auth-form" onSubmit={submit}><div className="auth-mobile-brand"><span className="brand-mark"><span /></span><strong>TCG Harbor</strong></div><p className="eyebrow">Welcome aboard</p><h2>{mode === 'signin' ? 'Sign in to your harbor' : mode === 'signup' ? 'Create your collector profile' : 'Reset your password'}</h2><p>{mode === 'reset' ? 'We’ll send a secure reset link if an account exists.' : 'Your collection and portfolio value stay private.'}</p><label>Email address<input name="email" type="email" defaultValue={mode === 'signin' ? 'mario@tcgharbor.demo' : ''} autoComplete="email" /></label>{mode !== 'reset' && <label>Password<input name="password" type="password" defaultValue={mode === 'signin' ? 'HarborDemo!2026' : ''} autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} minLength={8} /></label>}{error && <div className="form-error"><Icon name="info" />{error}</div>}<Button type="submit" className="full-width">{mode === 'signin' ? 'Sign in' : mode === 'signup' ? 'Create account' : 'Send reset link'}<Icon name="chevron" /></Button>{mode === 'signin' && <button type="button" className="demo-login" onClick={onSignIn}><span><Avatar initials="MD" size="sm"/><span><strong>Continue with demo account</strong><small>Pre-filled portfolio & communities</small></span></span><Icon name="chevron"/></button>}<div className="auth-links">{mode !== 'signin' ? <button type="button" onClick={() => { setMode('signin'); setError(''); }}>Back to sign in</button> : <><button type="button" onClick={() => setMode('signup')}>Create account</button><button type="button" onClick={() => setMode('reset')}>Forgot password?</button></>}</div></form></section>
+    <section className="auth-form-wrap"><form className="auth-form" onSubmit={submit}><div className="auth-mobile-brand"><span className="brand-mark"><span /></span><strong>TCG Harbor</strong></div><p className="eyebrow">Welcome aboard</p><h2>{mode === 'signin' ? 'Sign in to your harbor' : mode === 'signup' ? 'Create your collector profile' : 'Reset your password'}</h2><p>{mode === 'reset' ? 'We’ll send a secure reset link if an account exists.' : 'Your collection and portfolio value stay private.'}</p><label>Email address<input name="email" type="email" autoComplete="email" /></label>{mode !== 'reset' && <label>Password<input name="password" type="password" autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} minLength={8} /></label>}{error && <div className="form-error"><Icon name="info" />{error}</div>}<Button type="submit" className="full-width">{mode === 'signin' ? 'Sign in' : mode === 'signup' ? 'Create account' : 'Send reset link'}<Icon name="chevron" /></Button><div className="auth-links">{mode !== 'signin' ? <button type="button" onClick={() => { setMode('signin'); setError(''); }}>Back to sign in</button> : <><button type="button" onClick={() => setMode('signup')}>Create account</button><button type="button" onClick={() => setMode('reset')}>Forgot password?</button></>}</div></form></section>
   </main>;
 }
 
-function DashboardPage({ assets, market, setMarket, period, setPeriod, kind, setKind, navigate }: { assets: DemoAsset[]; market: Market; setMarket: (market: Market) => void; period: Period; setPeriod: (period: Period) => void; kind: AssetKind | 'all'; setKind: (kind: AssetKind | 'all') => void; navigate: (path: string) => void }) {
+function DashboardPage({ assets, dailySnapshots, market, setMarket, period, setPeriod, kind, setKind, navigate }: { assets: DemoAsset[]; dailySnapshots: PortfolioDailySnapshotV2[]; market: Market; setMarket: (market: Market) => void; period: Period; setPeriod: (period: Period) => void; kind: AssetKind | 'all'; setKind: (kind: AssetKind | 'all') => void; navigate: (path: string) => void }) {
   const [gainRank, setGainRank] = useState<'percentage' | 'absolute'>('percentage');
   const filtered = assets.filter((asset) => kind === 'all' || asset.kind === kind);
-  const current = filtered.reduce((sum, asset) => sum + (asset.quote[market] ?? 0) * asset.quantity, 0);
-  const historical = filtered.reduce((sum, asset) => {
-    const quote = asset.quote[market], change = asset.change[market][period];
-    return sum + (quote === null ? 0 : quote / (1 + (change ?? 0) / 100) * asset.quantity);
-  }, 0);
-  const absolute = current - historical;
-  const percent = historical ? absolute / historical * 100 : 0;
+  const valuation = resolvePortfolioValuationV2(assets, dailySnapshots, market, kind);
+  const current = valuation.currentKnownValue;
+  const acquisitionValue = valuation.acquisitionKnownValue;
+  const currentValueComplete = valuation.currentComplete;
+  const growthComplete = valuation.growthComplete;
+  const absolute = valuation.absoluteGrowth;
+  const percent = valuation.percentageGrowth;
+  const snapshotDate = valuation.acceptedSnapshotDate
+    ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${valuation.acceptedSnapshotDate}T00:00:00Z`))
+    : null;
+  const valuationFreshnessLabel = snapshotDate
+    ? `Account value stored ${snapshotDate}`
+    : valuation.snapshotFallbackReason === 'stale_prices'
+      ? `Fresh catalog values · stored daily value is older`
+      : `Current source · ${marketSourceDate(market)}`;
   const cards = assets.filter((asset) => asset.kind === 'card');
   const sealed = assets.filter((asset) => asset.kind === 'sealed');
   const mostValuable = (list: DemoAsset[]) => [...list].filter((asset) => asset.quote[market] !== null).sort((a, b) => (b.quote[market] ?? 0) * b.quantity - (a.quote[market] ?? 0) * a.quantity).slice(0, 4);
@@ -282,21 +308,37 @@ function DashboardPage({ assets, market, setMarket, period, setPeriod, kind, set
     const ba = (b.quote[market] ?? 0) * b.quantity - (b.quote[market] ?? 0) * b.quantity / (1 + bp / 100);
     return gainRank === 'percentage' ? bp - ap : ba - aa;
   }).slice(0, 4);
-  const bySet = Object.entries(filtered.reduce<Record<string, number>>((acc, asset) => { acc[asset.setCode] = (acc[asset.setCode] ?? 0) + (asset.quote[market] ?? 0) * asset.quantity; return acc; }, {})).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const allBySet = Object.entries(filtered.reduce<Record<string, number>>((acc, asset) => {
+    const quote = asset.quote[market];
+    if (quote !== null && Number.isFinite(quote)) acc[asset.setCode] = (acc[asset.setCode] ?? 0) + quote * asset.quantity;
+    return acc;
+  }, {})).sort((a, b) => b[1] - a[1]);
+  const bySet = allBySet.slice(0, 5);
+  const allocationTotal = allBySet.reduce((sum, [, value]) => sum + value, 0);
+  const allocationPercentage = (value: number) => allocationTotal > 0 ? value / allocationTotal * 100 : 0;
+  const allocationColors = ['#f0a36b', '#d5ab5f', '#8075d6', '#5b9cc7', '#567f71'];
+  let allocationCursor = 0;
+  const allocationSegments = bySet.map(([, value], index) => {
+    const start = allocationCursor;
+    allocationCursor += allocationPercentage(value);
+    return `${allocationColors[index]} ${start.toFixed(2)}% ${allocationCursor.toFixed(2)}%`;
+  });
+  if (allocationCursor < 100) allocationSegments.push(`#dfddd7 ${allocationCursor.toFixed(2)}% 100%`);
+  const allocationGradient = `conic-gradient(${allocationSegments.join(', ')})`;
   const totalQuantity = (list: DemoAsset[]) => list.reduce((sum, asset) => sum + asset.quantity, 0);
 
   return <div className="page dashboard-page">
-    <section className="control-bar"><div className="control-group"><label>Market source</label><Segmented value={market} onChange={setMarket} label="Market source" options={[{ value: 'cardmarket', label: 'Cardmarket · EU' }, { value: 'tcgplayer', label: 'US market · USD' }]} /></div><div className="control-group"><label>Compare trend with</label><Segmented value={period} onChange={setPeriod} label="Rolling average period" options={[{ value: '1D', label: '1-day avg' }, { value: '1W', label: '7-day avg' }, { value: '1M', label: '30-day avg' }]} /></div><div className="control-group"><label>Holdings</label><Segmented value={kind} onChange={setKind} label="Asset type" options={[{ value: 'all', label: 'All' }, { value: 'card', label: 'Cards' }, { value: 'sealed', label: 'Sealed' }]} /></div><div className="currency-display"><span>Currency</span><strong>{currencyFor(market)}</strong></div></section>
+    <section className="control-bar"><div className="control-group"><label>Market source</label><Segmented value={market} onChange={setMarket} label="Market source" options={[{ value: 'cardmarket', label: 'Cardmarket · EU' }, { value: 'tcgplayer', label: 'US market · USD' }]} /></div><div className="control-group"><label>Trend chart window</label><Segmented value={period} onChange={setPeriod} label="Rolling average period" options={[{ value: '1D', label: '1-day avg' }, { value: '1W', label: '7-day avg' }, { value: '1M', label: '30-day avg' }]} /></div><div className="control-group"><label>Holdings</label><Segmented value={kind} onChange={setKind} label="Asset type" options={[{ value: 'all', label: 'All' }, { value: 'card', label: 'Cards' }, { value: 'sealed', label: 'Sealed' }]} /></div><div className="currency-display"><span>Currency</span><strong>{currencyFor(market)}</strong></div></section>
     <section className="hero-grid">
-      <article className="portfolio-hero"><div className="portfolio-heading"><div><p className="eyebrow">Current market value</p><h2>{formatMoney(current, market)}</h2><div className={`portfolio-change ${absolute >= 0 ? 'positive' : 'negative'}`}><span><Icon name={absolute >= 0 ? 'arrow-up' : 'arrow-down'} />{absolute >= 0 ? '+' : ''}{formatMoney(absolute, market)}</span><strong>{percent >= 0 ? '+' : ''}{percent.toFixed(2)}%</strong><small>vs {period === '1D' ? '1-day' : period === '1W' ? '7-day' : '30-day'} rolling average</small></div></div><div className="price-freshness"><span className="live-pulse" />{marketSourceDate(market)}<MarketDataBadge compact /></div></div><PriceChart assets={filtered} market={market} period={period} /><div className="chart-axis"><span>{period === '1D' ? '1-day average' : period === '1W' ? '7-day average' : '30-day average'}</span><span>Current trend</span></div></article>
-      <aside className="portfolio-stats"><div className="section-label"><span>Collection at a glance</span><button onClick={() => navigate('/collection')}>View collection <Icon name="chevron" size={14}/></button></div><div className="stat-grid"><div><span className="stat-icon coral"><Icon name="cards" /></span><strong>{totalQuantity(cards)}</strong><small>Individual cards</small></div><div><span className="stat-icon gold"><Icon name="box" /></span><strong>{totalQuantity(sealed)}</strong><small>Sealed products</small></div><div><span className="stat-icon blue"><Icon name="collection" /></span><strong>{new Set(assets.map((asset) => asset.setCode)).size}</strong><small>Unique sets</small></div><div><span className="stat-icon violet"><Icon name="chart" /></span><strong>{assets.filter((asset) => asset.quote[market] !== null).length}</strong><small>Priced holdings</small></div></div><div className="cost-basis"><div><span>Known cost basis</span><strong>{formatMoney(assets.reduce((sum, asset) => sum + (asset.purchasePrice ?? 0) * asset.quantity, 0), market)}</strong></div><div><span>Unrealized difference</span><strong className="positive">+{formatMoney(current - assets.reduce((sum, asset) => sum + (asset.purchasePrice ?? 0) * asset.quantity, 0), market)}</strong></div><p><Icon name="lock" size={14}/>Purchase prices are private</p></div></aside>
+      <article className="portfolio-hero"><div className="portfolio-heading"><div><p className="eyebrow">{currentValueComplete ? 'Current market value' : 'Known current market value'}</p><h2>{formatMoney(current, market)}</h2>{valuation.empty ? <div className="portfolio-change incomplete"><span><Icon name="plus"/>No holdings yet</span><small>Add your first card or sealed product to start portfolio growth tracking.</small></div> : absolute === null || percent === null ? <div className="portfolio-change incomplete"><span><Icon name="info"/>Growth unavailable</span><small>Current prices: {valuation.currentPricedQuantity} of {valuation.totalQuantity} copies · acquisition values: {valuation.acquisitionPricedQuantity} of {valuation.totalQuantity} copies.</small></div> : <div className={`portfolio-change ${absolute >= 0 ? 'positive' : 'negative'}`}><span><Icon name={absolute >= 0 ? 'arrow-up' : 'arrow-down'} />{absolute >= 0 ? '+' : ''}{formatMoney(absolute, market)}</span><strong>{percent >= 0 ? '+' : ''}{percent.toFixed(2)}%</strong><small>since each remaining copy was added</small></div>}</div><div className="price-freshness"><span className="live-pulse" />{valuationFreshnessLabel}<MarketDataBadge compact /></div></div><PriceChart assets={filtered} market={market} period={period} /><div className="chart-axis"><span>{period === '1D' ? '1-day average' : period === '1W' ? '7-day average' : '30-day average'}</span><span>Current trend</span></div></article>
+      <aside className="portfolio-stats"><div className="section-label"><span>Collection at a glance</span><button onClick={() => navigate('/collection')}>View collection <Icon name="chevron" size={14}/></button></div><div className="stat-grid"><div><span className="stat-icon coral"><Icon name="cards" /></span><strong>{totalQuantity(cards)}</strong><small>Individual cards</small></div><div><span className="stat-icon gold"><Icon name="box" /></span><strong>{totalQuantity(sealed)}</strong><small>Sealed products</small></div><div><span className="stat-icon blue"><Icon name="collection" /></span><strong>{new Set(assets.map((asset) => asset.setCode)).size}</strong><small>Unique sets</small></div><div><span className="stat-icon violet"><Icon name="chart" /></span><strong>{assets.filter((asset) => asset.quote[market] !== null).length}</strong><small>Priced holdings</small></div></div><div className="cost-basis"><div><span>{growthComplete ? 'Market value when added' : 'Known value when added'}</span><strong>{formatMoney(acquisitionValue, market)}</strong></div><div><span>Growth since added</span><strong className={absolute === null ? '' : absolute >= 0 ? 'positive' : 'negative'}>{valuation.empty ? 'Not started' : absolute === null ? 'Incomplete pricing' : `${absolute >= 0 ? '+' : ''}${formatMoney(absolute, market)}`}</strong></div><p><Icon name="lock" size={14}/>{valuation.empty ? 'Add an item to begin private daily history' : snapshotDate ? 'Stored daily in your private account' : 'Using current holdings until the next matching daily valuation'}</p></div></aside>
     </section>
     <section className="dashboard-section"><div className="section-heading"><div><p className="eyebrow">Portfolio leaders</p><h2>Most valuable holdings</h2></div><button className="text-button" onClick={() => navigate('/collection')}>Explore collection <Icon name="chevron" size={15}/></button></div><div className="valuable-grid"><HoldingRank title="Cards" icon="cards" assets={mostValuable(cards)} market={market}/><HoldingRank title="Sealed products" icon="box" assets={mostValuable(sealed)} market={market}/></div></section>
     <section className="dashboard-columns"><article className="panel gainers-panel"><div className="panel-header"><div><p className="eyebrow">Momentum</p><h2>Top gainers</h2></div><Segmented value={gainRank} onChange={setGainRank} label="Gainer ranking" options={[{ value: 'percentage', label: '%' }, { value: 'absolute', label: currencyFor(market) }]} /></div><div className="gainer-list">{gainers.map((asset, index) => {
         const pct = asset.change[market][period] ?? 0, quote = asset.quote[market] ?? 0, start = quote / (1 + pct / 100), gain = (quote - start) * asset.quantity;
         return <button key={asset.id}><span className="rank">0{index + 1}</span><CardArt asset={asset} size="xs"/><span className="gainer-name"><strong>{asset.name}</strong><small>{asset.number ?? asset.productType} · Qty {asset.quantity}</small></span><span className="mini-spark"><PriceChart assets={[asset]} market={market} period={period} compact /></span><span className="gainer-value"><strong>{formatMoney(quote, market)}</strong><small>{formatMoney(start, market)} start</small></span><span className="gainer-change"><Trend value={pct}/><small>+{formatMoney(gain, market)}</small></span></button>;
       })}</div><p className="history-note"><Icon name="info" size={15}/>Items without a valid historical snapshot are excluded, never treated as zero.</p></article>
-      <article className="panel breakdown-panel"><div className="panel-header"><div><p className="eyebrow">Allocation</p><h2>Value by set</h2></div><Chip tone="neutral">Top 5</Chip></div><div className="donut-wrap"><div className="donut" style={{ background: `conic-gradient(#f0a36b 0 34%, #d5ab5f 34% 56%, #8075d6 56% 72%, #5b9cc7 72% 88%, #567f71 88% 100%)` }}><span><strong>{new Set(filtered.map((asset) => asset.setCode)).size}</strong><small>sets</small></span></div><div className="legend-list">{bySet.map(([set, value], index) => <div key={set}><i className={`legend-${index}`} /><span><strong>{set}</strong><small>{(value / current * 100).toFixed(1)}%</small></span><b>{formatMoney(value, market)}</b></div>)}</div></div><div className="concentration"><span>Largest concentration</span><strong>{bySet[0]?.[0]} · {((bySet[0]?.[1] ?? 0) / current * 100).toFixed(1)}%</strong><div><i style={{ width: `${((bySet[0]?.[1] ?? 0) / current * 100)}%` }} /></div></div></article>
+      <article className="panel breakdown-panel"><div className="panel-header"><div><p className="eyebrow">Allocation</p><h2>{currentValueComplete ? 'Value by set' : 'Known value by set'}</h2></div><Chip tone="neutral">Top 5</Chip></div>{allocationTotal <= 0 ? <EmptyState icon="chart" title="No priced allocation yet" detail="Add a priced card or sealed product to see how value is distributed across sets." /> : <><div className="donut-wrap"><div className="donut" style={{ background: allocationGradient }}><span><strong>{allBySet.length}</strong><small>priced sets</small></span></div><div className="legend-list">{bySet.map(([set, value], index) => <div key={set}><i className={`legend-${index}`} /><span><strong>{set}</strong><small>{allocationPercentage(value).toFixed(1)}%</small></span><b>{formatMoney(value, market)}</b></div>)}</div></div><div className="concentration"><span>Largest concentration</span><strong>{bySet[0][0]} · {allocationPercentage(bySet[0][1]).toFixed(1)}%</strong><div><i style={{ width: `${allocationPercentage(bySet[0][1])}%` }} /></div></div></>}</article>
     </section>
     <section className="dashboard-section"><div className="section-heading"><div><p className="eyebrow">Logbook</p><h2>Recent activity</h2></div><Chip tone="blue"><Icon name="lock" size={13}/>Only visible to you</Chip></div><div className="activity-row">{recentActivity.map((activity) => <div key={activity.title}><span><Icon name={activity.icon as Parameters<typeof Icon>[0]['name']} /></span><strong>{activity.title}</strong><small>{activity.detail}</small><time>{activity.time}</time></div>)}</div></section>
   </div>;
@@ -306,7 +348,7 @@ function HoldingRank({ title, icon, assets, market }: { title: string; icon: Par
   return <article className="holding-rank"><header><span><Icon name={icon}/></span><h3>{title}</h3><small>By total holding value</small></header><div>{assets.map((asset, index) => <button key={asset.id}><span className="rank-number">{index + 1}</span><CardArt asset={asset} size="sm"/><span className="holding-name"><strong>{asset.name}</strong><small>{asset.setCode}{asset.number ? ` · ${asset.number}` : ''}</small><em>{asset.variant}</em></span><span className="holding-qty">×{asset.quantity}</span><span className="holding-price"><strong>{formatMoney((asset.quote[market] ?? 0) * asset.quantity, market)}</strong><small>{formatMoney(asset.quote[market], market)} each</small><em>{marketSourceLabel(market)} · {marketSourceDate(market)}</em></span></button>)}</div></article>;
 }
 
-function CollectionPage({ assets, setAssets, market, navigate, notify }: { assets: DemoAsset[]; setAssets: (assets: DemoAsset[]) => void; market: Market; navigate: (path: string) => void; notify: (message: string) => void }) {
+function CollectionPage({ assets, setAssets, productionCollection, market, navigate, notify }: { assets: DemoAsset[]; setAssets: (assets: DemoAsset[]) => void; productionCollection?: ProductionCollectionRuntimeV2; market: Market; navigate: (path: string) => void; notify: (message: string) => void }) {
   const [tab, setTab] = useState<AssetKind>('card');
   const [view, setView] = useState<ViewMode>('grid');
   const [query, setQuery] = useState('');
@@ -314,8 +356,13 @@ function CollectionPage({ assets, setAssets, market, navigate, notify }: { asset
   const [rarity, setRarity] = useState('all');
   const [sort, setSort] = useState('value-desc');
   const [selected, setSelected] = useState<DemoAsset | null>(null);
+  const [noteDraft, setNoteDraft] = useState('');
   const [removeTarget, setRemoveTarget] = useState<DemoAsset | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const openAsset = (asset: DemoAsset) => {
+    setSelected(asset);
+    setNoteDraft(asset.note ?? '');
+  };
   const visible = assets.filter((asset) => asset.kind === tab)
     .filter((asset) => !query || `${asset.name} ${asset.number} ${asset.set} ${asset.setCode}`.toLowerCase().includes(query.toLowerCase()))
     .filter((asset) => setFilter === 'all' || asset.setCode === setFilter)
@@ -327,10 +374,28 @@ function CollectionPage({ assets, setAssets, market, navigate, notify }: { asset
       : sort === 'quantity' ? b.quantity - a.quantity : a.name.localeCompare(b.name));
   const uniqueSets = [...new Set(assets.filter((a) => a.kind === tab).map((a) => a.setCode))];
   const rarities = [...new Set(assets.filter((a) => a.kind === tab).map((a) => a.rarity))];
-  const updateQty = (asset: DemoAsset, delta: number) => {
+  const collectionValuation = summarizePortfolioGrowth(assets, market);
+  const marketRegion = market === 'cardmarket' ? 'EU' : 'US';
+  const collectionValueLabel = collectionValuation.totalQuantity === 0
+    ? 'No holdings yet'
+    : collectionValuation.currentComplete
+      ? `Current ${marketRegion} reference · all ${collectionValuation.totalQuantity} copies priced`
+      : `Known current ${marketRegion} reference · ${collectionValuation.currentPricedQuantity} of ${collectionValuation.totalQuantity} copies priced`;
+  const updateQty = async (asset: DemoAsset, delta: number) => {
     const next = Math.max(1, asset.quantity + delta);
     const actualDelta = next - asset.quantity;
     if (actualDelta === 0) return;
+    if (productionCollection) {
+      try {
+        const stillActive = await productionCollection.setQuantity(asset, next);
+        if (!stillActive) return;
+        setSelected(null);
+        notify(actualDelta > 0 ? `Quantity updated to ${next} · acquisition value captured` : `Quantity updated to ${next}`);
+      } catch (reason) {
+        notify(reason instanceof Error ? reason.message : 'Quantity could not be saved');
+      }
+      return;
+    }
     const capturedAt = new Date().toISOString();
     const priorLots: AcquisitionLot[] = asset.acquisitionLots?.length ? asset.acquisitionLots : [{
       id: `legacy-${asset.id}`,
@@ -355,22 +420,59 @@ function CollectionPage({ assets, setAssets, market, navigate, notify }: { asset
     setSelected(updated);
     notify(actualDelta > 0 ? `Quantity updated to ${next} · current value captured` : `Quantity updated to ${next}`);
   };
+  const confirmRemoval = async () => {
+    if (!removeTarget) return;
+    if (productionCollection) {
+      try {
+        const stillActive = await productionCollection.remove(removeTarget);
+        if (!stillActive) return;
+        setRemoveTarget(null);
+        notify('Item removed from your private collection');
+      } catch (reason) {
+        notify(reason instanceof Error ? reason.message : 'Item could not be removed');
+      }
+      return;
+    }
+    setAssets(assets.filter((asset) => asset.id !== removeTarget.id));
+    setRemoveTarget(null);
+    notify('Item removed from your collection');
+  };
+  const saveChanges = async () => {
+    if (!selected) return;
+    const privateNote = noteDraft.trim() || undefined;
+    if (productionCollection) {
+      try {
+        const stillActive = await productionCollection.updateNote(selected, privateNote);
+        if (!stillActive) return;
+        setSelected(null);
+        notify('Private note saved to your account');
+      } catch (reason) {
+        notify(reason instanceof Error ? reason.message : 'Item details could not be saved');
+      }
+      return;
+    }
+    const updated = { ...selected, note: privateNote };
+    setAssets(assets.map((asset) => asset.id === selected.id ? updated : asset));
+    setSelected(updated);
+    notify('Item details saved');
+  };
   return <div className="page collection-page">
-    <section className="collection-summary"><div><span className="summary-icon"><Icon name="lock"/></span><span><strong>{assets.filter((asset) => asset.kind === 'card').reduce((sum, asset) => sum + asset.quantity, 0)} cards</strong><small>Your full collection is never public</small></span></div><div><strong>{formatMoney(assets.reduce((sum, asset) => sum + (asset.quote[market] ?? 0) * asset.quantity, 0), market)}</strong><small>Current {market === 'cardmarket' ? 'EU' : 'US'} reference</small></div><Button onClick={() => navigate('/collection/add')} icon="plus">Add items</Button></section>
+    <section className="collection-summary"><div><span className="summary-icon"><Icon name="lock"/></span><span><strong>{assets.filter((asset) => asset.kind === 'card').reduce((sum, asset) => sum + asset.quantity, 0)} cards</strong><small>Your full collection is never public</small></span></div><div><strong>{formatMoney(collectionValuation.currentKnownValue, market)}</strong><small>{collectionValueLabel}</small></div><Button onClick={() => navigate('/collection/add')} icon="plus">Add items</Button></section>
     <div className="collection-tabs"><button className={tab === 'card' ? 'active' : ''} onClick={() => setTab('card')}><Icon name="cards"/>Cards <span>{assets.filter((asset) => asset.kind === 'card').length}</span></button><button className={tab === 'sealed' ? 'active' : ''} onClick={() => setTab('sealed')}><Icon name="box"/>Sealed products <span>{assets.filter((asset) => asset.kind === 'sealed').length}</span></button></div>
     <section className="collection-toolbar"><label className="search-field"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${tab === 'card' ? 'name, set or card number' : 'sealed products'}`} aria-label="Search collection" />{query && <button onClick={() => setQuery('')} aria-label="Clear search"><Icon name="close" size={15}/></button>}</label><Button variant="secondary" onClick={() => setFiltersOpen((open) => !open)} icon="filter">Filters{(setFilter !== 'all' || rarity !== 'all') && <span className="filter-count">{Number(setFilter !== 'all') + Number(rarity !== 'all')}</span>}</Button><label className="select-field"><span>Sort</span><select value={sort} onChange={(event) => setSort(event.target.value)}><option value="value-desc">Highest value</option><option value="value-asc">Lowest value</option><option value="gain">Largest gain</option><option value="loss">Largest loss</option><option value="name">Name</option><option value="quantity">Quantity</option></select></label><Segmented value={view} onChange={setView} label="Collection view" options={[{ value: 'grid', label: '', icon: 'grid' }, { value: 'table', label: '', icon: 'list' }]} /></section>
     {filtersOpen && <section className="filter-panel"><label>Set<select value={setFilter} onChange={(event) => setSetFilter(event.target.value)}><option value="all">All sets</option>{uniqueSets.map((set) => <option key={set}>{set}</option>)}</select></label><label>{tab === 'card' ? 'Rarity' : 'Product availability'}<select value={rarity} onChange={(event) => setRarity(event.target.value)}><option value="all">All</option>{rarities.map((value) => <option key={value}>{value}</option>)}</select></label><label>Condition<select><option>All conditions</option><option>Near Mint</option><option>Excellent</option></select></label><label>Language<select><option>All languages</option><option>English</option><option>Japanese</option></select></label><Button variant="ghost" onClick={() => { setSetFilter('all'); setRarity('all'); }}>Clear filters</Button></section>}
     <div className="result-meta"><span><strong>{visible.length}</strong> {tab === 'card' ? 'card entries' : 'sealed products'}</span><MarketDataBadge compact /></div>
-    {visible.length === 0 ? <EmptyState icon="search" title="No matching holdings" detail="Try removing a filter or search for another card." action={<Button variant="secondary" onClick={() => { setQuery(''); setSetFilter('all'); setRarity('all'); }}>Clear search</Button>} /> : view === 'grid' ? <div className="asset-grid">{visible.map((asset) => <button className="asset-card" key={asset.id} onClick={() => setSelected(asset)}><CardArt asset={asset} size="lg"/><div className="asset-card-body"><div className="asset-labels"><Chip tone="neutral">{asset.setCode}</Chip>{asset.variant !== 'Standard' && <Chip tone="gold">{asset.variant}</Chip>}</div><h3>{asset.name}</h3><p>{asset.number ?? asset.productType} · {asset.rarity}</p><div className="asset-price"><span><strong>{formatMoney(asset.quote[market], market)}</strong><small>Unit reference</small></span><Trend value={asset.change[market]['1M']} /></div><footer><span>Qty <strong>{asset.quantity}</strong></span><span>Total <strong>{formatMoney(asset.quote[market] === null ? null : asset.quote[market] * asset.quantity, market)}</strong></span></footer>{asset.quote[market] === null && <div className="missing-price"><Icon name="info"/>Market price unavailable</div>}</div></button>)}</div>
-      : <div className="asset-table-wrap"><table className="asset-table"><thead><tr><th>Item</th><th>Set / number</th><th>Details</th><th>Qty</th><th>Unit value</th><th>1M change</th><th>Total</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>{visible.map((asset) => <tr key={asset.id} onClick={() => setSelected(asset)}><td><span className="table-item"><CardArt asset={asset} size="xs"/><strong>{asset.name}</strong></span></td><td>{asset.setCode}<small>{asset.number ?? asset.productType}</small></td><td>{asset.variant}<small>{asset.condition} · {asset.language}</small></td><td>{asset.quantity}</td><td>{formatMoney(asset.quote[market], market)}</td><td><Trend value={asset.change[market]['1M']}/></td><td><strong>{formatMoney(asset.quote[market] === null ? null : asset.quote[market]! * asset.quantity, market)}</strong></td><td><Icon name="chevron"/></td></tr>)}</tbody></table></div>}
-    <Modal open={!!selected} onClose={() => setSelected(null)} title={selected?.name ?? ''} eyebrow="Private collection item" wide>{selected && <div className="asset-detail"><div className="detail-visual"><CardArt asset={selected} size="lg"/><div className="catalog-stamp"><Icon name="shield"/><span><strong>Printing matched</strong><small>Cardmarket product {selected.cardmarketProductId ?? 'unavailable'} · {selected.number ?? selected.productType}</small></span></div></div><div className="detail-content"><div className="asset-labels"><Chip tone="neutral">{selected.rarity}</Chip><Chip tone="gold">{selected.variant}</Chip><Chip tone="blue">{selected.language}</Chip></div><h3>{selected.set}</h3><p className="detail-number">{selected.number ?? selected.productType} · One Piece Card Game</p><div className="detail-prices"><div><span>Cardmarket trend · EUR</span><strong>{formatMoney(selected.quote.cardmarket, 'EUR')}</strong><small>Official daily guide · {marketSourceDate('cardmarket')}</small></div><div><span>{assetUsSourceLabel(selected)}</span><strong>{formatMoney(selected.quote.tcgplayer, 'USD')}</strong><small>Daily source snapshot · {assetUsSourceDate(selected)}</small></div></div><div className="detail-chart"><header><div><strong>Trend comparison</strong><small>Current trend vs 30-day rolling average</small></div><Trend value={selected.change[market]['1M']}/></header><PriceChart assets={[selected]} market={market} period="1M" /></div><dl className="detail-facts"><div><dt>Condition</dt><dd>{selected.condition}</dd></div><div><dt>First added</dt><dd>{new Date(selected.addedAt).toLocaleDateString()}</dd></div><div><dt>Purchase price</dt><dd>{selected.purchasePrice ? formatMoney(selected.purchasePrice, market) : 'Not recorded'}</dd></div><div><dt>Portfolio contribution</dt><dd>{formatMoney(selected.quote[market] === null ? null : selected.quote[market] * selected.quantity, market)}</dd></div><div><dt>Acquisition captures</dt><dd>{selected.acquisitionLots?.length ?? 0}</dd></div><div><dt>Last captured value</dt><dd>{latestAcquisition(selected) ? `${formatMoney(latestAcquisition(selected)?.quoteAtAdd.cardmarket ?? null, 'EUR')} / ${formatMoney(latestAcquisition(selected)?.quoteAtAdd.tcgplayer ?? null, 'USD')}` : 'Legacy item'}</dd></div></dl>{selected.note && <div className="private-note"><Icon name="lock"/><span><strong>Private note</strong><p>{selected.note}</p></span></div>}<div className="quantity-editor"><span><strong>Quantity</strong><small>Update copies held</small></span><div><Button variant="secondary" size="icon" onClick={() => updateQty(selected, -1)} aria-label="Decrease quantity">−</Button><strong>{selected.quantity}</strong><Button variant="secondary" size="icon" onClick={() => updateQty(selected, 1)} aria-label="Increase quantity">+</Button></div></div><div className="modal-actions"><Button variant="danger" onClick={() => { setSelected(null); setRemoveTarget(selected); }} icon="trash">Remove</Button><Button onClick={() => notify('Item details saved')} icon="edit">Save changes</Button></div></div></div>}</Modal>
-    <Modal open={!!removeTarget} onClose={() => setRemoveTarget(null)} title="Remove from collection?" eyebrow="Confirmation required"><div className="confirmation"><span className="danger-icon"><Icon name="trash"/></span><p>This removes <strong>{removeTarget?.name}</strong> and its private acquisition details. Catalog and market history remain available.</p><div><Button variant="secondary" onClick={() => setRemoveTarget(null)}>Keep item</Button><Button variant="danger" onClick={() => { if (removeTarget) setAssets(assets.filter((asset) => asset.id !== removeTarget.id)); setRemoveTarget(null); notify('Item removed from your collection'); }}>Remove item</Button></div></div></Modal>
+    {visible.length === 0 ? <EmptyState icon="search" title="No matching holdings" detail="Try removing a filter or search for another card." action={<Button variant="secondary" onClick={() => { setQuery(''); setSetFilter('all'); setRarity('all'); }}>Clear search</Button>} /> : view === 'grid' ? <div className="asset-grid">{visible.map((asset) => <button className="asset-card" key={asset.id} onClick={() => openAsset(asset)}><CardArt asset={asset} size="lg"/><div className="asset-card-body"><div className="asset-labels"><Chip tone="neutral">{asset.setCode}</Chip>{asset.variant !== 'Standard' && <Chip tone="gold">{asset.variant}</Chip>}</div><h3>{asset.name}</h3><p>{asset.number ?? asset.productType} · {asset.rarity}</p><div className="asset-price"><span><strong>{formatMoney(asset.quote[market], market)}</strong><small>Unit reference</small></span><Trend value={asset.change[market]['1M']} /></div><footer><span>Qty <strong>{asset.quantity}</strong></span><span>Total <strong>{formatMoney(asset.quote[market] === null ? null : asset.quote[market] * asset.quantity, market)}</strong></span></footer>{asset.quote[market] === null && <div className="missing-price"><Icon name="info"/>Market price unavailable</div>}</div></button>)}</div>
+      : <div className="asset-table-wrap"><table className="asset-table"><thead><tr><th>Item</th><th>Set / number</th><th>Details</th><th>Qty</th><th>Unit value</th><th>1M change</th><th>Total</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>{visible.map((asset) => <tr key={asset.id} onClick={() => openAsset(asset)}><td><span className="table-item"><CardArt asset={asset} size="xs"/><strong>{asset.name}</strong></span></td><td>{asset.setCode}<small>{asset.number ?? asset.productType}</small></td><td>{asset.variant}<small>{asset.condition} · {asset.language}</small></td><td>{asset.quantity}</td><td>{formatMoney(asset.quote[market], market)}</td><td><Trend value={asset.change[market]['1M']}/></td><td><strong>{formatMoney(asset.quote[market] === null ? null : asset.quote[market]! * asset.quantity, market)}</strong></td><td><Icon name="chevron"/></td></tr>)}</tbody></table></div>}
+    <Modal open={!!selected} onClose={() => setSelected(null)} title={selected?.name ?? ''} eyebrow="Private collection item" wide>{selected && <div className="asset-detail"><div className="detail-visual"><CardArt asset={selected} size="lg"/><div className="catalog-stamp"><Icon name="shield"/><span><strong>Printing matched</strong><small>Cardmarket product {selected.cardmarketProductId ?? 'unavailable'} · {selected.number ?? selected.productType}</small></span></div></div><div className="detail-content"><div className="asset-labels"><Chip tone="neutral">{selected.rarity}</Chip><Chip tone="gold">{selected.variant}</Chip><Chip tone="blue">{selected.language}</Chip></div><h3>{selected.set}</h3><p className="detail-number">{selected.number ?? selected.productType} · One Piece Card Game</p><div className="detail-prices"><div><span>Cardmarket trend · EUR</span><strong>{formatMoney(selected.quote.cardmarket, 'EUR')}</strong><small>Official daily guide · {marketSourceDate('cardmarket')}</small></div><div><span>{assetUsSourceLabel(selected)}</span><strong>{formatMoney(selected.quote.tcgplayer, 'USD')}</strong><small>Daily source snapshot · {assetUsSourceDate(selected)}</small></div></div><div className="detail-chart"><header><div><strong>Trend comparison</strong><small>Current trend vs 30-day rolling average</small></div><Trend value={selected.change[market]['1M']}/></header><PriceChart assets={[selected]} market={market} period="1M" /></div><dl className="detail-facts"><div><dt>Condition</dt><dd>{selected.condition}</dd></div><div><dt>First added</dt><dd>{new Date(selected.addedAt).toLocaleDateString()}</dd></div><div><dt>Purchase price</dt><dd>{selected.purchasePrice ? formatMoney(selected.purchasePrice, selected.purchaseCurrency ?? currencyFor(market)) : 'Not recorded'}</dd></div><div><dt>Portfolio contribution</dt><dd>{formatMoney(selected.quote[market] === null ? null : selected.quote[market] * selected.quantity, market)}</dd></div><div><dt>Acquisition captures</dt><dd>{selected.acquisitionLots?.length ?? 0}</dd></div><div><dt>Last captured value</dt><dd>{latestAcquisition(selected) ? `${formatMoney(latestAcquisition(selected)?.quoteAtAdd.cardmarket ?? null, 'EUR')} / ${formatMoney(latestAcquisition(selected)?.quoteAtAdd.tcgplayer ?? null, 'USD')}` : 'Awaiting first account capture'}</dd></div></dl><div className="private-note"><Icon name="lock"/><span><strong>Private note</strong><textarea aria-label="Private note" value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} placeholder="Storage location, provenance, grading notes…" maxLength={300}/></span></div><div className="quantity-editor"><span><strong>Quantity</strong><small>Update copies held</small></span><div><Button variant="secondary" size="icon" disabled={productionCollection?.mutating} onClick={() => void updateQty(selected, -1)} aria-label="Decrease quantity">−</Button><strong>{selected.quantity}</strong><Button variant="secondary" size="icon" disabled={productionCollection?.mutating} onClick={() => void updateQty(selected, 1)} aria-label="Increase quantity">+</Button></div></div><div className="modal-actions"><Button variant="danger" disabled={productionCollection?.mutating} onClick={() => { setSelected(null); setRemoveTarget(selected); }} icon="trash">Remove</Button><Button disabled={productionCollection?.mutating} onClick={() => void saveChanges()} icon="edit">Save changes</Button></div></div></div>}</Modal>
+    <Modal open={!!removeTarget} onClose={() => setRemoveTarget(null)} title="Remove from collection?" eyebrow="Confirmation required"><div className="confirmation"><span className="danger-icon"><Icon name="trash"/></span><p>This removes <strong>{removeTarget?.name}</strong> from the active collection. Its private acquisition and valuation history remains in your account audit trail.</p><div><Button variant="secondary" onClick={() => setRemoveTarget(null)}>Keep item</Button><Button variant="danger" disabled={productionCollection?.mutating} onClick={() => void confirmRemoval()}>Remove item</Button></div></div></Modal>
   </div>;
 }
 
-function AddItemsPage({ assets, setAssets, market, navigate, notify }: { assets: DemoAsset[]; setAssets: (assets: DemoAsset[]) => void; market: Market; navigate: (path: string) => void; notify: (message: string) => void }) {
+function AddItemsPage({ assets, setAssets, productionCollection, market, navigate, notify }: { assets: DemoAsset[]; setAssets: (assets: DemoAsset[]) => void; productionCollection?: ProductionCollectionRuntimeV2; market: Market; navigate: (path: string) => void; notify: (message: string) => void }) {
   const [tab, setTab] = useState<AssetKind>('card');
   const [query, setQuery] = useState('');
+  const [catalogSet, setCatalogSet] = useState('all');
   const [selected, setSelected] = useState<DemoAsset | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [condition, setCondition] = useState('Near Mint');
@@ -379,6 +481,7 @@ function AddItemsPage({ assets, setAssets, market, navigate, notify }: { assets:
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [validation, setValidation] = useState('');
   const [resultLimit, setResultLimit] = useState(40);
+  const [saving, setSaving] = useState(false);
 
   const cardGroups = useMemo(() => {
     const grouped = new Map<string, DemoAsset[]>();
@@ -406,23 +509,62 @@ function AddItemsPage({ assets, setAssets, market, navigate, notify }: { assets:
   }, []);
 
   const cardGroupIndex = useMemo(() => new Map(cardGroups.map((group) => [group.id, group.arts])), [cardGroups]);
+  const catalogSets = useMemo(() => [...new Set(catalogAssets
+    .filter((asset) => asset.kind === tab)
+    .map((asset) => asset.setCode))]
+    .sort((left, right) => left.localeCompare(right, 'en-US', { numeric: true })), [tab]);
   const normalizedQuery = query.trim().toLocaleLowerCase('en-US');
   const allResults = tab === 'card'
-    ? cardGroups.filter((group) => !normalizedQuery || group.searchText.includes(normalizedQuery)).map((group) => group.representative)
-    : catalogAssets.filter((asset) => asset.kind === 'sealed').filter((asset) => !normalizedQuery || `${asset.name} ${asset.set} ${asset.setCode} ${asset.productType ?? ''}`.toLocaleLowerCase('en-US').includes(normalizedQuery));
+    ? cardGroups
+      .filter((group) => catalogSet === 'all' || group.arts.some((asset) => asset.setCode === catalogSet))
+      .filter((group) => !normalizedQuery || group.searchText.includes(normalizedQuery))
+      .map((group) => catalogSet === 'all'
+        ? group.representative
+        : group.arts.find((asset) => asset.setCode === catalogSet) ?? group.representative)
+    : catalogAssets
+      .filter((asset) => asset.kind === 'sealed')
+      .filter((asset) => catalogSet === 'all' || asset.setCode === catalogSet)
+      .filter((asset) => !normalizedQuery || `${asset.name} ${asset.set} ${asset.setCode} ${asset.productType ?? ''}`.toLocaleLowerCase('en-US').includes(normalizedQuery));
   const results = allResults.slice(0, resultLimit);
   const availableArts = selected?.kind === 'card'
     ? cardGroupIndex.get(selected.rulesCardId ?? selected.number ?? selected.id) ?? [selected]
     : [];
 
-  useEffect(() => { setResultLimit(40); }, [query, tab]);
+  useEffect(() => { setResultLimit(40); }, [catalogSet, query, tab]);
 
   const reset = () => { setSelected(null); setQuery(''); setQuantity(1); setPurchase(''); setNote(''); setValidation(''); };
-  const save = (merge = false) => {
+  const save = async (merge = false) => {
     if (!selected) { setValidation(`Select a ${tab === 'card' ? 'card' : 'sealed product'} first.`); return; }
     if (quantity < 1 || quantity > 999) { setValidation('Quantity must be between 1 and 999.'); return; }
     const existing = assets.find((asset) => (asset.catalogId ?? asset.id) === selected.id && asset.condition === condition && asset.language === selected.language);
+    const privateNoteForSave = resolvePrivateNoteForAddV2(note, existing?.note);
     if (existing && !merge) { setDuplicateOpen(true); return; }
+    if (productionCollection) {
+      setSaving(true);
+      setValidation('');
+      try {
+        const stillActive = await productionCollection.add({
+          asset: selected,
+          condition,
+          quantity,
+          privateNote: privateNoteForSave,
+          purchaseUnitAmount: purchase ? Number(purchase) : undefined,
+          purchaseCurrency: currencyFor(market),
+        });
+        if (!stillActive) return;
+        notify(existing ? `${existing.name} quantity increased by ${quantity}` : `${selected.name} added to your private collection`);
+        setDuplicateOpen(false);
+        reset();
+        navigate('/collection');
+      } catch (reason) {
+        const message = reason instanceof Error ? reason.message : 'This item could not be saved to your account.';
+        setValidation(message);
+        notify(message);
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
     const capturedAt = new Date().toISOString();
     const acquisition: AcquisitionLot = {
       id: typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? `lot-${crypto.randomUUID()}` : `lot-${capturedAt}-${assets.length}`,
@@ -444,7 +586,7 @@ function AddItemsPage({ assets, setAssets, market, navigate, notify }: { assets:
         catalogId: selected.id,
         quantity: asset.quantity + quantity,
         purchasePrice: purchase ? Number(purchase) : asset.purchasePrice,
-        note: note || asset.note,
+        note: privateNoteForSave,
         quote: selected.quote,
         pricing: selected.pricing,
         sourceUpdatedAt: selected.sourceUpdatedAt,
@@ -464,7 +606,7 @@ function AddItemsPage({ assets, setAssets, market, navigate, notify }: { assets:
         condition,
         language: selected.language,
         purchasePrice: purchase ? Number(purchase) : undefined,
-        note: note || undefined,
+        note: privateNoteForSave,
         addedAt: capturedAt,
         acquisitionLots: [acquisition],
       }]);
@@ -479,8 +621,8 @@ function AddItemsPage({ assets, setAssets, market, navigate, notify }: { assets:
     <div className="add-layout">
       <section className="add-catalog panel">
         <div className="panel-header"><div><p className="eyebrow">One Piece Card Game</p><h2>Search the complete catalog</h2></div><MarketDataBadge compact /></div>
-        <Segmented value={tab} onChange={(value) => { setTab(value); setSelected(null); setQuery(''); setCondition(value === 'sealed' ? 'Factory sealed' : 'Near Mint'); }} label="Catalog type" options={[{ value: 'card', label: 'Individual card', icon: 'cards' }, { value: 'sealed', label: 'Sealed product', icon: 'box' }]} />
-        <label className="search-field catalog-search"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tab === 'card' ? 'Search card name, number, set or art' : 'Search product, set or type'} aria-label="Search catalog" /></label>
+        <Segmented value={tab} onChange={(value) => { setTab(value); setSelected(null); setQuery(''); setCatalogSet('all'); setCondition(value === 'sealed' ? 'Factory sealed' : 'Near Mint'); }} label="Catalog type" options={[{ value: 'card', label: 'Individual card', icon: 'cards' }, { value: 'sealed', label: 'Sealed product', icon: 'box' }]} />
+        <div className="catalog-search-row"><label className="search-field catalog-search"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tab === 'card' ? 'Search card name, number, set or art' : 'Search product, set or type'} aria-label="Search catalog" /></label><label className="select-field catalog-set-filter"><span>Set</span><select value={catalogSet} onChange={(event) => { setCatalogSet(event.target.value); setSelected(null); }}><option value="all">All current sets</option>{catalogSets.map((setCode) => <option key={setCode} value={setCode}>{setCode}</option>)}</select></label></div>
         <p className="catalog-hint">{tab === 'card' ? `${cardGroups.length.toLocaleString()} card numbers with every sourced art · try “Nami” or “OP01-016”` : `${allResults.length.toLocaleString()} verified English sealed products · try “Booster Box”`}</p>
         <div className="catalog-results" aria-live="polite">
           {results.map((asset) => {
@@ -505,30 +647,30 @@ function AddItemsPage({ assets, setAssets, market, navigate, notify }: { assets:
       </section>
       <section className="add-details panel">
         <div className="panel-header"><div><p className="eyebrow">Collection details</p><h2>{selected ? selected.name : `Select a ${tab === 'card' ? 'card' : 'product'}`}</h2></div>{selected && <Chip tone="gold">{selected.variant}</Chip>}</div>
-        {!selected ? <EmptyState icon={tab === 'card' ? 'cards' : 'box'} title="Choose a catalog entry" detail="Select an item on the left to choose its exact art and capture today’s market references." /> : <form onSubmit={(event) => { event.preventDefault(); save(); }}>
+        {!selected ? <EmptyState icon={tab === 'card' ? 'cards' : 'box'} title="Choose a catalog entry" detail="Select an item on the left to choose its exact art and capture today’s market references." /> : <form onSubmit={(event) => { event.preventDefault(); void save(); }}>
           <div className="selected-preview"><CardArt asset={selected} size="md"/><div><Chip tone="neutral">{selected.setCode}</Chip><h3>{selected.name}</h3><p>{selected.set}</p><small>{selected.number ?? selected.productType} · {selected.rarity}</small></div></div>
           {selected.kind === 'card' && <section className="art-picker" aria-labelledby="art-picker-title">
             <header><span><strong id="art-picker-title">Choose the exact art</strong><small>{availableArts.length} sourced {availableArts.length === 1 ? 'printing' : 'printings'} for {selected.rulesCardId ?? selected.number}</small></span><Chip tone="blue">{selected.language} printing</Chip></header>
             <div>{availableArts.map((art) => <button type="button" key={art.id} className={selected.id === art.id ? 'selected' : ''} aria-pressed={selected.id === art.id} onClick={() => { setSelected(art); setValidation(''); }}><CardArt asset={art} size="xs"/><span><strong>{art.variant}</strong><small>{art.language} · {art.setCode} · {formatMoney(art.quote.tcgplayer, 'USD')}</small></span>{selected.id === art.id && <i><Icon name="check"/></i>}</button>)}</div>
           </section>}
           <div className="reference-pair"><div><span>Cardmarket trend · EUR</span><strong>{formatMoney(selected.quote.cardmarket, 'EUR')}</strong><small><span className="live-pulse"/>Official daily guide · {marketSourceDate('cardmarket')}</small></div><div><span>{assetUsSourceLabel(selected)}</span><strong>{formatMoney(selected.quote.tcgplayer, 'USD')}</strong><small><span className="live-pulse"/>Daily source snapshot · {assetUsSourceDate(selected)}</small></div></div>
-          <p className="reference-note"><Icon name="info"/>Only exact source matches are shown. Unavailable means no verified price was substituted.</p>
+          <p className="reference-note"><Icon name="info"/>Only exact product matches are shown. Source values are product-level market references and are not adjusted by condition; unavailable means no verified price was substituted.</p>
           <div className="form-grid">
             <label className="read-only-field">{selected.kind === 'card' ? 'Exact printing' : 'Product type'}<output>{selected.kind === 'card' ? selected.variant : selected.productType}</output></label>
             <label className="read-only-field">Language / region<output>{selected.language}</output><small>Fixed by the English-release catalog</small></label>
-            <label>Condition<select value={condition} onChange={(event) => setCondition(event.target.value)}>{tab === 'card' ? <><option>Near Mint</option><option>Excellent</option><option>Good</option><option>Light Played</option></> : <><option>Factory sealed</option><option>Sealed · minor wear</option><option>Damaged packaging</option></>}</select></label>
+            <label>Condition<select value={condition} onChange={(event) => setCondition(event.target.value)}>{tab === 'card' ? <><option>Near Mint</option><option>Excellent</option><option>Good</option><option>Light Played</option></> : <option>Factory sealed</option>}</select></label>
             <label className="quantity-field">Quantity<div><Button type="button" variant="secondary" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))}>−</Button><input type="number" min="1" max="999" value={quantity} onChange={(event) => setQuantity(Number(event.target.value))}/><Button type="button" variant="secondary" size="icon" onClick={() => setQuantity(quantity + 1)}>+</Button></div></label>
             <div className="auto-capture"><Icon name="shield"/><span><strong>Added automatically at save time</strong><small>The timestamp and both current market references are stored for this quantity.</small></span></div>
             <label>Purchase price per {tab === 'card' ? 'card' : 'unit'} <small>Optional · private</small><span className="money-input"><b>{currencyFor(market) === 'EUR' ? '€' : '$'}</b><input type="number" min="0" step="0.01" value={purchase} onChange={(event) => setPurchase(event.target.value)} placeholder="0.00" /></span></label>
           </div>
           <label>Private note <small>Optional</small><textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Storage location, provenance, grading notes…" maxLength={300}/><span className="field-count">{note.length}/300</span></label>
           {validation && <div className="form-error"><Icon name="info"/>{validation}</div>}
-          <div className="form-actions"><Button type="button" variant="ghost" onClick={reset}>Clear</Button><Button type="submit" icon="plus">Add to collection</Button></div>
+          <div className="form-actions"><Button type="button" variant="ghost" onClick={reset} disabled={saving}>Clear</Button><Button type="submit" icon="plus" disabled={saving || productionCollection?.mutating}>{saving ? 'Saving…' : 'Add to collection'}</Button></div>
         </form>}
       </section>
     </div>
     <section className="privacy-banner"><span><Icon name="shield"/></span><div><strong>Private by design</strong><p>Purchase price, notes, and complete holdings are never exposed to store communities. Only cards you intentionally offer in a trade post become visible.</p></div><button onClick={() => navigate('/settings')}>Privacy settings <Icon name="chevron"/></button></section>
-    <Modal open={duplicateOpen} onClose={() => setDuplicateOpen(false)} title="You already own this item" eyebrow="Duplicate detected"><div className="duplicate-dialog">{selected && <div><CardArt asset={selected} size="sm"/><span><strong>{selected.name}</strong><small>{condition} · {selected.language}</small></span></div>}<p>An identical collection item already exists. Increasing its quantity will add a new timestamped market-value snapshot for these <strong>{quantity}</strong> copies.</p><div><Button variant="secondary" onClick={() => setDuplicateOpen(false)}>Review details</Button><Button onClick={() => save(true)}>Increase quantity</Button></div></div></Modal>
+    <Modal open={duplicateOpen} onClose={() => setDuplicateOpen(false)} title="You already own this item" eyebrow="Duplicate detected"><div className="duplicate-dialog">{selected && <div><CardArt asset={selected} size="sm"/><span><strong>{selected.name}</strong><small>{condition} · {selected.language}</small></span></div>}<p>An identical collection item already exists. Increasing its quantity will add a new timestamped market-value snapshot for these <strong>{quantity}</strong> copies.</p><div><Button variant="secondary" onClick={() => setDuplicateOpen(false)}>Review details</Button><Button disabled={saving || productionCollection?.mutating} onClick={() => void save(true)}>{saving ? 'Saving…' : 'Increase quantity'}</Button></div></div></Modal>
   </div>;
 }
 
@@ -689,16 +831,16 @@ function SettingsPage({ market, setMarket, notify, signOut, identity }: { market
   const [currency, setCurrency] = useState(currencyFor(market));
   const [preferences, setPreferences] = useState({ dm: true, chat: true, matches: true, status: true, email: false });
   const save = (event: FormEvent) => { event.preventDefault(); notify('Profile and preferences saved'); };
-  const displayName = identity?.displayName || identity?.username || 'Mario Delor';
+  const displayName = identity?.displayName || identity?.username || 'Player';
   const initials = displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'P';
   const roleLabel = identity?.roles.includes('platform_administrator') ? 'Platform administrator' : identity?.roles.includes('store_administrator') ? 'Player and store operator' : identity?.accountKind === 'store' ? 'Player and store applicant' : 'Player';
   return <div className="page settings-page"><div className="settings-layout">
     <aside className="settings-nav panel"><button className="active"><Icon name="settings"/>Profile & market</button><button><Icon name="bell"/>Notifications</button><button><Icon name="lock"/>Privacy & safety</button><button><Icon name="shield"/>Account security</button></aside>
     <div className="settings-content">
       <form className="panel settings-card" onSubmit={save}>
-        <div className="panel-header"><div><p className="eyebrow">Player identity</p><h2>Profile</h2></div><Chip tone="positive"><Icon name="shield" size={13}/>{identity ? 'Authenticated account' : 'Verified demo account'}</Chip></div>
+        <div className="panel-header"><div><p className="eyebrow">Player identity</p><h2>Profile</h2></div><Chip tone={identity ? 'positive' : 'neutral'}><Icon name="shield" size={13}/>{identity ? 'Authenticated account' : 'Local development session'}</Chip></div>
         <div className="profile-editor"><Avatar initials={initials} size="lg"/><div><Button type="button" variant="secondary" size="sm" onClick={() => notify('Avatar upload will use the account-owned Supabase Storage path')} icon="upload">Change avatar</Button><small>JPG or PNG · max 2 MB</small></div></div>
-        <div className="form-grid"><label>Username<input defaultValue={identity?.username ?? 'MarioDelor'} /></label><label>Email<input type="email" defaultValue={identity?.email ?? 'mario@tcgharbor.demo'} disabled/><small>Managed by authentication provider</small></label><label>Approximate city or postcode<input defaultValue="Dresden"/><small>Never shown publicly</small></label><label>Role<input value={roleLabel} disabled/></label></div>
+        <div className="form-grid"><label>Username<input defaultValue={identity?.username ?? ''} /></label><label>Email<input type="email" defaultValue={identity?.email ?? ''} disabled/><small>Managed by authentication provider</small></label><label>Approximate city or postcode<input defaultValue="Dresden"/><small>Never shown publicly</small></label><label>Role<input value={roleLabel} disabled/></label></div>
         <hr/>
         <div className="panel-header"><div><p className="eyebrow">Valuation defaults</p><h2>Market & currency</h2></div><MarketDataBadge compact/></div>
         <div className="preference-options">
@@ -708,9 +850,9 @@ function SettingsPage({ market, setMarket, notify, signOut, identity }: { market
         <label>Preferred display currency<select value={currency} onChange={(event) => setCurrency(event.target.value as 'EUR' | 'USD')}><option>EUR</option><option>USD</option></select><small>Values remain in each provider's native currency; no hidden conversion is applied.</small></label>
         <div className="form-actions"><Button type="submit">Save changes</Button></div>
       </form>
-      <section className="panel settings-card"><div className="panel-header"><div><p className="eyebrow">Stay in the loop</p><h2>In-app notifications</h2></div></div><div className="toggle-list"><Toggle label="Private messages" detail="When another verified collector messages you" checked={preferences.dm} onChange={(dm) => setPreferences({ ...preferences, dm })}/><Toggle label="Community replies" detail="Replies and mentions in store chat" checked={preferences.chat} onChange={(chat) => setPreferences({ ...preferences, chat })}/><Toggle label="Collection trade matches" detail="Someone is looking for a card you own" checked={preferences.matches} onChange={(matches) => setPreferences({ ...preferences, matches })}/><Toggle label="Trade status changes" detail="When a post moves to discussing, completed, or closed" checked={preferences.status} onChange={(status) => setPreferences({ ...preferences, status })}/><Toggle label="Email digest" detail="Delivery structure ready; no email is sent in demo mode" checked={preferences.email} onChange={(email) => setPreferences({ ...preferences, email })}/></div><Button variant="secondary" onClick={() => notify('Notification preferences saved')}>Save notification preferences</Button></section>
+      <section className="panel settings-card"><div className="panel-header"><div><p className="eyebrow">Stay in the loop</p><h2>In-app notifications</h2></div></div><div className="toggle-list"><Toggle label="Private messages" detail="When another verified collector messages you" checked={preferences.dm} onChange={(dm) => setPreferences({ ...preferences, dm })}/><Toggle label="Community replies" detail="Replies and mentions in store chat" checked={preferences.chat} onChange={(chat) => setPreferences({ ...preferences, chat })}/><Toggle label="Collection trade matches" detail="Someone is looking for a card you own" checked={preferences.matches} onChange={(matches) => setPreferences({ ...preferences, matches })}/><Toggle label="Trade status changes" detail="When a post moves to discussing, completed, or closed" checked={preferences.status} onChange={(status) => setPreferences({ ...preferences, status })}/><Toggle label="Email digest" detail="Email delivery is not connected yet" checked={preferences.email} onChange={(email) => setPreferences({ ...preferences, email })}/></div><Button variant="secondary" onClick={() => notify('Notification preferences saved')}>Save notification preferences</Button></section>
       <section className="panel privacy-card"><span><Icon name="lock"/></span><div><h2>Your collection is private</h2><p>Portfolio value, cost basis, acquisition dates, and notes are restricted to your account. Communities see only trade cards you explicitly publish.</p><div><Chip tone="positive">RLS protected</Chip><Chip tone="positive">Private by default</Chip><Chip tone="neutral">No exact location</Chip></div></div></section>
-      <section className="panel danger-zone"><div><h2>Session</h2><p>{identity ? 'Sign out of the authenticated session on this device.' : 'Sign out on this device. Your locally persisted demo collection remains available for the next demo sign-in.'}</p></div><Button variant="danger" onClick={signOut} icon="logout">Sign out</Button></section>
+      <section className="panel danger-zone"><div><h2>Session</h2><p>{identity ? 'Sign out of the authenticated session on this device.' : 'Sign out of the local development session on this device.'}</p></div><Button variant="danger" onClick={signOut} icon="logout">Sign out</Button></section>
     </div>
   </div></div>;
 }

@@ -1,4 +1,5 @@
 import type { Session, SupabaseClient } from "@supabase/supabase-js";
+import { verifiedSupabaseSessionV3 } from "../services/supabase/authSessionIsolationV3";
 import type {
   AppRole,
   CommunityChannel,
@@ -211,7 +212,12 @@ export class SupabaseProductionAccess {
   async getSession(): Promise<Session | null> {
     const { data, error } = await this.client.auth.getSession();
     if (error) throw new ProductionAccessError("getSession", error);
-    return data.session;
+    if (!data.session) return null;
+    try {
+      return await verifiedSupabaseSessionV3(this.client, data.session);
+    } catch (verificationError) {
+      throw new ProductionAccessError("verifySession", verificationError);
+    }
   }
 
   onAuthChange(listener: (event: string, session: Session | null) => void): () => void {
@@ -257,8 +263,13 @@ export class SupabaseProductionAccess {
   }
 
   async signOut(): Promise<void> {
-    const { error } = await this.client.auth.signOut();
+    const { error } = await this.client.auth.signOut({ scope: "local" });
     if (error) throw new ProductionAccessError("signOut", error);
+  }
+
+  async signOutEverywhere(): Promise<void> {
+    const { error } = await this.client.auth.signOut({ scope: "global" });
+    if (error) throw new ProductionAccessError("signOutEverywhere", error);
   }
 
   async requestPasswordReset(email: string): Promise<void> {

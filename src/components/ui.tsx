@@ -1,6 +1,7 @@
 import { useId, useMemo, useState, type ReactNode } from 'react';
 import { Icon } from './Icon';
 import { formatMoney, type DemoAsset, type Market, type Period } from '../data/demo';
+import sealedProductPlaceholder from '../assets/sealed-product-placeholder-v1.png';
 
 export function Button({ children, variant = 'primary', size = 'md', icon, className = '', ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger'; size?: 'sm' | 'md' | 'icon'; icon?: Parameters<typeof Icon>[0]['name'] }) {
   return <button className={`button button-${variant} button-${size} ${className}`} {...props}>{icon && <Icon name={icon} size={size === 'sm' ? 16 : 18} />}{children}</button>;
@@ -20,12 +21,15 @@ export function Avatar({ initials, size = 'md', tone = 0 }: { initials: string; 
 
 export function CardArt({ asset, size = 'md' }: { asset: DemoAsset; size?: 'xs' | 'sm' | 'md' | 'lg' }) {
   const monogram = asset.name.split(' ').filter((word) => word.length > 2).slice(0, 2).map((word) => word[0]).join('');
-  return <div className={`card-art art-${asset.color} art-${size} ${asset.imageUrl ? 'has-card-image' : ''} ${asset.imageState === 'unavailable' ? 'art-source-unavailable' : ''}`} role="img" aria-label={`${asset.name}${asset.number ? `, ${asset.number}` : ''}${asset.imageState === 'unavailable' ? ', source artwork unavailable' : ''}`} title={asset.imageUnavailableReason}>
+  const usesSealedPlaceholder = asset.kind === 'sealed' && !asset.imageUrl;
+  const displayImageUrl = asset.imageUrl ?? (usesSealedPlaceholder ? sealedProductPlaceholder : undefined);
+  const unavailableLabel = usesSealedPlaceholder ? ', placeholder image; official product artwork unavailable' : asset.imageState === 'unavailable' ? ', source artwork unavailable' : '';
+  return <div className={`card-art art-${asset.color} art-${size} ${displayImageUrl ? 'has-card-image' : ''} ${usesSealedPlaceholder ? 'is-sealed-placeholder' : ''} ${asset.imageState === 'unavailable' ? 'art-source-unavailable' : ''}`} role="img" aria-label={`${asset.name}${asset.number ? `, ${asset.number}` : ''}${unavailableLabel}`} title={usesSealedPlaceholder ? asset.imageUnavailableReason ?? 'Placeholder image · official product artwork unavailable' : asset.imageUnavailableReason}>
     <div className="art-compass"><span>{monogram}</span></div>
     <div className="art-waves" />
     <div className="art-meta"><small>{asset.setCode}</small><strong>{asset.kind === 'card' ? asset.rarity : asset.productType}</strong></div>
-    {asset.imageUrl && <img className="card-art-image" src={asset.imageUrl} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={(event) => { event.currentTarget.style.display = 'none'; }} />}
-    {asset.imageState === 'unavailable' && <span className="art-unavailable"><Icon name="info" size={size === 'xs' ? 10 : 13}/><small>Art unavailable</small></span>}
+    {displayImageUrl && <img className="card-art-image" src={displayImageUrl} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={(event) => { event.currentTarget.style.display = 'none'; }} />}
+    {usesSealedPlaceholder ? <span className="art-unavailable art-placeholder-label"><Icon name="info" size={size === 'xs' ? 10 : 13}/><small>Placeholder image</small></span> : asset.imageState === 'unavailable' && <span className="art-unavailable"><Icon name="info" size={size === 'xs' ? 10 : 13}/><small>Art unavailable</small></span>}
   </div>;
 }
 

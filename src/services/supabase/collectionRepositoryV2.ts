@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AcquisitionLot, Currency, DemoAsset, Market } from '../../data/demo';
+import { assertRowsOwnedByV3, requireAuthenticatedOwnerV3 } from './authSessionIsolationV3';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -65,6 +66,7 @@ interface SealedProductRelationRow {
 
 interface CollectionRow {
   id: string;
+  owner_id: string;
   card_variant_id: string | null;
   sealed_product_id: string | null;
   condition: string;
@@ -81,6 +83,7 @@ interface CollectionRow {
 
 interface AcquisitionRow {
   id: number;
+  owner_id: string;
   collection_item_id: string;
   added_quantity: number;
   purchase_unit_amount: number | string | null;
@@ -140,6 +143,7 @@ export interface PortfolioDailySnapshotV2 {
 }
 
 export interface ProductionCollectionSnapshotV2 {
+  readonly ownerId: string;
   readonly assets: DemoAsset[];
   readonly dailySnapshots: PortfolioDailySnapshotV2[];
   readonly unmappedHoldingCount: number;
@@ -330,12 +334,16 @@ async function readAllPages<T>(
 export class SupabaseCollectionRepositoryV2 {
   constructor(private readonly client: SupabaseClient) {}
 
-  async load(catalog: readonly DemoAsset[]): Promise<ProductionCollectionSnapshotV2> {
+  async load(
+    catalog: readonly DemoAsset[],
+    expectedOwnerId: string,
+  ): Promise<ProductionCollectionSnapshotV2> {
+    await requireAuthenticatedOwnerV3(this.client, expectedOwnerId, 'Load collection');
     const [items, lots, references, providers, dailyRows] = await Promise.all([
       readAllPages<CollectionRow>('Load collection', (from, to) => this.client
         .from('collection_items')
         .select(`
-          id, card_variant_id, sealed_product_id, condition, language, quantity,
+          id, owner_id, card_variant_id, sealed_product_id, condition, language, quantity,
           acquired_on, purchase_unit_amount, purchase_currency, private_note, created_at,
           card_variant:card_variants!collection_items_card_variant_id_fkey(
             id, variant_identifier, variant_name, language, image_url,
@@ -356,13 +364,15 @@ export class SupabaseCollectionRepositoryV2 {
             )
           )
         `)
+        .eq('owner_id', expectedOwnerId)
         .is('deleted_at', null)
         .order('created_at', { ascending: true })
         .order('id', { ascending: true })
         .range(from, to) as unknown as PromiseLike<DataPage<CollectionRow>>),
       readAllPages<AcquisitionRow>('Load acquisition lots', (from, to) => this.client
         .from('collection_acquisition_lots')
-        .select('id, collection_item_id, added_quantity, purchase_unit_amount, purchase_currency, captured_at')
+        .select('id, owner_id, collection_item_id, added_quantity, purchase_unit_amount, purchase_currency, captured_at')
+        .eq('owner_id', expectedOwnerId)
         .order('captured_at', { ascending: true })
         .order('id', { ascending: true })
         .range(from, to) as unknown as PromiseLike<DataPage<AcquisitionRow>>),
@@ -386,10 +396,15 @@ export class SupabaseCollectionRepositoryV2 {
           acquisition_priced_unit_count, acquisition_unpriced_unit_count,
           latest_price_observed_at, captured_at, updated_at
         `)
+        .eq('owner_id', expectedOwnerId)
         .order('snapshot_date', { ascending: true })
         .order('provider_id', { ascending: true })
         .range(from, to) as unknown as PromiseLike<DataPage<DailySnapshotRow>>),
     ]);
+
+    assertRowsOwnedByV3(items, expectedOwnerId, 'Load collection');
+    assertRowsOwnedByV3(lots, expectedOwnerId, 'Load acquisition lots');
+    assertRowsOwnedByV3(dailyRows, expectedOwnerId, 'Load portfolio history');
 
     const catalogById = new Map(catalog.map((asset) => [asset.id, asset]));
     const providerById = new Map(providers.map((provider) => [provider.id, provider]));
@@ -474,11 +489,11 @@ export class SupabaseCollectionRepositoryV2 {
       }];
     });
 
-    return { assets, dailySnapshots, unmappedHoldingCount };
+    return { ownerId: expectedOwnerId, assets, dailySnapshots, unmappedHoldingCount };
   }
 
   async add(input: AddCollectionItemV2, expectedOwnerId: string): Promise<void> {
-    if (!expectedOwnerId) throw new Error('A signed-in collection owner is required.');
+    await requireAuthenticatedOwnerV3(this.client, expectedOwnerId, 'Add collection item');
     const target = await this.resolveCatalogTarget(input.asset);
     const { error } = await this.client.rpc('add_or_merge_collection_item_v2', {
       p_expected_owner_id: expectedOwnerId,
@@ -495,7 +510,8 @@ export class SupabaseCollectionRepositoryV2 {
     if (error) throw new Error(`Add collection item: ${error.message}`);
   }
 
-  async setQuantity(collectionItemId: string, quantity: number): Promise<void> {
+  async setQuantity(collectionItemId: string, quantity: number, expectedOwnerId: string): Promise<void> {
+    await requireAuthenticatedOwnerV3(this.client, expectedOwnerId, 'Update collection quantity');
     const { error } = await this.client.rpc('set_collection_item_quantity', {
       p_collection_item_id: collectionItemId,
       p_quantity: quantity,
@@ -503,7 +519,8 @@ export class SupabaseCollectionRepositoryV2 {
     if (error) throw new Error(`Update collection quantity: ${error.message}`);
   }
 
-  async updateNote(collectionItemId: string, privateNote?: string): Promise<void> {
+  async updateNote(collectionItemId: string, privateNote: string | undefined, expectedOwnerId: string): Promise<void> {
+    await requireAuthenticatedOwnerV3(this.client, expectedOwnerId, 'Update collection item');
     const { error } = await this.client.rpc('update_collection_item_details', {
       p_collection_item_id: collectionItemId,
       p_private_note: privateNote?.trim() || null,
@@ -511,7 +528,8 @@ export class SupabaseCollectionRepositoryV2 {
     if (error) throw new Error(`Update collection item: ${error.message}`);
   }
 
-  async remove(collectionItemId: string): Promise<void> {
+  async remove(collectionItemId: string, expectedOwnerId: string): Promise<void> {
+    await requireAuthenticatedOwnerV3(this.client, expectedOwnerId, 'Remove collection item');
     const { error } = await this.client.rpc('soft_remove_collection_item', {
       p_collection_item_id: collectionItemId,
     });

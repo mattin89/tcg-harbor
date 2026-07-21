@@ -8,12 +8,12 @@ This project is not affiliated with Bandai, Cardmarket, TCGPlayer, or any local 
 
 The repository contains four complementary layers:
 
-1. A production-gated Vite/React application shell in `src/App.tsx`, with a generated card/market snapshot plus temporary community fixtures while those repositories are migrated.
+1. A production-gated Vite/React application shell in `src/App.tsx`, with a generated card/market snapshot plus temporary community/trade fixtures while the remaining repositories are migrated.
 2. Framework-neutral domain and service modules for business rules, local persistence, authentication boundaries, repositories, and normalized pricing providers.
 3. A production-oriented PostgreSQL/Supabase migration, RLS policies, RPCs, triggers, and seed data.
 4. An environment-activated Supabase account layer with real player/store signup, session restoration, password reset, store applications, platform approval, per-store QR invitations, and store-owned chat/moderation tools.
 
-`ProductionApp_v2.tsx` is the only shipped entry and requires a project URL plus browser-safe publishable key. Missing account configuration fails closed; there is no shared live/demo account or authentication bypass. Player collections are owner-scoped in Supabase. Community, trade, direct-message, and notification repositories are still being migrated from fixtures, so the production transition remains incremental.
+`ProductionApp_v2.tsx` is the only shipped entry and requires a project URL plus browser-safe publishable key. Missing account configuration fails closed; there is no shared live/demo account or authentication bypass. Player collections and participant-only direct messages are owner-scoped in Supabase. Community, trade, and notification repositories are still being migrated from fixtures, so the production transition remains incremental.
 
 ## Quick start
 
@@ -129,7 +129,7 @@ The detailed design is in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 - Seeded data from `src/data/demo.ts`
 - Retained local fixture adapters for isolated development tests; the production entry never falls back to their session
 - Owner-scoped Supabase collection rows, acquisition captures, and daily valuation history for signed-in production players
-- In-memory React state for memberships, chat, trades, messages, and notifications
+- In-memory React state for memberships, community chat, trades, and notifications; authenticated direct messages persist in Supabase
 - Inline SVG portfolio charts and a custom illustrative store map
 
 ### Domain layer
@@ -186,7 +186,7 @@ The target database is defined by:
 
 The migrations model users and profiles, extensible games/catalogs, collections and quantity history, provider mappings/raw responses/quotes/snapshots, reviewed store applications, approved stores, store-owned chat channels, revocable join codes, communities, trades, direct messages, notifications, blocks, reports, moderation evidence, and activity logs. RLS and guarded RPCs make approval and store/community capabilities server-enforced.
 
-The frontend installs `@supabase/supabase-js`, reads only the browser-safe project URL/publishable key, and connects Auth plus account/store-administration workflows. Signed-in player collections use owner-scoped Supabase RPCs and RLS instead of shared browser storage. Each addition creates a timestamped acquisition lot and captures the then-current provider reference; the daily catalog workflow appends current price snapshots and refreshes per-account valuation/growth history. Legacy fixture adapters remain isolated development utilities and are not an authentication fallback. Durable chat-message repositories and message Realtime subscriptions remain a subsequent integration phase.
+The frontend installs `@supabase/supabase-js`, reads only the browser-safe project URL/publishable key, and connects Auth plus account/store-administration workflows. Signed-in player collections use owner-scoped Supabase RPCs and RLS instead of shared browser storage. Each addition creates a timestamped acquisition lot and captures the then-current provider reference; the daily catalog workflow appends current price snapshots and refreshes per-account valuation/growth history. Participant-only direct conversations, messages, sends, and read state now use Supabase with explicit authenticated-owner checks in addition to RLS. Legacy fixture adapters remain isolated development utilities and are not an authentication fallback. Durable player community-chat repositories and message Realtime subscriptions remain a subsequent integration phase.
 
 ### Production collection storage and growth
 
@@ -341,8 +341,8 @@ tcg-harbor/
 ## Honest limitations
 
 - Real Supabase authentication, player/store onboarding, store approval, protected roles, owner-scoped collections, and chat-channel administration are connected. Missing Supabase configuration fails closed.
-- Trade posts, community message bodies, direct messages, and most notification changes are still managed by the existing browser UI rather than durable Supabase repositories.
-- Joined-community presentation, chats, trades, conversations, and notification changes still reset on refresh; collection holdings and daily growth history do not.
+- Trade posts, player-facing community message bodies, and most notification changes are still managed by the existing browser UI rather than durable Supabase repositories.
+- Joined-community presentation, chats, trades, and notification changes still reset on refresh; collection holdings, daily growth history, and direct conversations do not.
 - The database publishes protected application, channel, message, and notification changes, but the current client does not yet provide full multi-user chat delivery, offline queueing, or server retry behavior.
 - The store map uses interactive MapLibre with OpenStreetMap raster tiles. It shows approved Supabase store rows in production and six Dresden fixtures only in the local development adapter; the distance selector is still presentational and does not yet calculate geospatial distance or clustering.
 - Live camera and uploaded-image QR decoding depend on browser media support and image quality; manual code entry remains the guaranteed accessible fallback.
@@ -351,5 +351,5 @@ tcg-harbor/
 - Cardmarket, OPTCG, and TCGCSV data are generated daily snapshots, not streaming quotes. The Dresden stores remain illustrative registered app records, not verified real businesses.
 - Cross-market ratios cover only exact English base printings with both provider identities and positive daily prices. They exclude alternate arts without a two-provider match, and do not include fees, tax, shipping, condition adjustments, liquidity, or executable sale prices.
 - No publisher artwork is bundled locally. Every card printing loads exact remote art from its recorded/audited source; redistribution and hotlink permission still require deployment review.
-- Account creation, password reset, and durable owner-scoped collections are connected through Supabase. Avatar upload, durable message adapters, notification delivery, and parts of the report/block UI remain to be connected.
+- Account creation, password reset, durable owner-scoped collections, and participant-only direct messages are connected through Supabase. Avatar upload, notification delivery, Realtime inbox subscriptions, and parts of the report/block UI remain to be connected.
 - No email, push, payment, sale, auction, escrow, shipping, or store inventory integration is included.

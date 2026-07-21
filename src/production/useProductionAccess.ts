@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseClient } from "../services/supabase/client";
+import { resolveAuthStateTransitionV3 } from "../services/supabase/authSessionIsolationV3";
 import { LatestRequestGateV2 } from "../domain/latestRequestGateV2";
 import { authFailurePhaseV2 } from "../domain/authRecoveryV2";
 import { SupabaseProductionAccess } from "./supabaseProductionAccess";
@@ -34,6 +35,7 @@ export interface ProductionAccessController {
   signIn(email: string, password: string): Promise<void>;
   signUp(draft: SignUpDraft): Promise<SignUpResult>;
   signOut(): Promise<void>;
+  signOutEverywhere(): Promise<void>;
   requestPasswordReset(email: string): Promise<void>;
   updatePassword(password: string): Promise<void>;
   submitStoreApplication(draft: StoreApplicationDraft): Promise<void>;
@@ -69,6 +71,7 @@ export function useProductionAccess(): ProductionAccessController {
   const [error, setError] = useState<string | null>(null);
   const [passwordRecovery, setPasswordRecovery] = useState(false);
   const sessionRequestGate = useMemo(() => new LatestRequestGateV2(), []);
+  const renderedUserIdRef = useRef<string | null>(null);
 
   const loadSession = useCallback(async () => {
     if (!service) return;
@@ -78,17 +81,23 @@ export function useProductionAccess(): ProductionAccessController {
       const session = await service.getSession();
       if (!isCurrentRequest()) return;
       if (!session) {
+        renderedUserIdRef.current = null;
         setSnapshot(null);
+        setPasswordRecovery(false);
         setPhase("signed-out");
         return;
       }
       const next = await service.loadSnapshot(session);
       if (!isCurrentRequest()) return;
+      renderedUserIdRef.current = next.profile.id;
       setSnapshot(next);
       setError(null);
       setPhase("ready");
     } catch (nextError) {
       if (!isCurrentRequest()) return;
+      renderedUserIdRef.current = null;
+      setSnapshot(null);
+      setPasswordRecovery(false);
       setError(errorMessage(nextError));
       setPhase("error");
     }
@@ -98,9 +107,32 @@ export function useProductionAccess(): ProductionAccessController {
     if (!service) return;
     let active = true;
     void loadSession();
-    const unsubscribe = service.onAuthChange((event) => {
+    const unsubscribe = service.onAuthChange((event, session) => {
       if (!active) return;
       if (event === "PASSWORD_RECOVERY") setPasswordRecovery(true);
+      const transition = resolveAuthStateTransitionV3(
+        event,
+        session?.user.id ?? null,
+        renderedUserIdRef.current,
+      );
+      if (transition === "signed-out") {
+        sessionRequestGate.invalidate();
+        renderedUserIdRef.current = null;
+        setSnapshot(null);
+        setPasswordRecovery(false);
+        setError(null);
+        setPhase("signed-out");
+        return;
+      }
+      if (transition === "replace-account") {
+        sessionRequestGate.invalidate();
+        renderedUserIdRef.current = null;
+        setSnapshot(null);
+        if (event !== "PASSWORD_RECOVERY") setPasswordRecovery(false);
+        setError(null);
+        setPhase("loading");
+      }
+      if (transition === "ignore") return;
       // Deferring avoids making another Supabase call while the auth client is
       // still holding its internal session lock.
       window.setTimeout(() => {
@@ -110,6 +142,7 @@ export function useProductionAccess(): ProductionAccessController {
     return () => {
       active = false;
       sessionRequestGate.invalidate();
+      renderedUserIdRef.current = null;
       unsubscribe();
     };
   }, [loadSession, service, sessionRequestGate]);
@@ -141,7 +174,9 @@ export function useProductionAccess(): ProductionAccessController {
     async signIn(email, password) {
       if (!service) return;
       sessionRequestGate.invalidate();
+      renderedUserIdRef.current = null;
       setSnapshot(null);
+      setPasswordRecovery(false);
       setPhase("loading");
       setError(null);
       try {
@@ -149,6 +184,7 @@ export function useProductionAccess(): ProductionAccessController {
         await loadSession();
       } catch (nextError) {
         sessionRequestGate.invalidate();
+        renderedUserIdRef.current = null;
         setSnapshot(null);
         setError(errorMessage(nextError));
         setPhase(authFailurePhaseV2("sign_in", false));
@@ -162,6 +198,7 @@ export function useProductionAccess(): ProductionAccessController {
         result = await service.signUp(draft);
         if (result.session) {
           sessionRequestGate.invalidate();
+          renderedUserIdRef.current = null;
           setSnapshot(null);
           setPhase("loading");
           await loadSession();
@@ -171,21 +208,51 @@ export function useProductionAccess(): ProductionAccessController {
     },
     async signOut() {
       if (!service) return;
-      const previousSnapshot = snapshot;
       sessionRequestGate.invalidate();
+      renderedUserIdRef.current = null;
       setSnapshot(null);
+      setPasswordRecovery(false);
       setPhase("loading");
       setError(null);
       try {
         await service.signOut();
         sessionRequestGate.invalidate();
+        renderedUserIdRef.current = null;
         setSnapshot(null);
+        setPasswordRecovery(false);
         setPhase("signed-out");
       } catch (nextError) {
         sessionRequestGate.invalidate();
-        setSnapshot(previousSnapshot);
+        renderedUserIdRef.current = null;
+        setSnapshot(null);
+        setPasswordRecovery(false);
         setError(errorMessage(nextError));
-        setPhase(authFailurePhaseV2("sign_out", Boolean(previousSnapshot)));
+        setPhase("error");
+        throw nextError;
+      }
+    },
+    async signOutEverywhere() {
+      if (!service) return;
+      sessionRequestGate.invalidate();
+      renderedUserIdRef.current = null;
+      setSnapshot(null);
+      setPasswordRecovery(false);
+      setPhase("loading");
+      setError(null);
+      try {
+        await service.signOutEverywhere();
+        sessionRequestGate.invalidate();
+        renderedUserIdRef.current = null;
+        setSnapshot(null);
+        setPasswordRecovery(false);
+        setPhase("signed-out");
+      } catch (nextError) {
+        sessionRequestGate.invalidate();
+        renderedUserIdRef.current = null;
+        setSnapshot(null);
+        setPasswordRecovery(false);
+        setError(errorMessage(nextError));
+        setPhase("error");
         throw nextError;
       }
     },

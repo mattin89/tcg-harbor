@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 import QRCode from 'qrcode';
 import { z } from 'zod';
 import { Icon } from './components/Icon';
+import { AccountMenuButton } from './components/AccountMenuButton';
 import { ScannerPage as WorkingScannerPage } from './components/ScannerPage';
 import { MarketComparisonPage } from './components/MarketComparisonPage';
 import { StoreMap } from './components/StoreMap';
@@ -11,7 +12,10 @@ import { summarizePortfolioGrowth } from './domain/acquisitionGrowthV2';
 import { resolvePrivateNoteForAddV2 } from './domain/collectionDraftV2';
 import { resolvePortfolioValuationV2 } from './domain/portfolioValuationV2';
 import { resolveActiveNavPathV2 } from './domain/navigationV2';
+import { resolveAccountBootstrapSeedsV2 } from './domain/accountBootstrapV2';
 import { useProductionCollectionV2, type ProductionCollectionRuntimeV2 } from './services/supabase/useProductionCollectionV2';
+import { useProductionDirectMessagesV2, type ProductionDirectMessagesRuntimeV2 } from './services/supabase/useProductionDirectMessagesV2';
+import type { ProductionDirectConversationV2 } from './services/supabase/directMessageRepositoryV2';
 import type { PortfolioDailySnapshotV2 } from './services/supabase/collectionRepositoryV2';
 import {
   assetById,
@@ -48,6 +52,7 @@ export interface AppRuntimeIdentity {
   roles: string[];
   registeredStores?: Store[];
   onSignOut: () => void | Promise<void>;
+  onSignOutEverywhere?: () => void | Promise<void>;
   storePortal?: ReactNode;
 }
 
@@ -75,6 +80,43 @@ function assetUsSourceDate(asset: DemoAsset): string {
 
 function latestAcquisition(asset: DemoAsset): AcquisitionLot | undefined {
   return asset.acquisitionLots?.at(-1);
+}
+
+function directMessageTimeV2(createdAt: string): string {
+  const date = new Date(createdAt);
+  if (!Number.isFinite(date.getTime())) return '';
+  const today = new Date();
+  const sameDay = date.getFullYear() === today.getFullYear()
+    && date.getMonth() === today.getMonth()
+    && date.getDate() === today.getDate();
+  return sameDay
+    ? new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(date)
+    : new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(date);
+}
+
+function directMessageInitialsV2(name: string): string {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'CM';
+}
+
+function directConversationsToViewV2(
+  conversations: readonly ProductionDirectConversationV2[],
+): Conversation[] {
+  return conversations.map((conversation) => ({
+    id: conversation.id,
+    user: conversation.peer.displayName,
+    initials: directMessageInitialsV2(conversation.peer.displayName),
+    community: conversation.communityName,
+    online: false,
+    unread: conversation.unreadCount,
+    messages: conversation.messages.map((message) => ({
+      id: message.id,
+      user: message.own ? 'You' : conversation.peer.displayName,
+      initials: message.own ? 'YO' : directMessageInitialsV2(conversation.peer.displayName),
+      text: message.body,
+      time: directMessageTimeV2(message.createdAt),
+      own: message.own,
+    })),
+  }));
 }
 
 const navItems = [
@@ -130,17 +172,31 @@ export default function App({ identity }: AppProps = {}) {
   const { path, navigate } = usePath();
   const sanitizedJoinToken = path === '/join/store' ? peekStoreJoinIntent(window.sessionStorage)?.token ?? '' : '';
   const storeDirectory = identity?.registeredStores ?? stores;
+  const [accountSeeds] = useState(() => resolveAccountBootstrapSeedsV2(identity, {
+    communityMessages: initialCommunityMessages,
+    tradePosts: initialTradePosts,
+    conversations: initialConversations,
+    notifications,
+    recentActivity,
+  }));
   const [demoAuthenticated, setDemoAuthenticated] = useState(() => localStorage.getItem('tcg-harbor-session') === 'signed-in');
-  const [demoAssets, setDemoAssets] = useState<DemoAsset[]>(safeAssets);
+  const [demoAssets, setDemoAssets] = useState<DemoAsset[]>(() => identity ? [] : safeAssets());
   const productionCollection = useProductionCollectionV2(Boolean(identity), identity?.userId);
+  const productionDirectMessages = useProductionDirectMessagesV2(Boolean(identity), identity?.userId);
   const assets = identity ? productionCollection.assets : demoAssets;
   const [market, setMarket] = useState<Market>('cardmarket');
   const [period, setPeriod] = useState<Period>('1M');
   const [kind, setKind] = useState<AssetKind | 'all'>('all');
   const [joinedIds, setJoinedIds] = useState(() => new Set(storeDirectory.filter((store) => store.joined).map((store) => store.id)));
-  const [communityMessages, setCommunityMessages] = useState<Record<string, CommunityMessage[]>>(initialCommunityMessages);
-  const [tradePosts, setTradePosts] = useState<TradePost[]>(initialTradePosts);
-  const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
+  const [communityMessages, setCommunityMessages] = useState<Record<string, CommunityMessage[]>>(accountSeeds.communityMessages);
+  const [tradePosts, setTradePosts] = useState<TradePost[]>(accountSeeds.tradePosts);
+  const [demoConversations, setDemoConversations] = useState<Conversation[]>(accountSeeds.conversations);
+  const productionConversations = useMemo(
+    () => directConversationsToViewV2(productionDirectMessages.conversations),
+    [productionDirectMessages.conversations],
+  );
+  const conversations = identity ? productionConversations : demoConversations;
+  const setConversations = identity ? () => undefined : setDemoConversations;
   const [toast, setToast] = useState('');
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
@@ -157,6 +213,8 @@ export default function App({ identity }: AppProps = {}) {
   const authenticated = Boolean(identity) || demoAuthenticated;
   const profileName = identity?.displayName || identity?.username || 'Player';
   const profileInitials = profileName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'P';
+  const unreadMessageCount = conversations.reduce((sum, conversation) => sum + conversation.unread, 0);
+  const unreadNotificationCount = accountSeeds.notifications.filter((notification) => notification.unread).length;
   const isPlatformAdministrator = identity?.roles.includes('platform_administrator') ?? false;
   const isApprovedStoreAdministrator = identity?.roles.includes('store_administrator') ?? false;
   // Production store/approval navigation is owned by ProductionAccessGate.
@@ -216,7 +274,7 @@ export default function App({ identity }: AppProps = {}) {
             : path.startsWith('/communities/')
               ? <CommunityPage communityId={path.split('/')[2]} joinedIds={joinedIds} assets={assets} messages={communityMessages} setMessages={setCommunityMessages} trades={tradePosts} setTrades={setTradePosts} market={market} navigate={navigate} notify={notify} />
               : path === '/messages' || path.startsWith('/messages/')
-                ? <MessagesPage conversationId={path.split('/')[2]} conversations={conversations} setConversations={setConversations} navigate={navigate} notify={notify} />
+                ? <MessagesPage conversationId={path.split('/')[2]} conversations={conversations} setConversations={setConversations} productionMessages={identity ? productionDirectMessages : undefined} navigate={navigate} notify={notify} />
                 : path === '/settings'
                   ? <SettingsPage market={market} setMarket={setMarket} notify={notify} signOut={signOut} identity={identity} />
                   : path === '/store-admin'
@@ -229,12 +287,12 @@ export default function App({ identity }: AppProps = {}) {
                         ? <JoinPage code={sanitizedJoinToken} joinedIds={joinedIds} setJoinedIds={setJoinedIds} navigate={navigate} notify={notify} />
                       : path.startsWith('/join/')
                         ? <JoinPage code={decodeURIComponent(path.split('/')[2] ?? '')} joinedIds={joinedIds} setJoinedIds={setJoinedIds} navigate={navigate} notify={notify} />
-                        : <DashboardPage assets={assets} dailySnapshots={identity ? productionCollection.dailySnapshots : []} market={market} setMarket={setMarket} period={period} setPeriod={setPeriod} kind={kind} setKind={setKind} navigate={navigate} />;
+                        : <DashboardPage assets={assets} dailySnapshots={identity ? productionCollection.dailySnapshots : []} activity={accountSeeds.recentActivity} market={market} setMarket={setMarket} period={period} setPeriod={setPeriod} kind={kind} setKind={setKind} navigate={navigate} />;
 
   return <div className="app-shell">
     <aside className="sidebar">
       <button className="brand" onClick={() => navigate('/dashboard')} aria-label="TCG Harbor dashboard"><span className="brand-mark"><span /></span><span><strong>TCG Harbor</strong><small>Collector community</small></span></button>
-      <nav aria-label="Primary navigation">{navItems.map((item) => <button key={item.path} className={activeNavPath === item.path ? 'active' : ''} onClick={() => navigate(item.path)}><Icon name={item.icon} /><span>{item.label}</span>{item.path === '/messages' && <em>2</em>}</button>)}</nav>
+      <nav aria-label="Primary navigation">{navItems.map((item) => <button key={item.path} className={activeNavPath === item.path ? 'active' : ''} onClick={() => navigate(item.path)}><Icon name={item.icon} /><span>{item.label}</span>{item.path === '/messages' && unreadMessageCount > 0 && <em>{unreadMessageCount}</em>}</button>)}</nav>
       <div className="sidebar-grow" />
       {canOpenStorePortal && <button className={`side-utility ${path === '/store-admin' ? 'active' : ''}`} onClick={() => navigate('/store-admin')}><Icon name="shield" /><span>{isPlatformAdministrator ? 'Store approvals' : isApprovedStoreAdministrator ? 'Store admin' : identity ? 'Register store' : 'Store admin'}</span></button>}
       <button className={`profile-card ${path === '/settings' ? 'active' : ''}`} onClick={() => navigate('/settings')}><Avatar initials={profileInitials} size="md" /><span><strong>{profileName}</strong><small>{accountLabel}</small></span><Icon name="more" size={18} /></button>
@@ -243,7 +301,7 @@ export default function App({ identity }: AppProps = {}) {
     <div className="app-main">
       <header className="topbar">
         <div><p className="eyebrow mobile-only">TCG Harbor</p><h1>{title[0]}</h1><p>{title[1]}</p></div>
-        <div className="top-actions">{!identity && <DemoBadge compact />}<button className="icon-button notification-button" onClick={() => setNotificationsOpen((open) => !open)} aria-label="Notifications"><Icon name="bell" /><span>2</span></button><Avatar initials={profileInitials} size="sm" /></div>
+        <div className="top-actions">{!identity && <DemoBadge compact />}<button className="icon-button notification-button" onClick={() => setNotificationsOpen((open) => !open)} aria-label="Notifications"><Icon name="bell" />{unreadNotificationCount > 0 && <span>{unreadNotificationCount}</span>}</button><AccountMenuButton initials={profileInitials} active={path === '/settings'} onOpen={() => navigate('/settings')} /></div>
       </header>
       <main id="main-content">
         {identity && (productionCollection.loading || productionCollection.error) && <div className={`collection-sync-banner ${productionCollection.error ? 'is-error' : ''}`} role={productionCollection.error ? 'alert' : 'status'}>
@@ -254,8 +312,8 @@ export default function App({ identity }: AppProps = {}) {
         {page}
       </main>
     </div>
-    <nav className="bottom-nav" aria-label="Mobile navigation">{navItems.filter((item) => item.path !== '/collection/add').map((item) => <button key={item.path} className={activeNavPath === item.path ? 'active' : ''} onClick={() => navigate(item.path)}><Icon name={item.icon} size={20}/><span>{item.path === '/market-comparison' ? 'Markets' : item.label === 'Communities' ? 'Community' : item.label}</span>{item.path === '/messages' && <em>2</em>}</button>)}</nav>
-    {notificationsOpen && <div className="notification-panel"><header><div><p className="eyebrow">Activity</p><h2>Notifications</h2></div><Button variant="ghost" size="icon" onClick={() => setNotificationsOpen(false)} aria-label="Close notifications"><Icon name="close" /></Button></header><div className="notification-list">{notifications.map((note) => <button key={note.id} className={note.unread ? 'unread' : ''} onClick={() => { setNotificationsOpen(false); if (note.type === 'message') navigate('/messages/lena'); }}><span className={`notification-icon ${note.type}`}><Icon name={note.type === 'message' ? 'message' : note.type === 'trade' ? 'trade' : note.type === 'community' ? 'users' : 'check'} /></span><span><strong>{note.title}</strong><small>{note.detail}</small><time>{note.time}</time></span></button>)}</div><footer><Button variant="secondary" onClick={() => notify('All notifications marked as read')}><Icon name="check"/>Mark all read</Button></footer></div>}
+    <nav className="bottom-nav" aria-label="Mobile navigation">{navItems.filter((item) => item.path !== '/collection/add').map((item) => <button key={item.path} className={activeNavPath === item.path ? 'active' : ''} onClick={() => navigate(item.path)}><Icon name={item.icon} size={20}/><span>{item.path === '/market-comparison' ? 'Markets' : item.label === 'Communities' ? 'Community' : item.label}</span>{item.path === '/messages' && unreadMessageCount > 0 && <em>{unreadMessageCount}</em>}</button>)}</nav>
+    {notificationsOpen && <div className="notification-panel"><header><div><p className="eyebrow">Activity</p><h2>Notifications</h2></div><Button variant="ghost" size="icon" onClick={() => setNotificationsOpen(false)} aria-label="Close notifications"><Icon name="close" /></Button></header><div className="notification-list">{accountSeeds.notifications.length === 0 ? <div className="notification-empty"><Icon name="bell" size={22}/><span><strong>No notifications yet</strong><small>Account activity will appear here.</small></span></div> : accountSeeds.notifications.map((note) => <button key={note.id} className={note.unread ? 'unread' : ''} onClick={() => { setNotificationsOpen(false); if (note.type === 'message') navigate('/messages/lena'); }}><span className={`notification-icon ${note.type}`}><Icon name={note.type === 'message' ? 'message' : note.type === 'trade' ? 'trade' : note.type === 'community' ? 'users' : 'check'} /></span><span><strong>{note.title}</strong><small>{note.detail}</small><time>{note.time}</time></span></button>)}</div>{accountSeeds.notifications.length > 0 && <footer><Button variant="secondary" onClick={() => notify('All notifications marked as read')}><Icon name="check"/>Mark all read</Button></footer>}</div>}
     {toast && <div className="toast" role="status"><span><Icon name="check" size={16} /></span>{toast}</div>}
   </div>;
 }
@@ -281,7 +339,7 @@ function AuthPage({ onSignIn }: { onSignIn: () => void }) {
   </main>;
 }
 
-function DashboardPage({ assets, dailySnapshots, market, setMarket, period, setPeriod, kind, setKind, navigate }: { assets: DemoAsset[]; dailySnapshots: PortfolioDailySnapshotV2[]; market: Market; setMarket: (market: Market) => void; period: Period; setPeriod: (period: Period) => void; kind: AssetKind | 'all'; setKind: (kind: AssetKind | 'all') => void; navigate: (path: string) => void }) {
+function DashboardPage({ assets, dailySnapshots, activity, market, setMarket, period, setPeriod, kind, setKind, navigate }: { assets: DemoAsset[]; dailySnapshots: PortfolioDailySnapshotV2[]; activity: typeof recentActivity; market: Market; setMarket: (market: Market) => void; period: Period; setPeriod: (period: Period) => void; kind: AssetKind | 'all'; setKind: (kind: AssetKind | 'all') => void; navigate: (path: string) => void }) {
   const [gainRank, setGainRank] = useState<'percentage' | 'absolute'>('percentage');
   const filtered = assets.filter((asset) => kind === 'all' || asset.kind === kind);
   const valuation = resolvePortfolioValuationV2(assets, dailySnapshots, market, kind);
@@ -340,7 +398,7 @@ function DashboardPage({ assets, dailySnapshots, market, setMarket, period, setP
       })}</div><p className="history-note"><Icon name="info" size={15}/>Items without a valid historical snapshot are excluded, never treated as zero.</p></article>
       <article className="panel breakdown-panel"><div className="panel-header"><div><p className="eyebrow">Allocation</p><h2>{currentValueComplete ? 'Value by set' : 'Known value by set'}</h2></div><Chip tone="neutral">Top 5</Chip></div>{allocationTotal <= 0 ? <EmptyState icon="chart" title="No priced allocation yet" detail="Add a priced card or sealed product to see how value is distributed across sets." /> : <><div className="donut-wrap"><div className="donut" style={{ background: allocationGradient }}><span><strong>{allBySet.length}</strong><small>priced sets</small></span></div><div className="legend-list">{bySet.map(([set, value], index) => <div key={set}><i className={`legend-${index}`} /><span><strong>{set}</strong><small>{allocationPercentage(value).toFixed(1)}%</small></span><b>{formatMoney(value, market)}</b></div>)}</div></div><div className="concentration"><span>Largest concentration</span><strong>{bySet[0][0]} · {allocationPercentage(bySet[0][1]).toFixed(1)}%</strong><div><i style={{ width: `${allocationPercentage(bySet[0][1])}%` }} /></div></div></>}</article>
     </section>
-    <section className="dashboard-section"><div className="section-heading"><div><p className="eyebrow">Logbook</p><h2>Recent activity</h2></div><Chip tone="blue"><Icon name="lock" size={13}/>Only visible to you</Chip></div><div className="activity-row">{recentActivity.map((activity) => <div key={activity.title}><span><Icon name={activity.icon as Parameters<typeof Icon>[0]['name']} /></span><strong>{activity.title}</strong><small>{activity.detail}</small><time>{activity.time}</time></div>)}</div></section>
+    <section className="dashboard-section"><div className="section-heading"><div><p className="eyebrow">Logbook</p><h2>Recent activity</h2></div><Chip tone="blue"><Icon name="lock" size={13}/>Only visible to you</Chip></div>{activity.length === 0 ? <EmptyState icon="clock" title="No account activity yet" detail="Collection changes, community joins, and trades will appear here after you make them." /> : <div className="activity-row">{activity.map((item) => <div key={item.title}><span><Icon name={item.icon as Parameters<typeof Icon>[0]['name']} /></span><strong>{item.title}</strong><small>{item.detail}</small><time>{item.time}</time></div>)}</div>}</section>
   </div>;
 }
 
@@ -806,25 +864,52 @@ function TradeCreateModal({ open, onClose, communityId, assets, market, onCreate
   return <Modal open={open} onClose={onClose} title="Create a local trade post" eyebrow="Card for card · no sales" wide><form className="trade-form" onSubmit={submit}><div className="trade-form-notice"><Icon name="shield"/><span><strong>No price entry, payments, or auctions.</strong><small>Only read-only market references appear after publication.</small></span></div><div className="trade-form-grid"><section><p className="eyebrow offering">You are offering</p><label>Your collection card<select value={offeredId} onChange={(event) => setOfferedId(event.target.value)}>{assets.filter((asset) => asset.kind === 'card').map((asset) => <option value={asset.id} key={asset.id}>{asset.name} · {asset.number}</option>)}</select></label><div className="form-asset-preview"><CardArt asset={offered} size="sm"/><span><strong>{offered.name}</strong><small>{offered.number} · Qty owned {offered.quantity}</small><em>{formatMoney(offered.quote[market], market)} read-only reference</em></span></div><div className="form-grid"><label>Quantity<input type="number" min="1" max={offered.quantity} defaultValue="1" /></label><label>Condition<select value={condition} onChange={(event) => setCondition(event.target.value)}><option>Near Mint</option><option>Excellent</option><option>Good</option></select></label><label className="read-only-field">Language<output>{offered.language}</output></label></div></section><span className="trade-form-arrow"><Icon name="trade"/></span><section><p className="eyebrow looking">You are looking for</p><label>Catalog card<select value={wantedId} onChange={(event) => setWantedId(event.target.value)}>{catalogAssets.filter((asset) => asset.kind === 'card').map((asset) => <option value={asset.id} key={asset.id}>{asset.name} · {asset.number}</option>)}</select></label><div className="form-asset-preview"><CardArt asset={wanted} size="sm"/><span><strong>{wanted.name}</strong><small>{wanted.number} · {wanted.setCode}</small><em>{formatMoney(wanted.quote[market], market)} read-only reference</em></span></div><div className="form-grid"><label>Desired condition<select><option>Near Mint</option><option>Excellent or better</option><option>Any</option></select></label><label className="read-only-field">Desired language<output>{wanted.language}</output></label></div></section></div><label>Trade note <small>No cash terms or sale prices</small><textarea value={note} onChange={(event) => setNote(event.target.value.replace(/€|\$|USD|EUR/gi, ''))} placeholder="Describe variants, meetup timing, or what you’re flexible on…" maxLength={300}/></label><label>Local meetup preference<select><option>{stores.find((store) => store.id === communityId)?.name}</option><option>Friday locals</option><option>Weekend afternoon</option></select></label>{error && <div className="form-error"><Icon name="info"/>{error}</div>}<div className="trade-form-reference"><span><Icon name="info"/></span><p>At publication, the app captures read-only EU and US market references with timestamps. Similar references do not imply an equal or fair trade.</p></div><div className="form-actions"><Button type="button" variant="secondary" onClick={onClose}>Cancel</Button><Button type="submit" icon="trade">Publish trade post</Button></div></form></Modal>;
 }
 
-function MessagesPage({ conversationId, conversations, setConversations, navigate, notify }: { conversationId?: string; conversations: Conversation[]; setConversations: (conversations: Conversation[]) => void; navigate: (path: string) => void; notify: (message: string) => void }) {
+function MessagesPage({ conversationId, conversations, setConversations, productionMessages, navigate, notify }: { conversationId?: string; conversations: Conversation[]; setConversations: (conversations: Conversation[]) => void; productionMessages?: ProductionDirectMessagesRuntimeV2; navigate: (path: string) => void; notify: (message: string) => void }) {
   const active = conversations.find((conversation) => conversation.id === conversationId) ?? conversations[0];
   const [text, setText] = useState('');
   const [query, setQuery] = useState('');
   const [blocked, setBlocked] = useState(false);
   const visible = conversations.filter((conversation) => !query || conversation.user.toLowerCase().includes(query.toLowerCase()));
   useEffect(() => {
-    if (conversationId && active.unread) setConversations(conversations.map((conversation) => conversation.id === active.id ? { ...conversation, unread: 0 } : conversation));
+    if (conversationId && active?.unread) {
+      if (productionMessages) void productionMessages.markRead(active.id).catch(() => undefined);
+      else setConversations(conversations.map((conversation) => conversation.id === active.id ? { ...conversation, unread: 0 } : conversation));
+    }
     // Deliberately keyed to selected conversation only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
-  const send = (event: FormEvent) => {
+  const send = async (event: FormEvent) => {
     event.preventDefault();
-    if (!text.trim() || blocked) return;
+    if (!text.trim() || blocked || !active) return;
+    if (productionMessages) {
+      const body = text.trim().slice(0, 1000);
+      setText('');
+      try {
+        await productionMessages.send({ conversationId: active.id, body });
+      } catch {
+        setText(body);
+        notify('The private message could not be sent. Check the inbox status and try again.');
+      }
+      return;
+    }
     const message: CommunityMessage = { id: `dm-${Date.now()}`, user: 'Mario', initials: 'MD', text: text.trim().slice(0, 1000), time: 'Now', own: true };
     setConversations(conversations.map((conversation) => conversation.id === active.id ? { ...conversation, messages: [...conversation.messages, message] } : conversation));
     setText('');
   };
-  return <div className="page messages-page"><section className="dm-privacy"><Icon name="lock"/><span><strong>End-to-end private access policy</strong><small>Only you and the other participant can access this conversation. Store staff cannot read messages.</small></span><Chip tone="positive"><Icon name="shield" size={13}/>Shared community verified</Chip></section><div className={`messages-layout ${conversationId ? 'conversation-open' : ''}`}><aside className="conversation-list panel"><header><div><p className="eyebrow">Inbox</p><h2>Conversations</h2></div><Button variant="ghost" size="icon" aria-label="Start conversation" onClick={() => notify('Open a community member profile to start a verified conversation')}><Icon name="plus"/></Button></header><label className="search-field"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search conversations" /></label><div>{visible.map((conversation, index) => { const last = conversation.messages.at(-1); return <button key={conversation.id} className={active.id === conversation.id && conversationId ? 'active' : ''} onClick={() => navigate(`/messages/${conversation.id}`)}><span className="avatar-presence"><Avatar initials={conversation.initials} tone={index}/><i className={conversation.online ? 'online' : ''}/></span><span><strong>{conversation.user}<small>{last?.time}</small></strong><em>{conversation.community}</em><p>{last?.own ? 'You: ' : ''}{last?.text}</p></span>{conversation.unread > 0 && <b>{conversation.unread}</b>}</button>; })}</div><footer><Icon name="shield"/><span><strong>Server-enforced access</strong><small>A shared active store membership is required.</small></span></footer></aside><section className="conversation panel"><header><button className="mobile-back" onClick={() => navigate('/messages')} aria-label="Back to conversations"><Icon name="chevron"/></button><span className="avatar-presence"><Avatar initials={active.initials}/><i className={active.online ? 'online' : ''}/></span><div><strong>{active.user}</strong><small>{active.online ? 'Online now' : 'Last active yesterday'} · via {active.community}</small></div><div className="conversation-actions"><Button variant="ghost" size="icon" aria-label="Report user" onClick={() => notify(`${active.user} reported for review`)}><Icon name="shield"/></Button><Button variant="ghost" size="icon" aria-label="Conversation options" onClick={() => setBlocked((value) => !value)}><Icon name="more"/></Button></div></header><div className="shared-context"><Icon name="users"/><span>You can message because you both belong to <strong>{active.community}</strong>.</span></div><div className="dm-messages"><div className="chat-date"><span>Today</span></div>{active.messages.map((message, index) => <div className={`chat-message ${message.own ? 'own' : ''}`} key={message.id}>{!message.own && <Avatar initials={message.initials} size="sm" tone={index}/>}<div><p>{message.text}</p><time>{message.time}{message.own && ' · Delivered'}</time></div></div>)}</div>{blocked ? <div className="blocked-composer"><Icon name="lock"/><span><strong>You blocked {active.user}</strong><small>They cannot message you and this composer is disabled.</small></span><Button variant="secondary" size="sm" onClick={() => setBlocked(false)}>Unblock</Button></div> : <form className="message-composer dm-composer" onSubmit={send}><label><span className="sr-only">Private message</span><textarea value={text} onChange={(event) => setText(event.target.value)} placeholder={`Message ${active.user}…`} rows={1} maxLength={1000}/><small>{text.length}/1000</small></label><Button size="icon" disabled={!text.trim()} aria-label="Send private message"><Icon name="send"/></Button></form>}<p className="realtime-note"><span className="live-pulse"/>Private realtime channel connected · visible only to both participants</p></section></div></div>;
+  if (!active) {
+    const emptyTitle = productionMessages?.loading
+      ? 'Loading your private inbox'
+      : productionMessages?.error
+        ? 'Inbox unavailable'
+        : 'No conversations yet';
+    const emptyDetail = productionMessages?.loading
+      ? 'Checking for account-owned conversations…'
+      : productionMessages?.error
+        ? productionMessages.error
+        : 'After you join a physical store community, open a member profile to start a private conversation.';
+    return <div className="page messages-page"><section className="dm-privacy"><Icon name="lock"/><span><strong>Private account inbox</strong><small>Only account-owned conversations are shown. Store staff cannot read private messages.</small></span><Chip tone="positive"><Icon name="shield" size={13}/>Server protected</Chip></section><div className="messages-layout inbox-empty"><aside className="conversation-list panel"><header><div><p className="eyebrow">Inbox</p><h2>Conversations</h2></div><Button variant="ghost" size="icon" aria-label="Start conversation" onClick={() => notify('Join a store community to meet collectors you can message')}><Icon name="plus"/></Button></header><label className="search-field"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search conversations" disabled aria-label="Search conversations"/></label><div className="conversation-list-empty"><Icon name="message" size={20}/><span><strong>{productionMessages?.loading ? 'Loading inbox…' : productionMessages?.error ? 'Inbox needs attention' : 'Your inbox is empty'}</strong><small>{productionMessages?.error ?? 'No demo messages are added to real accounts.'}</small></span></div><footer><Icon name="shield"/><span><strong>Server-enforced access</strong><small>A shared active store membership is required.</small></span></footer></aside><section className="conversation panel conversation-empty"><EmptyState icon={productionMessages?.error ? 'info' : 'message'} title={emptyTitle} detail={emptyDetail} action={productionMessages?.error ? <Button onClick={() => void productionMessages.refresh()} icon="refresh">Try again</Button> : productionMessages?.loading ? undefined : <Button onClick={() => navigate('/stores')} icon="store">Find a store</Button>}/></section></div></div>;
+  }
+  return <div className="page messages-page"><section className="dm-privacy"><Icon name="lock"/><span><strong>Participant-only private access</strong><small>Only you and the other participant can access this conversation. Store staff cannot read messages.</small></span><Chip tone="positive"><Icon name="shield" size={13}/>Shared community verified</Chip></section><div className={`messages-layout ${conversationId ? 'conversation-open' : ''}`}><aside className="conversation-list panel"><header><div><p className="eyebrow">Inbox</p><h2>Conversations</h2></div><Button variant="ghost" size="icon" aria-label="Start conversation" onClick={() => notify('Open a community member profile to start a verified conversation')}><Icon name="plus"/></Button></header><label className="search-field"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search conversations" /></label><div>{visible.map((conversation, index) => { const last = conversation.messages.at(-1); return <button key={conversation.id} className={active.id === conversation.id && conversationId ? 'active' : ''} onClick={() => navigate(`/messages/${conversation.id}`)}><span className="avatar-presence"><Avatar initials={conversation.initials} tone={index}/><i className={conversation.online ? 'online' : ''}/></span><span><strong>{conversation.user}<small>{last?.time}</small></strong><em>{conversation.community}</em><p>{last?.own ? 'You: ' : ''}{last?.text}</p></span>{conversation.unread > 0 && <b>{conversation.unread}</b>}</button>; })}</div><footer><Icon name="shield"/><span><strong>Server-enforced access</strong><small>A shared active store membership is required.</small></span></footer></aside><section className="conversation panel"><header><button className="mobile-back" onClick={() => navigate('/messages')} aria-label="Back to conversations"><Icon name="chevron"/></button><span className="avatar-presence"><Avatar initials={active.initials}/><i className={active.online ? 'online' : ''}/></span><div><strong>{active.user}</strong><small>{productionMessages ? 'Activity status private' : active.online ? 'Online now' : 'Last active yesterday'} · via {active.community}</small></div><div className="conversation-actions"><Button variant="ghost" size="icon" aria-label="Report user" onClick={() => notify(`${active.user} reported for review`)}><Icon name="shield"/></Button><Button variant="ghost" size="icon" aria-label="Conversation options" onClick={() => setBlocked((value) => !value)}><Icon name="more"/></Button></div></header><div className="shared-context"><Icon name="users"/><span>You can message because you both belong to <strong>{active.community}</strong>.</span></div><div className="dm-messages"><div className="chat-date"><span>Today</span></div>{active.messages.map((message, index) => <div className={`chat-message ${message.own ? 'own' : ''}`} key={message.id}>{!message.own && <Avatar initials={message.initials} size="sm" tone={index}/>}<div><p>{message.text}</p><time>{message.time}{message.own && ' · Delivered'}</time></div></div>)}</div>{blocked ? <div className="blocked-composer"><Icon name="lock"/><span><strong>You blocked {active.user}</strong><small>They cannot message you and this composer is disabled.</small></span><Button variant="secondary" size="sm" onClick={() => setBlocked(false)}>Unblock</Button></div> : <form className="message-composer dm-composer" onSubmit={send}><label><span className="sr-only">Private message</span><textarea value={text} onChange={(event) => setText(event.target.value)} placeholder={`Message ${active.user}…`} rows={1} maxLength={1000}/><small>{text.length}/1000</small></label><Button size="icon" disabled={!text.trim() || productionMessages?.mutating} aria-label="Send private message"><Icon name="send"/></Button></form>}<p className="realtime-note"><span className="live-pulse"/>{productionMessages ? 'Private Supabase inbox · visible only to both participants' : 'Private realtime demo channel connected · visible only to both participants'}</p></section></div></div>;
 }
 
 function SettingsPage({ market, setMarket, notify, signOut, identity }: { market: Market; setMarket: (market: Market) => void; notify: (message: string) => void; signOut: () => void; identity?: AppRuntimeIdentity }) {
@@ -852,7 +937,7 @@ function SettingsPage({ market, setMarket, notify, signOut, identity }: { market
       </form>
       <section className="panel settings-card"><div className="panel-header"><div><p className="eyebrow">Stay in the loop</p><h2>In-app notifications</h2></div></div><div className="toggle-list"><Toggle label="Private messages" detail="When another verified collector messages you" checked={preferences.dm} onChange={(dm) => setPreferences({ ...preferences, dm })}/><Toggle label="Community replies" detail="Replies and mentions in store chat" checked={preferences.chat} onChange={(chat) => setPreferences({ ...preferences, chat })}/><Toggle label="Collection trade matches" detail="Someone is looking for a card you own" checked={preferences.matches} onChange={(matches) => setPreferences({ ...preferences, matches })}/><Toggle label="Trade status changes" detail="When a post moves to discussing, completed, or closed" checked={preferences.status} onChange={(status) => setPreferences({ ...preferences, status })}/><Toggle label="Email digest" detail="Email delivery is not connected yet" checked={preferences.email} onChange={(email) => setPreferences({ ...preferences, email })}/></div><Button variant="secondary" onClick={() => notify('Notification preferences saved')}>Save notification preferences</Button></section>
       <section className="panel privacy-card"><span><Icon name="lock"/></span><div><h2>Your collection is private</h2><p>Portfolio value, cost basis, acquisition dates, and notes are restricted to your account. Communities see only trade cards you explicitly publish.</p><div><Chip tone="positive">RLS protected</Chip><Chip tone="positive">Private by default</Chip><Chip tone="neutral">No exact location</Chip></div></div></section>
-      <section className="panel danger-zone"><div><h2>Session</h2><p>{identity ? 'Sign out of the authenticated session on this device.' : 'Sign out of the local development session on this device.'}</p></div><Button variant="danger" onClick={signOut} icon="logout">Sign out</Button></section>
+      <section className="panel danger-zone"><div><h2>Sessions</h2><p>{identity ? 'Sign out only this device, or revoke every active session if you do not recognize another login.' : 'Sign out of the local development session on this device.'}</p></div><div className="session-actions"><Button variant="danger" onClick={signOut} icon="logout">Sign out this device</Button>{identity?.onSignOutEverywhere && <Button variant="secondary" onClick={() => { if (window.confirm('Sign out every device currently using this account?')) void identity.onSignOutEverywhere?.(); }} icon="shield">Sign out all devices</Button>}</div></section>
     </div>
   </div></div>;
 }

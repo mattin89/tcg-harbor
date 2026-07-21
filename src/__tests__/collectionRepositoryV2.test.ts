@@ -12,6 +12,7 @@ class MockQuery {
     private readonly ranges: Record<string, Array<[number, number]>>,
     private readonly missingDailySnapshots: boolean,
     private readonly selectedColumns?: Record<string, string[]>,
+    private readonly equalityFilters?: Record<string, Array<[string, unknown]>>,
   ) {}
 
   select(columns = '*'): this {
@@ -21,6 +22,12 @@ class MockQuery {
     return this;
   }
   is(): this { return this; }
+  eq(column: string, value: unknown): this {
+    if (this.equalityFilters) {
+      (this.equalityFilters[this.table] ??= []).push([column, value]);
+    }
+    return this;
+  }
   order(): this { return this; }
 
   range(from: number, to: number) {
@@ -50,6 +57,9 @@ describe('SupabaseCollectionRepositoryV2', () => {
       },
     };
     const client = {
+      auth: {
+        getUser() { return Promise.resolve({ data: { user: { id: 'account-a' } }, error: null }); },
+      },
       from() { return lookup; },
       rpc(functionName: string, params: Record<string, unknown>) {
         calls.push({ functionName, params });
@@ -68,6 +78,45 @@ describe('SupabaseCollectionRepositoryV2', () => {
     expect(calls[0].params.p_expected_owner_id).toBe('account-a');
   });
 
+  it('rejects an owner request before querying when Supabase verifies a different account', async () => {
+    let tableCalls = 0;
+    const client = {
+      auth: {
+        getUser() { return Promise.resolve({ data: { user: { id: 'account-b' } }, error: null }); },
+      },
+      from() {
+        tableCalls += 1;
+        throw new Error('No table query should run for a mismatched account.');
+      },
+    } as unknown as SupabaseClient;
+
+    await expect(new SupabaseCollectionRepositoryV2(client).load([], 'account-a'))
+      .rejects.toThrow(/active session belongs to a different account/i);
+    expect(tableCalls).toBe(0);
+  });
+
+  it('fails closed if a transport returns another owner despite the explicit filter', async () => {
+    const rowsByTable: Record<string, readonly MockRow[]> = {
+      collection_items: [{ id: 'foreign-item', owner_id: 'account-b' }],
+      collection_acquisition_lots: [],
+      collection_acquisition_market_references: [],
+      pricing_providers: [],
+      collection_daily_valuation_snapshots: [],
+    };
+    const ranges: Record<string, Array<[number, number]>> = {};
+    const client = {
+      auth: {
+        getUser() { return Promise.resolve({ data: { user: { id: 'account-a' } }, error: null }); },
+      },
+      from(table: string) {
+        return new MockQuery(table, rowsByTable[table] ?? [], ranges, false);
+      },
+    } as unknown as SupabaseClient;
+
+    await expect(new SupabaseCollectionRepositoryV2(client).load([], 'account-a'))
+      .rejects.toThrow(/database returned data owned by another account/i);
+  });
+
   it('paginates owner-scoped collection and daily-history reads', async () => {
     const catalogAsset = catalogAssets.find((asset) => asset.kind === 'card');
     expect(catalogAsset).toBeDefined();
@@ -75,6 +124,7 @@ describe('SupabaseCollectionRepositoryV2', () => {
     const collectionItemId = 'collection-item-1';
     const acquisitionLots = Array.from({ length: 1_001 }, (_, index) => ({
       id: index + 1,
+      owner_id: 'account-a',
       collection_item_id: collectionItemId,
       added_quantity: 1,
       captured_at: new Date(2026, 0, 1, 0, 0, index).toISOString(),
@@ -89,6 +139,7 @@ describe('SupabaseCollectionRepositoryV2', () => {
     const rowsByTable: Record<string, readonly MockRow[]> = {
       collection_items: [{
         id: collectionItemId,
+        owner_id: 'account-a',
         card_variant_id: 'variant-1',
         sealed_product_id: null,
         condition: 'near_mint',
@@ -108,14 +159,19 @@ describe('SupabaseCollectionRepositoryV2', () => {
       collection_daily_valuation_snapshots: [],
     };
     const ranges: Record<string, Array<[number, number]>> = {};
+    const equalityFilters: Record<string, Array<[string, unknown]>> = {};
     const client = {
+      auth: {
+        getUser() { return Promise.resolve({ data: { user: { id: 'account-a' } }, error: null }); },
+      },
       from(table: string) {
-        return new MockQuery(table, rowsByTable[table] ?? [], ranges, false);
+        return new MockQuery(table, rowsByTable[table] ?? [], ranges, false, undefined, equalityFilters);
       },
     } as unknown as SupabaseClient;
 
-    const snapshot = await new SupabaseCollectionRepositoryV2(client).load([catalogAsset!]);
+    const snapshot = await new SupabaseCollectionRepositoryV2(client).load([catalogAsset!], 'account-a');
 
+    expect(snapshot.ownerId).toBe('account-a');
     expect(snapshot.assets).toHaveLength(1);
     expect(snapshot.assets[0].acquisitionLots).toHaveLength(1_001);
     expect(snapshot.dailySnapshots).toEqual([]);
@@ -124,6 +180,9 @@ describe('SupabaseCollectionRepositoryV2', () => {
     expect(ranges.collection_items).toEqual([[0, 999]]);
     expect(ranges.pricing_providers).toEqual([[0, 999]]);
     expect(ranges.collection_daily_valuation_snapshots).toEqual([[0, 999]]);
+    expect(equalityFilters.collection_items).toContainEqual(['owner_id', 'account-a']);
+    expect(equalityFilters.collection_acquisition_lots).toContainEqual(['owner_id', 'account-a']);
+    expect(equalityFilters.collection_daily_valuation_snapshots).toContainEqual(['owner_id', 'account-a']);
   });
 
   it.each(['PGRST205', '42P01'])(
@@ -131,11 +190,15 @@ describe('SupabaseCollectionRepositoryV2', () => {
     async (errorCode) => {
       const ranges: Record<string, Array<[number, number]>> = {};
       const client = {
+        auth: {
+          getUser() { return Promise.resolve({ data: { user: { id: 'account-a' } }, error: null }); },
+        },
         from(table: string) {
           const query = new MockQuery(table, [], ranges, false);
           if (table !== 'collection_daily_valuation_snapshots') return query;
           return {
             select() { return this; },
+            eq() { return this; },
             order() { return this; },
             range() {
               return Promise.resolve({
@@ -147,7 +210,7 @@ describe('SupabaseCollectionRepositoryV2', () => {
         },
       } as unknown as SupabaseClient;
 
-      await expect(new SupabaseCollectionRepositoryV2(client).load([]))
+      await expect(new SupabaseCollectionRepositoryV2(client).load([], 'account-a'))
         .rejects.toThrow(/Load portfolio history: Daily valuation history is unavailable/);
     },
   );
@@ -157,6 +220,7 @@ describe('SupabaseCollectionRepositoryV2', () => {
       collection_items: [
         {
           id: 'archived-card-item',
+          owner_id: 'account-a',
           card_variant_id: 'archived-variant',
           sealed_product_id: null,
           condition: 'near_mint',
@@ -201,6 +265,7 @@ describe('SupabaseCollectionRepositoryV2', () => {
         },
         {
           id: 'archived-sealed-item',
+          owner_id: 'account-a',
           card_variant_id: null,
           sealed_product_id: 'archived-sealed',
           condition: 'sealed',
@@ -242,12 +307,15 @@ describe('SupabaseCollectionRepositoryV2', () => {
     const ranges: Record<string, Array<[number, number]>> = {};
     const selectedColumns: Record<string, string[]> = {};
     const client = {
+      auth: {
+        getUser() { return Promise.resolve({ data: { user: { id: 'account-a' } }, error: null }); },
+      },
       from(table: string) {
         return new MockQuery(table, rowsByTable[table] ?? [], ranges, false, selectedColumns);
       },
     } as unknown as SupabaseClient;
 
-    const snapshot = await new SupabaseCollectionRepositoryV2(client).load([]);
+    const snapshot = await new SupabaseCollectionRepositoryV2(client).load([], 'account-a');
 
     expect(snapshot.unmappedHoldingCount).toBe(2);
     expect(snapshot.assets).toHaveLength(2);

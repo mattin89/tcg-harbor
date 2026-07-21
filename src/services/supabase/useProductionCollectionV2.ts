@@ -84,8 +84,11 @@ export function useProductionCollectionV2(
       setError(null);
     }
     try {
-      const snapshot = await repository.load(catalogAssets);
+      const snapshot = await repository.load(catalogAssets, expectedOwnerId);
       if (isCurrentRequest()) {
+        if (snapshot.ownerId !== expectedOwnerId) {
+          throw new Error('The collection response belongs to a different account. No data was displayed.');
+        }
         setAssets(snapshot.assets);
         setDailySnapshots(snapshot.dailySnapshots);
         setUnmappedHoldingCount(snapshot.unmappedHoldingCount);
@@ -175,21 +178,21 @@ export function useProductionCollectionV2(
     if (!repository || !asset.collectionItemId) {
       throw new Error('This holding is missing its account record. Refresh the collection and try again.');
     }
-    return mutate(() => repository.setQuantity(asset.collectionItemId!, quantity));
+    return mutate((expectedOwnerId) => repository.setQuantity(asset.collectionItemId!, quantity, expectedOwnerId));
   }, [mutate, repository]);
 
   const updateNote = useCallback(async (asset: DemoAsset, note?: string) => {
     if (!repository || !asset.collectionItemId) {
       throw new Error('This holding is missing its account record. Refresh the collection and try again.');
     }
-    return mutate(() => repository.updateNote(asset.collectionItemId!, note));
+    return mutate((expectedOwnerId) => repository.updateNote(asset.collectionItemId!, note, expectedOwnerId));
   }, [mutate, repository]);
 
   const remove = useCallback(async (asset: DemoAsset) => {
     if (!repository || !asset.collectionItemId) {
       throw new Error('This holding is missing its account record. Refresh the collection and try again.');
     }
-    return mutate(() => repository.remove(asset.collectionItemId!));
+    return mutate((expectedOwnerId) => repository.remove(asset.collectionItemId!, expectedOwnerId));
   }, [mutate, repository]);
 
   const hasLoadedActiveOwner = Boolean(enabled && ownerId && loadedOwnerId === ownerId);

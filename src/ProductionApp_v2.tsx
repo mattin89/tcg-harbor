@@ -62,5 +62,6 @@ function ProductionIdentityBridge() {
     roles: identity.roles,
     registeredStores: identity.registeredStores.map(toMapStore),
     onSignOut: identity.signOut,
+    onSignOutEverywhere: identity.signOutEverywhere,
   }} />;
 }

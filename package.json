@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node scripts/check-client-bundle-secrets.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "bootstrap:admin": "node scripts/bootstrap-platform-admin-v2.mjs",
     "sync:data": "node scripts/sync-onepiece-data.mjs",

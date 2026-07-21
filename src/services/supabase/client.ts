@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { isBrowserSafeSupabaseKeyV3, supabaseAuthStorageKeyV3 } from "./authSessionIsolationV3";
 
 export interface SupabaseRuntimeConfig {
   url: string | null;
@@ -13,8 +14,9 @@ function readEnvironmentValue(name: "VITE_SUPABASE_URL" | "VITE_SUPABASE_PUBLISH
 
 export function getSupabaseRuntimeConfig(): SupabaseRuntimeConfig {
   const url = readEnvironmentValue("VITE_SUPABASE_URL");
-  const anonKey = readEnvironmentValue("VITE_SUPABASE_PUBLISHABLE_KEY")
+  const configuredKey = readEnvironmentValue("VITE_SUPABASE_PUBLISHABLE_KEY")
     ?? readEnvironmentValue("VITE_SUPABASE_ANON_KEY");
+  const anonKey = configuredKey && isBrowserSafeSupabaseKeyV3(configuredKey) ? configuredKey : null;
   return { url, anonKey, configured: Boolean(url && anonKey) };
 }
 
@@ -39,7 +41,9 @@ export function getSupabaseClient(): SupabaseClient | null {
     auth: {
       autoRefreshToken: true,
       detectSessionInUrl: true,
+      flowType: "pkce",
       persistSession: true,
+      storageKey: supabaseAuthStorageKeyV3(config.url),
     },
   });
 

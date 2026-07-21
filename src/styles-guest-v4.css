@@ -1,0 +1,173 @@
+/*
+ * Guest browsing v4
+ *
+ * The guest shell reuses the signed-in visual language while making its
+ * read-only boundary and account handoff visible at every relevant action.
+ */
+
+.guest-auth-card {
+  display: grid;
+  gap: 9px;
+  padding: 13px;
+  color: #e8eff2;
+  background: rgba(255, 255, 255, .055);
+  border: 1px solid rgba(255, 255, 255, .11);
+  border-radius: 13px;
+}
+
+.guest-auth-card > svg {
+  color: #f1a273;
+}
+
+.guest-auth-card > div {
+  display: grid;
+  gap: 3px;
+}
+
+.guest-auth-card strong {
+  font-size: 12px;
+}
+
+.guest-auth-card small {
+  color: #a9bbc5;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.guest-auth-card .button {
+  width: 100%;
+}
+
+.guest-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.guest-access-banner {
+  margin: 18px 22px 0;
+  padding: 11px 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #214c61;
+  background: #e8f2f5;
+  border: 1px solid #c8dce2;
+  border-radius: 11px;
+}
+
+.guest-access-banner > span {
+  display: grid;
+  gap: 2px;
+}
+
+.guest-access-banner strong {
+  font-size: 12px;
+}
+
+.guest-access-banner small {
+  color: #4f6874;
+  font-size: 11px;
+}
+
+.guest-access-banner .button {
+  margin-left: auto;
+}
+
+.guest-access-banner.is-error {
+  color: #8b332d;
+  background: #faece9;
+  border-color: #e8c6c1;
+}
+
+.guest-card-details,
+.guest-save-gate,
+.guest-store-gate {
+  border: 1px solid #d5e0e3;
+  background: #f0f5f6;
+  border-radius: 12px;
+}
+
+.guest-card-details {
+  padding: 14px;
+}
+
+.guest-save-gate,
+.guest-store-gate {
+  padding: 13px 14px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: #274f62;
+  box-shadow: inset 3px 0 #2f6f92;
+}
+
+.guest-save-gate > span,
+.guest-store-gate > span {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: #2f6f92;
+  background: #dcebf1;
+  border-radius: 9px;
+}
+
+.guest-save-gate > div,
+.guest-store-gate > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.guest-save-gate strong,
+.guest-store-gate strong {
+  font-size: 12px;
+}
+
+.guest-save-gate p,
+.guest-store-gate p {
+  color: #4f6874;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.guest-save-gate .button,
+.guest-store-gate .button {
+  margin-left: auto;
+}
+
+@media (max-width: 860px) {
+  .guest-shell .bottom-nav {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .guest-access-banner {
+    margin: 12px 12px 0;
+  }
+}
+
+@media (max-width: 620px) {
+  .guest-top-actions .chip {
+    display: none;
+  }
+
+  .guest-top-actions .button {
+    min-height: 36px;
+    padding-inline: 10px;
+    font-size: 11px;
+  }
+
+  .guest-save-gate,
+  .guest-store-gate {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .guest-save-gate .button,
+  .guest-store-gate .button {
+    width: 100%;
+    margin-left: 45px;
+  }
+}

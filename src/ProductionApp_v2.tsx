@@ -2,6 +2,7 @@ import App from './App';
 import { ProductionAccessGate, useProductionIdentity } from './production';
 import type { RegisteredStore } from './production';
 import type { Store } from './data/demo';
+import { usePublicStoreDirectoryV4 } from './services/supabase/usePublicStoreDirectoryV4';
 
 const storeAccents = ['coral', 'gold', 'violet', 'azure', 'jade', 'amber'];
 
@@ -39,11 +40,29 @@ function toMapStore(store: RegisteredStore, index: number): Store {
 }
 
 /**
- * Production-aware root. The application shell is exposed only through a
- * server-verified session; missing account configuration fails closed.
+ * Production-aware root. Guests receive an explicit read-only browsing
+ * runtime, while account data remains behind a server-verified session.
  */
 export default function ProductionAppV2() {
-  return <ProductionAccessGate><ProductionIdentityBridge /></ProductionAccessGate>;
+  return (
+    <ProductionAccessGate renderGuest={({ requestAuthentication }) => (
+      <ProductionGuestBridge onRequestAuthentication={requestAuthentication} />
+    )}>
+      <ProductionIdentityBridge />
+    </ProductionAccessGate>
+  );
+}
+
+function ProductionGuestBridge({ onRequestAuthentication }: { onRequestAuthentication: () => void }) {
+  const directory = usePublicStoreDirectoryV4();
+
+  return <App key="guest-v4" guest={{
+    registeredStores: directory.stores.map(toMapStore),
+    storesLoading: directory.loading,
+    storesError: directory.error,
+    storesRefresh: directory.refresh,
+    onRequestAuthentication,
+  }} />;
 }
 
 function ProductionIdentityBridge() {

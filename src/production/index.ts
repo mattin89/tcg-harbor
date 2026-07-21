@@ -1,5 +1,5 @@
 export { ProductionAccessBoundary, ProductionAccessGate } from "./ProductionAccessGate";
-export type { ProductionAccessGateProps } from "./ProductionAccessGate";
+export type { ProductionAccessGateProps, ProductionGuestRenderContextV4 } from "./ProductionAccessGate";
 export { ProductionAccessProvider, useProductionAccessContext, useProductionIdentity } from "./ProductionAccessContext";
 export { ProductionAuthPanel } from "./ProductionAuthPanel";
 export { ProductionStoreJoinPage } from "./ProductionStoreJoinPage";

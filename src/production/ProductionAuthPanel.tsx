@@ -42,11 +42,13 @@ export function ProductionAuthPanel({
   pendingStoreJoin = false,
   onEmailConfirmationHandoff,
   onCancelPendingStoreJoin,
+  onBrowseAsGuest,
 }: {
   access: ProductionAccessController;
   pendingStoreJoin?: boolean;
   onEmailConfirmationHandoff?: () => boolean;
   onCancelPendingStoreJoin?: () => void;
+  onBrowseAsGuest?: () => void;
 }) {
   const [mode, setMode] = useState<AuthMode>("sign-in");
   const [accountKind, setAccountKind] = useState<AccountKind>("player");
@@ -165,6 +167,7 @@ export function ProductionAuthPanel({
           <button type="button" onClick={() => { setMode("reset"); setNotice(null); access.clearError(); }}>Forgot password?</button>
         </>}
         {mode !== "sign-in" && <button type="button" onClick={() => { setMode("sign-in"); setNotice(null); access.clearError(); }}>Back to sign in</button>}
+        {onBrowseAsGuest && <button type="button" onClick={onBrowseAsGuest}>Continue browsing as guest</button>}
       </div>
     </AuthShell>
   );

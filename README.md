@@ -1,24 +1,25 @@
 # TCG Harbor
 
-TCG Harbor is an unofficial, collector-focused One Piece Card Game portfolio and local-community demo. It combines collection tracking and source-backed EU/US market references with store discovery, QR-gated communities, card-for-card trade posts, community chat, and private-message flows.
+TCG Harbor is an unofficial, collector-focused One Piece Card Game portfolio and local-community platform in transition from a browser demo to a real multi-user product. It combines collection tracking and source-backed EU/US market references with store discovery, QR-gated communities, card-for-card trade posts, community chat, and private-message flows.
 
 This project is not affiliated with Bandai, Cardmarket, TCGPlayer, or any local game store represented by the fixtures. It is not a marketplace: there are no sale listings, user-entered trade prices, payments, auctions, bidding, checkout, or shipping features.
 
 ## Project status
 
-The repository contains three complementary layers:
+The repository contains four complementary layers:
 
 1. A polished, runnable Vite/React browser demo in `src/App.tsx`, with a generated card/market snapshot plus seeded community fixtures and browser state.
 2. Framework-neutral domain and service modules for business rules, local persistence, authentication boundaries, repositories, and normalized pricing providers.
 3. A production-oriented PostgreSQL/Supabase migration, RLS policies, RPCs, triggers, and seed data.
+4. An environment-activated Supabase account layer with real player/store signup, session restoration, password reset, store applications, platform approval, per-store QR invitations, and store-owned chat/moderation tools.
 
-The first layer is the current end-to-end UI. The service graph and Supabase schema are deliberately present as integration-ready boundaries, but the browser UI does not yet use a Supabase client and is not fully wired through `createDemoServices()`.
+With no Supabase values configured, the original local demo remains available. With a project URL and browser-safe publishable key, `ProductionApp_v2.tsx` replaces the demo login gate with Supabase Auth and protected account areas. Collection and message repositories are still being migrated from local fixtures, so the production transition is intentionally incremental.
 
 ## Quick start
 
 Prerequisites:
 
-- Node.js 18 or newer
+- Node.js 22 or newer
 - npm
 
 Install and start the development server:
@@ -30,16 +31,16 @@ npm run dev
 
 Open [http://127.0.0.1:4173](http://127.0.0.1:4173). The port is fixed in `vite.config.ts` for both development and preview.
 
-The current browser demo needs no environment variables. `.env.example` documents the optional values needed when adding Supabase and authorized live-provider transports.
+The browser demo needs no environment variables. `.env.example` documents the values that activate real Supabase accounts and the separate server-only values reserved for authorized live-provider transports.
 
-### Demo login
+### Demo-fallback login
 
 - Email: `mario@tcgharbor.demo`
 - Password: `HarborDemo!2026`
 
 The first browser visit may open directly on the populated dashboard. To exercise sign-in, go to **Settings**, sign out, and use the prefilled credentials or **Continue with demo account**.
 
-The current client sign-in is a demonstration gate: it validates email shape and persists a local session flag, but it does not authenticate against Supabase or verify a password server-side. Do not use it as a security boundary.
+This credential is available only while Supabase configuration is blank. Once Supabase is configured, the account screen uses Supabase Auth and the demo credential no longer bypasses authentication.
 
 ## Available commands
 
@@ -50,6 +51,7 @@ These commands match `package.json`:
 | `npm run dev` | Start Vite on `127.0.0.1` for development. |
 | `npm run build` | Run strict TypeScript checking, then create the Vite production bundle. |
 | `npm run preview` | Serve the completed production bundle on `127.0.0.1`. Run `npm run build` first. |
+| `npm run bootstrap:admin` | Guarded, server-only creation of the first Auth account; role promotion remains a separate exact-UUID operation. |
 | `npm run sync:data` | Refresh the generated One Piece snapshot from Cardmarket, OPTCG API, and TCGCSV. Requires network access. |
 | `npm test` | Run the Vitest business-rule suite once. |
 | `npm run test:watch` | Run Vitest in watch mode. |
@@ -119,7 +121,7 @@ Additional states:
 - Upload fallback: choose any image; the demo simulates detection of the Dresden fixture.
 - Development shortcut: **Simulate Dresden scan** on `/scan`.
 
-The scanner requests permission only after an explicit click and uses ZXing to decode QR frames from the live camera. Uploaded QR images are decoded locally in the browser; manual entry and clearly labelled simulation links remain accessible fallbacks. The store-admin generator encodes a real `/join/:code` URL and downloads a print-quality SVG. Regenerated admin codes remain local to that screen and are not added to the static join-code fixture registry.
+The scanner requests permission only after an explicit click and uses ZXing to decode QR frames from the live camera. Uploaded QR images are decoded locally in the browser; manual entry and clearly labelled simulation links remain accessible fallbacks. Production store QR codes use `/join/store#token=...`, keeping bearer tokens out of HTTP requests, while the legacy `/join/:code` demo links remain compatible. The store workspace downloads a print-quality SVG.
 
 The separate database seed has its own hashed development tokens, documented in `supabase/seed.sql`. Those tokens exercise the database RPC model and are not connected to the browser fixture registry.
 
@@ -174,25 +176,36 @@ The detailed design is in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 The target database is defined by:
 
 - [`supabase/migrations/202607160001_initial_schema.sql`](supabase/migrations/202607160001_initial_schema.sql)
+- [`supabase/migrations/202607160002_automatic_acquisition_lots.sql`](supabase/migrations/202607160002_automatic_acquisition_lots.sql)
+- [`supabase/migrations/202607200003_store_applications_and_approval.sql`](supabase/migrations/202607200003_store_applications_and_approval.sql)
+- [`supabase/migrations/202607200004_store_chat_channels_and_moderation.sql`](supabase/migrations/202607200004_store_chat_channels_and_moderation.sql)
+- [`supabase/migrations/20260720180849_physical_store_qr_invites.sql`](supabase/migrations/20260720180849_physical_store_qr_invites.sql)
+- [`supabase/migrations/20260721093251_fix_store_join_redemption_ambiguity.sql`](supabase/migrations/20260721093251_fix_store_join_redemption_ambiguity.sql)
+- [`supabase/migrations/20260721093619_set_community_member_profiles_security_invoker.sql`](supabase/migrations/20260721093619_set_community_member_profiles_security_invoker.sql)
+- [`supabase/config.toml`](supabase/config.toml)
 - [`supabase/seed.sql`](supabase/seed.sql)
 - [`supabase/SECURITY.md`](supabase/SECURITY.md)
+- [`supabase/SECURITY_v2.md`](supabase/SECURITY_v2.md)
+- [`docs/PRODUCTION_ACCOUNTS_v2.md`](docs/PRODUCTION_ACCOUNTS_v2.md)
+- [`docs/PRODUCTION_OPERATIONS_v3.md`](docs/PRODUCTION_OPERATIONS_v3.md)
 
-The migration models users and profiles, extensible games/catalogs, collections and quantity history, provider mappings/raw responses/quotes/snapshots, stores and revocable join codes, communities, trades, direct messages, notifications, blocks, reports, and activity logs. It enables RLS across application tables and supplies guarded RPCs for QR redemption, direct-conversation creation, membership moderation, and other privileged workflows.
+The migrations model users and profiles, extensible games/catalogs, collections and quantity history, provider mappings/raw responses/quotes/snapshots, reviewed store applications, approved stores, store-owned chat channels, revocable join codes, communities, trades, direct messages, notifications, blocks, reports, moderation evidence, and activity logs. RLS and guarded RPCs make approval and store/community capabilities server-enforced.
 
-The local frontend does not install `@supabase/supabase-js`, does not read Supabase environment variables, and does not run Realtime subscriptions. The schema is the production authorization design to connect in a subsequent integration phase.
+The frontend now installs `@supabase/supabase-js`, reads only the browser-safe project URL/publishable key, and connects Auth plus account/store-administration workflows. Durable collection/chat-message repositories and message Realtime subscriptions remain a subsequent integration phase.
 
 ## Optional Supabase setup
 
 Supabase is not required to run the browser demo. To inspect or adopt the database design:
 
-1. Create a PostgreSQL 15+/Supabase project.
-2. Apply `supabase/migrations/202607160001_initial_schema.sql` using your normal migration workflow. If the separately installed Supabase CLI is linked to a disposable project, `supabase db push` will apply repository migrations.
-3. Read the Auth UUID instructions at the top of `supabase/seed.sql`. Create development users through Supabase Auth; never insert password hashes through SQL.
-4. Apply `supabase/seed.sql`. Public catalog, store, hashed-code, and market fixtures always load; private fixtures load only when the documented Auth users exist.
-5. Configure browser-safe project values from `.env.example`, install a Supabase client, and implement repositories that satisfy the existing domain/service interfaces.
-6. Move authenticated writes and provider ingestion behind server routes/functions. Never expose the service-role key to Vite client code.
+1. Create a PostgreSQL 15+/Supabase project in an EU region appropriate for the deployment. The current hosted project uses `eu-west-1`; a future region change requires a planned database migration.
+2. Apply every file in `supabase/migrations/` in filename order. A linked Supabase CLI can use `supabase db push`.
+3. Do **not** apply `supabase/seed.sql` to production; it contains explicit local fixtures and development join codes. Create users through Supabase Auth, never by inserting password hashes.
+4. Configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` from `.env.example`.
+5. Follow `docs/PRODUCTION_OPERATIONS_v3.md` to bootstrap the first platform administrator with a one-time password and exact-UUID role promotion.
+6. Configure Auth redirect URLs and custom SMTP, then validate the RLS denial cases against a disposable project before inviting users.
+7. Keep provider ingestion and any service-role operation on a trusted server. Never expose the service-role key to Vite client code.
 
-There is intentionally no `supabase/config.toml` or automated Auth-user bootstrap in this repository, so `supabase start`/`supabase db reset` is not a one-command setup yet.
+The repository now includes a pinned CLI, production-aware `supabase/config.toml`, and a guarded Auth-user bootstrap. Every deployment must still verify linked migrations, Auth redirects, the exact administrator UUID, and advisor results; production must never include `supabase/seed.sql`.
 
 ## Replacing mock prices with authorized live data
 
@@ -245,6 +258,7 @@ tcg-harbor/
 ├── vite.config.ts
 ├── src/
 │   ├── App.tsx
+│   ├── ProductionApp_v2.tsx
 │   ├── main.tsx
 │   ├── styles.css
 │   ├── styles-community.css
@@ -269,6 +283,12 @@ tcg-harbor/
 │   │   ├── privacy.ts
 │   │   ├── trade.ts
 │   │   └── types.ts
+│   ├── production/
+│   │   ├── ProductionAccessGate.tsx
+│   │   ├── ProductionAuthPanel.tsx
+│   │   ├── StoreAccessPanels.tsx
+│   │   ├── supabaseProductionAccess.ts
+│   │   └── useProductionAccess.ts
 │   └── services/
 │       ├── createDemoServices.ts
 │       ├── index.ts
@@ -281,6 +301,8 @@ tcg-harbor/
 │       │   ├── index.ts
 │       │   ├── repository.ts
 │       │   └── types.ts
+│       ├── supabase/
+│       │   └── client.ts
 │       └── pricing/
 │           ├── BasePricingProvider.ts
 │           ├── PricingService.ts
@@ -297,24 +319,32 @@ tcg-harbor/
 │               ├── MockPricingProvider.ts
 │               └── TCGPlayerPricingProvider.ts
 └── supabase/
+    ├── config.toml
     ├── SECURITY.md
+    ├── SECURITY_v2.md
     ├── seed.sql
     └── migrations/
-        └── 202607160001_initial_schema.sql
+        ├── 202607160001_initial_schema.sql
+        ├── 202607160002_automatic_acquisition_lots.sql
+        ├── 202607200003_store_applications_and_approval.sql
+        ├── 202607200004_store_chat_channels_and_moderation.sql
+        ├── 20260720180849_physical_store_qr_invites.sql
+        ├── 20260721093251_fix_store_join_redemption_ambiguity.sql
+        └── 20260721093619_set_community_member_profiles_security_invoker.sql
 ```
 
 ## Honest limitations
 
-- The current UI is a client-side demo. Its login, authorization checks, and mutable community state are not trusted server controls.
-- `createDemoServices()` and the Supabase schema are not yet connected to `App.tsx`; the UI currently manages most state directly.
+- Real Supabase authentication, player/store onboarding, store approval, protected roles, and chat-channel administration are connected when environment values are present. The no-configuration demo fallback remains intentionally available.
+- Collection holdings, trade posts, community message bodies, direct messages, and most notification changes are still managed by the existing browser UI rather than Supabase repositories.
 - Only collection assets and the simple demo session flag persist directly in the UI. Joined communities, chats, trades, conversations, and notification changes reset on refresh.
-- Realtime behavior is simulated with local React state. There is no Supabase Realtime connection, multi-user delivery, offline queue, or server retry pipeline.
-- The store map uses interactive MapLibre with OpenStreetMap raster tiles and six registered Dresden demo stores. The distance selector is still presentational and does not calculate geospatial distance or clustering.
+- The database publishes protected application, channel, message, and notification changes, but the current client does not yet provide full multi-user chat delivery, offline queueing, or server retry behavior.
+- The store map uses interactive MapLibre with OpenStreetMap raster tiles. It shows approved Supabase store rows in production and six Dresden fixtures in demo fallback; the distance selector is still presentational and does not yet calculate geospatial distance or clustering.
 - Live camera and uploaded-image QR decoding depend on browser media support and image quality; manual code entry remains the guaranteed accessible fallback.
-- Regenerated store-admin tokens are not persisted into the frontend join registry or database.
+- Production QR token hashes and lifecycle metadata are persisted in Supabase; raw tokens are returned only once and remain in short-lived browser join intent storage.
 - Portfolio and item charts show only the two source-backed endpoints (Cardmarket current trend versus the selected rolling average), not an invented transaction history. The SQL seed still includes 31 days of database snapshots for a future adapter.
 - Cardmarket, OPTCG, and TCGCSV data are generated daily snapshots, not streaming quotes. The Dresden stores remain illustrative registered app records, not verified real businesses.
 - Cross-market ratios cover only exact English base printings with both provider identities and positive daily prices. They exclude alternate arts without a two-provider match, and do not include fees, tax, shipping, condition adjustments, liquidity, or executable sale prices.
 - No publisher artwork is bundled locally. Remote art loads from its recorded OPTCG or TCGplayer source; seven unresolved exact printings show a clearly labelled unavailable state rather than a misleading substitute.
-- Password reset, account creation, avatar upload, report/block workflows, notification delivery, and several moderation actions are UI/demo structures rather than connected backend operations.
+- Account creation and password reset are connected through Supabase Auth. Avatar upload, durable collection/message adapters, notification delivery, and parts of the report/block UI remain to be connected.
 - No email, push, payment, sale, auction, escrow, shipping, or store inventory integration is included.

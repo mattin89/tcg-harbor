@@ -167,22 +167,29 @@ function createPopupContent(location: StoreLocation): HTMLElement {
   address.className = 'store-map-popup__address';
   address.textContent = store.address;
 
-  const metrics = document.createElement('dl');
-  metrics.className = 'store-map-popup__metrics';
-  for (const [label, value] of [
-    ['Collectors', store.members.toLocaleString()],
-    ['Open trades', store.trades.toLocaleString()],
-  ]) {
-    const metric = document.createElement('div');
-    const term = document.createElement('dt');
-    const description = document.createElement('dd');
-    term.textContent = label;
-    description.textContent = value;
-    metric.append(term, description);
-    metrics.append(metric);
+  article.append(eyebrow, heading, locationLine, address);
+  if (store.source === 'registered') {
+    const approved = document.createElement('p');
+    approved.className = 'store-map-popup__fixture';
+    approved.textContent = 'Approved TCG Harbor store';
+    article.append(approved);
+  } else {
+    const metrics = document.createElement('dl');
+    metrics.className = 'store-map-popup__metrics';
+    for (const [label, value] of [
+      ['Collectors', store.members.toLocaleString()],
+      ['Open trades', store.trades.toLocaleString()],
+    ]) {
+      const metric = document.createElement('div');
+      const term = document.createElement('dt');
+      const description = document.createElement('dd');
+      term.textContent = label;
+      description.textContent = value;
+      metric.append(term, description);
+      metrics.append(metric);
+    }
+    article.append(metrics);
   }
-
-  article.append(eyebrow, heading, locationLine, address, metrics);
   if (usesFallbackCoordinates) {
     const note = document.createElement('p');
     note.className = 'store-map-popup__fixture';

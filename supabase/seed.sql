@@ -147,7 +147,12 @@ insert into public.store_join_codes (
   ('22000000-0000-4000-8000-000000000004','20000000-0000-4000-8000-000000000004','21000000-0000-4000-8000-000000000004',extensions.digest('HARBOR-NYC-DEMO-2026','sha256'),'HARBOR-NYC','Demo fixture — simulate scan',10000),
   ('22000000-0000-4000-8000-000000000005','20000000-0000-4000-8000-000000000005','21000000-0000-4000-8000-000000000005',extensions.digest('HARBOR-SEATTLE-DEMO-2026','sha256'),'HARBOR-SEA','Demo fixture — simulate scan',10000),
   ('22000000-0000-4000-8000-000000000006','20000000-0000-4000-8000-000000000006','21000000-0000-4000-8000-000000000006',extensions.digest('HARBOR-SF-DEMO-2026','sha256'),'HARBOR-SF-','Demo fixture — simulate scan',10000)
-on conflict (id) do update set deactivated_at = null, max_uses = excluded.max_uses;
+on conflict (id) do update set
+  deactivated_at = null,
+  deactivated_by = null,
+  deactivation_reason = null,
+  rotated_to_id = null,
+  max_uses = excluded.max_uses;
 
 -- Stable provider mappings: provider IDs + catalog UUIDs, never display-name matching.
 with ranked as (

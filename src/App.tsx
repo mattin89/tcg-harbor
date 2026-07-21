@@ -6,6 +6,7 @@ import { ScannerPage as WorkingScannerPage } from './components/ScannerPage';
 import { MarketComparisonPage } from './components/MarketComparisonPage';
 import { StoreMap } from './components/StoreMap';
 import { Avatar, Button, CardArt, Chip, DemoBadge, EmptyState, MarketDataBadge, Modal, PriceChart, Segmented, Toggle, Trend } from './components/ui';
+import { clearStoredStoreJoinIntent, peekStoreJoinIntent } from './production/storeJoinRoute';
 import {
   assetById,
   catalogAssets,
@@ -31,6 +32,21 @@ import {
 } from './data/demo';
 
 type ViewMode = 'grid' | 'table';
+
+export interface AppRuntimeIdentity {
+  username: string;
+  displayName: string | null;
+  email: string;
+  accountKind: 'player' | 'store';
+  roles: string[];
+  registeredStores?: Store[];
+  onSignOut: () => void | Promise<void>;
+  storePortal?: ReactNode;
+}
+
+interface AppProps {
+  identity?: AppRuntimeIdentity;
+}
 
 function marketSourceLabel(market: Market): string {
   return market === 'cardmarket' ? 'Cardmarket trend · EUR' : 'US market reference · USD';
@@ -103,14 +119,16 @@ function usePath() {
   return { path, navigate };
 }
 
-export default function App() {
+export default function App({ identity }: AppProps = {}) {
   const { path, navigate } = usePath();
-  const [authenticated, setAuthenticated] = useState(() => localStorage.getItem('tcg-harbor-session') !== 'signed-out');
+  const sanitizedJoinToken = path === '/join/store' ? peekStoreJoinIntent(window.sessionStorage)?.token ?? '' : '';
+  const storeDirectory = identity?.registeredStores ?? stores;
+  const [demoAuthenticated, setDemoAuthenticated] = useState(() => localStorage.getItem('tcg-harbor-session') !== 'signed-out');
   const [assets, setAssets] = useState<DemoAsset[]>(safeAssets);
   const [market, setMarket] = useState<Market>('cardmarket');
   const [period, setPeriod] = useState<Period>('1M');
   const [kind, setKind] = useState<AssetKind | 'all'>('all');
-  const [joinedIds, setJoinedIds] = useState(() => new Set(stores.filter((store) => store.joined).map((store) => store.id)));
+  const [joinedIds, setJoinedIds] = useState(() => new Set(storeDirectory.filter((store) => store.joined).map((store) => store.id)));
   const [communityMessages, setCommunityMessages] = useState<Record<string, CommunityMessage[]>>(initialCommunityMessages);
   const [tradePosts, setTradePosts] = useState<TradePost[]>(initialTradePosts);
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
@@ -125,14 +143,28 @@ export default function App() {
   }, [toast]);
 
   const notify = (message: string) => setToast(message);
+  const authenticated = Boolean(identity) || demoAuthenticated;
+  const profileName = identity?.displayName || identity?.username || 'Mario Delor';
+  const profileInitials = profileName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'P';
+  const isPlatformAdministrator = identity?.roles.includes('platform_administrator') ?? false;
+  const isApprovedStoreAdministrator = identity?.roles.includes('store_administrator') ?? false;
+  // Production store/approval navigation is owned by ProductionAccessGate.
+  // The embedded route remains available only to the local demo or to a future
+  // caller that deliberately supplies a production store portal node.
+  const canOpenStorePortal = !identity || Boolean(identity.storePortal);
+  const accountLabel = isPlatformAdministrator ? 'Platform administrator' : isApprovedStoreAdministrator ? 'Player · Store operator' : identity?.accountKind === 'store' ? 'Player · Store applicant' : 'Player · Europe';
   const signOut = () => {
+    if (identity) {
+      void identity.onSignOut();
+      return;
+    }
     localStorage.setItem('tcg-harbor-session', 'signed-out');
-    setAuthenticated(false);
+    setDemoAuthenticated(false);
     navigate('/signin');
   };
   const signIn = () => {
     localStorage.setItem('tcg-harbor-session', 'demo');
-    setAuthenticated(true);
+    setDemoAuthenticated(true);
     const pending = sessionStorage.getItem('tcg-harbor-pending-join');
     sessionStorage.removeItem('tcg-harbor-pending-join');
     navigate(pending || '/dashboard');
@@ -153,10 +185,10 @@ export default function App() {
     : path === '/communities' ? ['Your communities', 'Trade and connect where you play']
     : path.startsWith('/messages/') || path === '/messages' ? ['Private messages', 'Available only between collectors who share a community']
     : path === '/settings' ? ['Profile & settings', 'Control your market, privacy, and notifications']
-    : path === '/store-admin' ? ['Store administration', 'Manage store identity and physical community access']
+    : path === '/store-admin' ? [isPlatformAdministrator ? 'Store approvals' : isApprovedStoreAdministrator ? 'Store administration' : 'Register your store', isPlatformAdministrator ? 'Review store applications and protect community access' : 'Manage store identity and community access after approval']
     : path === '/scan' ? ['Scan a store code', 'Join a community while you are physically at the store']
     : path.startsWith('/join/') ? ['Join community', 'Confirm the store you are visiting']
-    : ['Portfolio overview', 'Welcome back, Mario — your collection moved today'];
+    : ['Portfolio overview', `Welcome back, ${profileName} — your collection moved today`];
 
   const page = path.startsWith('/collection/add')
     ? <AddItemsPage assets={assets} setAssets={setAssets} market={market} navigate={navigate} notify={notify} />
@@ -165,9 +197,9 @@ export default function App() {
       : path === '/market-comparison'
         ? <MarketComparisonPage />
       : path === '/stores'
-        ? <StoresPage joinedIds={joinedIds} navigate={navigate} notify={notify} />
+        ? <StoresPage stores={storeDirectory} joinedIds={joinedIds} navigate={navigate} notify={notify} />
         : path.startsWith('/stores/')
-          ? <StoreProfilePage storeId={path.split('/')[2]} joinedIds={joinedIds} navigate={navigate} />
+          ? <StoreProfilePage stores={storeDirectory} storeId={path.split('/')[2]} joinedIds={joinedIds} navigate={navigate} />
           : path === '/communities'
             ? <CommunitiesPage joinedIds={joinedIds} navigate={navigate} />
             : path.startsWith('/communities/')
@@ -175,11 +207,15 @@ export default function App() {
               : path === '/messages' || path.startsWith('/messages/')
                 ? <MessagesPage conversationId={path.split('/')[2]} conversations={conversations} setConversations={setConversations} navigate={navigate} notify={notify} />
                 : path === '/settings'
-                  ? <SettingsPage market={market} setMarket={setMarket} notify={notify} signOut={signOut} />
+                  ? <SettingsPage market={market} setMarket={setMarket} notify={notify} signOut={signOut} identity={identity} />
                   : path === '/store-admin'
-                    ? <StoreAdminPage notify={notify} />
+                    ? canOpenStorePortal
+                      ? identity?.storePortal ?? <StoreAdminPage notify={notify} />
+                      : <StorePortalDenied navigate={navigate} />
                     : path === '/scan'
                       ? <WorkingScannerPage navigate={navigate} notify={notify} />
+                      : path === '/join/store'
+                        ? <JoinPage code={sanitizedJoinToken} joinedIds={joinedIds} setJoinedIds={setJoinedIds} navigate={navigate} notify={notify} />
                       : path.startsWith('/join/')
                         ? <JoinPage code={decodeURIComponent(path.split('/')[2] ?? '')} joinedIds={joinedIds} setJoinedIds={setJoinedIds} navigate={navigate} notify={notify} />
                         : <DashboardPage assets={assets} market={market} setMarket={setMarket} period={period} setPeriod={setPeriod} kind={kind} setKind={setKind} navigate={navigate} />;
@@ -189,14 +225,14 @@ export default function App() {
       <button className="brand" onClick={() => navigate('/dashboard')} aria-label="TCG Harbor dashboard"><span className="brand-mark"><span /></span><span><strong>TCG Harbor</strong><small>Collector community</small></span></button>
       <nav aria-label="Primary navigation">{navItems.map((item) => <button key={item.path} className={activeNavPath === item.path ? 'active' : ''} onClick={() => navigate(item.path)}><Icon name={item.icon} /><span>{item.label}</span>{item.path === '/messages' && <em>2</em>}</button>)}</nav>
       <div className="sidebar-grow" />
-      <button className={`side-utility ${path === '/store-admin' ? 'active' : ''}`} onClick={() => navigate('/store-admin')}><Icon name="shield" /><span>Store admin</span></button>
-      <button className={`profile-card ${path === '/settings' ? 'active' : ''}`} onClick={() => navigate('/settings')}><Avatar initials="MD" size="md" /><span><strong>Mario Delor</strong><small>Collector · Europe</small></span><Icon name="more" size={18} /></button>
-      <p className="unofficial">Unofficial collector/community demo<br />Not affiliated with any publisher or marketplace.</p>
+      {canOpenStorePortal && <button className={`side-utility ${path === '/store-admin' ? 'active' : ''}`} onClick={() => navigate('/store-admin')}><Icon name="shield" /><span>{isPlatformAdministrator ? 'Store approvals' : isApprovedStoreAdministrator ? 'Store admin' : identity ? 'Register store' : 'Store admin'}</span></button>}
+      <button className={`profile-card ${path === '/settings' ? 'active' : ''}`} onClick={() => navigate('/settings')}><Avatar initials={profileInitials} size="md" /><span><strong>{profileName}</strong><small>{accountLabel}</small></span><Icon name="more" size={18} /></button>
+      <p className="unofficial">Unofficial collector/community {identity ? 'platform' : 'demo'}<br />Not affiliated with any publisher or marketplace.</p>
     </aside>
     <div className="app-main">
       <header className="topbar">
         <div><p className="eyebrow mobile-only">TCG Harbor</p><h1>{title[0]}</h1><p>{title[1]}</p></div>
-        <div className="top-actions"><DemoBadge compact /><button className="icon-button notification-button" onClick={() => setNotificationsOpen((open) => !open)} aria-label="Notifications"><Icon name="bell" /><span>2</span></button><Avatar initials="MD" size="sm" /></div>
+        <div className="top-actions">{identity ? <Chip tone="positive"><Icon name="shield" size={13}/>Live account</Chip> : <DemoBadge compact />}<button className="icon-button notification-button" onClick={() => setNotificationsOpen((open) => !open)} aria-label="Notifications"><Icon name="bell" /><span>2</span></button><Avatar initials={profileInitials} size="sm" /></div>
       </header>
       <main id="main-content">{page}</main>
     </div>
@@ -496,22 +532,28 @@ function AddItemsPage({ assets, setAssets, market, navigate, notify }: { assets:
   </div>;
 }
 
-function StoresPage({ joinedIds, navigate, notify }: { joinedIds: Set<string>; navigate: (path: string) => void; notify: (message: string) => void }) {
+function identityBadgeForStores(availableStores: Store[]) {
+  return availableStores.some((store) => store.source === 'registered')
+    ? <Chip tone="positive"><Icon name="shield" size={13}/>Approved directory</Chip>
+    : <DemoBadge compact />;
+}
+
+function StoresPage({ stores: availableStores, joinedIds, navigate, notify }: { stores: Store[]; joinedIds: Set<string>; navigate: (path: string) => void; notify: (message: string) => void }) {
   const [query, setQuery] = useState('');
   const [distance, setDistance] = useState('50');
   const [selected, setSelected] = useState<Store | null>(null);
   const [mobileMode, setMobileMode] = useState<'list' | 'map'>('map');
   const [locating, setLocating] = useState(false);
-  const visible = stores.filter((store) => !query || `${store.name} ${store.city} ${store.country} ${store.address}`.toLowerCase().includes(query.toLowerCase()));
+  const visible = availableStores.filter((store) => !query || `${store.name} ${store.city} ${store.country} ${store.address}`.toLowerCase().includes(query.toLowerCase()));
   const nearMe = () => {
     setLocating(true);
     if (!navigator.geolocation) { setLocating(false); notify('Location is unavailable in this browser'); return; }
-    navigator.geolocation.getCurrentPosition(() => { setLocating(false); setSelected(stores[0]); notify('Showing stores near your approximate location'); }, () => { setLocating(false); notify('Location permission denied — search by city or postcode instead'); }, { timeout: 5000 });
+    navigator.geolocation.getCurrentPosition(() => { setLocating(false); setSelected(availableStores[0] ?? null); notify('Showing stores near your approximate location'); }, () => { setLocating(false); notify('Location permission denied — search by city or postcode instead'); }, { timeout: 5000 });
   };
   return <div className="page stores-page">
     <section className="store-search panel"><label className="search-field"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search city, postcode, address, or store name" aria-label="Search stores" />{query && <button onClick={() => setQuery('')} aria-label="Clear search"><Icon name="close"/></button>}</label><Button variant="secondary" onClick={nearMe} disabled={locating} icon={locating ? 'refresh' : 'locate'}>{locating ? 'Locating…' : 'Near me'}</Button><label className="select-field"><span>Within</span><select value={distance} onChange={(event) => setDistance(event.target.value)}><option value="10">10 km</option><option value="25">25 km</option><option value="50">50 km</option><option value="100">100 km</option><option value="any">Any distance</option></select></label><Button onClick={() => navigate('/scan')} icon="scan">Scan store QR</Button></section>
     <div className="mobile-map-toggle"><Segmented value={mobileMode} onChange={setMobileMode} label="Store result view" options={[{ value: 'list', label: 'List', icon: 'list' }, { value: 'map', label: 'Map', icon: 'map' }]} /></div>
-    <section className="store-layout"><div className={`store-list ${mobileMode === 'map' ? 'mobile-hidden' : ''}`}><header><span><strong>{visible.length} registered stores</strong><small>Dresden · {distance === 'any' ? 'all distances' : `within ${distance} km`}</small></span><DemoBadge compact /></header>{visible.length === 0 ? <EmptyState icon="store" title="No stores found" detail="Try a broader location or remove the distance filter." action={<Button variant="secondary" onClick={() => setQuery('')}>Clear search</Button>} /> : visible.map((store) => <article key={store.id} className={selected?.id === store.id ? 'selected' : ''} onMouseEnter={() => setSelected(store)}><button className="store-card-main" onClick={() => setSelected(store)}><StoreVisual store={store}/><span className="store-info"><span className="store-status"><Chip tone={joinedIds.has(store.id) ? 'positive' : 'neutral'}>{joinedIds.has(store.id) ? 'Joined' : 'Visit to join'}</Chip><small>{store.distance}</small></span><strong>{store.name}</strong><small>{store.address}</small><span className="store-open"><i />{store.hours}</span><span className="store-stats"><em><Icon name="users"/> {store.members} members</em><em><Icon name="trade"/> {store.trades} active trades</em></span></span></button><footer><Button variant="ghost" size="sm" onClick={() => window.open(`https://www.openstreetmap.org/?mlat=${store.latitude}&mlon=${store.longitude}#map=17/${store.latitude}/${store.longitude}`, '_blank')} icon="locate">Directions</Button><Button variant="secondary" size="sm" onClick={() => navigate(`/stores/${store.id}`)}>View store <Icon name="chevron"/></Button></footer></article>)}</div><div className={`map-panel ${mobileMode === 'list' ? 'mobile-hidden' : ''}`}><StoreMap stores={visible} selectedStoreId={selected?.id ?? null} onSelectStore={(store) => setSelected(stores.find((candidate) => candidate.id === store.id) ?? null)} height="100%" ariaLabel="Registered TCG Harbor stores in Dresden" active={mobileMode === 'map'} /></div></section>
+    <section className="store-layout"><div className={`store-list ${mobileMode === 'map' ? 'mobile-hidden' : ''}`}><header><span><strong>{visible.length} registered stores</strong><small>Dresden · {distance === 'any' ? 'all distances' : `within ${distance} km`}</small></span>{identityBadgeForStores(availableStores)}</header>{visible.length === 0 ? <EmptyState icon="store" title="No stores found" detail="Try a broader location or remove the distance filter." action={<Button variant="secondary" onClick={() => setQuery('')}>Clear search</Button>} /> : visible.map((store) => <article key={store.id} className={selected?.id === store.id ? 'selected' : ''} onMouseEnter={() => setSelected(store)}><button className="store-card-main" onClick={() => setSelected(store)}><StoreVisual store={store}/><span className="store-info"><span className="store-status"><Chip tone={joinedIds.has(store.id) ? 'positive' : 'neutral'}>{joinedIds.has(store.id) ? 'Joined' : 'Visit to join'}</Chip><small>{store.distance}</small></span><strong>{store.name}</strong><small>{store.address}</small><span className="store-open"><i />{store.hours}</span><span className="store-stats">{store.source === 'registered' ? <><em><Icon name="shield"/> Approved store</em><em><Icon name="lock"/> Community stats private</em></> : <><em><Icon name="users"/> {store.members} members</em><em><Icon name="trade"/> {store.trades} active trades</em></>}</span></span></button><footer><Button variant="ghost" size="sm" onClick={() => window.open(`https://www.openstreetmap.org/?mlat=${store.latitude}&mlon=${store.longitude}#map=17/${store.latitude}/${store.longitude}`, '_blank')} icon="locate">Directions</Button><Button variant="secondary" size="sm" onClick={() => navigate(`/stores/${store.id}`)}>View store <Icon name="chevron"/></Button></footer></article>)}</div><div className={`map-panel ${mobileMode === 'list' ? 'mobile-hidden' : ''}`}><StoreMap stores={visible} selectedStoreId={selected?.id ?? null} onSelectStore={(store) => setSelected(availableStores.find((candidate) => candidate.id === store.id) ?? null)} height="100%" ariaLabel="Registered TCG Harbor stores in Dresden" active={mobileMode === 'map'} /></div></section>
     <section className="store-footnote"><Icon name="lock"/><span><strong>Location without exposure</strong><small>Your search and approximate location stay private. We never publish exact collector locations.</small></span></section>
   </div>;
 }
@@ -524,9 +566,29 @@ function HarborMap({ visibleStores, selected, setSelected, navigate }: { visible
   return <div className="harbor-map" role="application" aria-label="Interactive store map"><div className="map-land land-one"/><div className="map-land land-two"/><div className="map-road road-one"/><div className="map-road road-two"/><div className="map-watermark">HARBOR MAP</div>{visibleStores.map((store) => <button key={store.id} className={`map-pin ${selected?.id === store.id ? 'active' : ''}`} style={{ left: `${store.x}%`, top: `${store.y}%` }} onClick={() => setSelected(store)} aria-label={`${store.name}, ${store.city}`}><span><Icon name="store" size={17}/></span></button>)}{selected && <article className="map-popover"><StoreVisual store={selected}/><div><strong>{selected.name}</strong><small>{selected.city} · {selected.distance}</small><span><Icon name="users"/> {selected.members} collectors</span></div><button onClick={() => navigate(`/stores/${selected.id}`)} aria-label={`Open ${selected.name}`}><Icon name="chevron"/></button></article>}<div className="map-controls"><button aria-label="Zoom in">+</button><button aria-label="Zoom out">−</button><button aria-label="Center map"><Icon name="locate" size={16}/></button></div></div>;
 }
 
-function StoreProfilePage({ storeId, joinedIds, navigate }: { storeId: string; joinedIds: Set<string>; navigate: (path: string) => void }) {
-  const store = stores.find((item) => item.id === storeId) ?? stores[0];
+function RegisteredStoreProfilePage({ store, navigate }: { store: Store; navigate: (path: string) => void }) {
+  return <div className="page store-profile-page">
+    <button className="back-link" onClick={() => navigate('/stores')}><Icon name="chevron"/>Back to stores</button>
+    <section className={`store-hero store-${store.accent}`}>
+      <div className="store-hero-art"><StoreVisual store={store}/></div>
+      <div className="store-hero-copy"><div><Chip tone="positive"><Icon name="shield" size={13}/>Approved store</Chip><h2>{store.name}</h2><p>{store.address}</p></div><div className="store-hero-actions"><Button variant="secondary" onClick={() => window.open(`https://www.openstreetmap.org/?mlat=${store.latitude}&mlon=${store.longitude}#map=17/${store.latitude}/${store.longitude}`, '_blank')} icon="locate">Directions</Button><Button onClick={() => navigate('/scan')} icon="scan">Scan at the store</Button></div></div>
+    </section>
+    <section className="store-profile-grid">
+      <div className="store-profile-main">
+        <article className="panel"><div className="panel-header"><div><p className="eyebrow">Verified location</p><h2>Local player community</h2></div><span className="community-seal"><Icon name="users"/></span></div><p className="lead-copy">This store passed the TCG Harbor review workflow. Visit the location and scan its current QR code to unlock its private channels, trade posts, and member directory.</p><div className="locked-preview"><span><Icon name="lock"/></span><div><strong>Community details stay private</strong><p>Member counts, messages, and trades are disclosed only to active store-community members.</p></div></div></article>
+        <article className="panel qr-instructions"><span className="qr-placeholder"><Icon name="qr" size={42}/></span><div><p className="eyebrow">Join in person</p><h2>Scan the code at the counter</h2><ol><li><span>1</span>Visit {store.name}</li><li><span>2</span>Find the current TCG Harbor QR</li><li><span>3</span>Scan and confirm the local community</li></ol><p><Icon name="shield"/>The token is revocable and never contains credentials.</p></div><div><Button variant="secondary" onClick={() => navigate('/scan')} icon="camera">Open scanner</Button></div></article>
+      </div>
+      <aside className="store-facts panel"><h3>Store information</h3><dl><div><dt><Icon name="map"/>Address</dt><dd>{store.address}</dd></div><div><dt><Icon name="clock"/>Opening hours</dt><dd>{store.hours}</dd></div>{(store.email || store.phone) && <div><dt><Icon name="message"/>Contact</dt><dd>{store.email && <a href={`mailto:${store.email}`}>{store.email}</a>}{store.phone && <a href={`tel:${store.phone}`}>{store.phone}</a>}</dd></div>}</dl><p className="demo-address"><Chip tone="positive"><Icon name="shield" size={13}/>Database-approved location</Chip></p></aside>
+    </section>
+  </div>;
+}
+
+function StoreProfilePage({ stores: availableStores, storeId, joinedIds, navigate }: { stores: Store[]; storeId: string; joinedIds: Set<string>; navigate: (path: string) => void }) {
+  const store = availableStores.find((item) => item.id === storeId);
+  if (!store) return <div className="page"><EmptyState icon="store" title="Store not found" detail="This store is unavailable or no longer approved." action={<Button onClick={() => navigate('/stores')}>Back to stores</Button>}/></div>;
   const joined = joinedIds.has(store.id);
+  const registered = store.source === 'registered';
+  if (registered) return <RegisteredStoreProfilePage store={store} navigate={navigate}/>;
   return <div className="page store-profile-page"><button className="back-link" onClick={() => navigate('/stores')}><Icon name="chevron"/>Back to stores</button><section className={`store-hero store-${store.accent}`}><div className="store-hero-art"><StoreVisual store={store}/></div><div className="store-hero-copy"><div><Chip tone={joined ? 'positive' : 'gold'}>{joined ? 'Community member' : 'Physical visit required to join'}</Chip><h2>{store.name}</h2><p>{store.address}</p></div><div className="store-hero-actions"><Button variant="secondary" onClick={() => window.open(`https://www.openstreetmap.org/search?query=${encodeURIComponent(store.address)}`, '_blank')} icon="locate">Directions</Button>{joined ? <Button onClick={() => navigate(`/communities/${store.id}`)} icon="users">Open community</Button> : <Button onClick={() => navigate(`/join/${store.code}`)} icon="scan">Simulate demo scan</Button>}</div></div></section><section className="store-profile-grid"><div className="store-profile-main"><article className="panel"><div className="panel-header"><div><p className="eyebrow">Local community</p><h2>Your table is waiting</h2></div><span className="community-seal"><Icon name="users"/></span></div><p className="lead-copy">A verified community for collectors who play and trade at {store.name}. Scan the physical QR displayed in store to unlock member-only chat, trades, and direct messaging.</p><div className="community-metrics"><div><strong>{store.members}</strong><small>Active members</small></div><div><strong>{store.trades}</strong><small>Open trade posts</small></div><div><strong>4.8</strong><small>Community health</small></div></div><div className="locked-preview"><span><Icon name={joined ? 'check' : 'lock'}/></span><div><strong>{joined ? 'You have verified access' : 'Private community content'}</strong><p>{joined ? 'Chat, trades, and the member directory are available.' : 'Messages and member details are visible only after an in-store QR scan.'}</p></div>{joined && <Button size="sm" onClick={() => navigate(`/communities/${store.id}`)}>Enter community</Button>}</div></article><article className="panel qr-instructions"><span className="qr-placeholder"><Icon name="qr" size={42}/></span><div><p className="eyebrow">Join in person</p><h2>Scan the code at the counter</h2><ol><li><span>1</span>Visit {store.name}</li><li><span>2</span>Find the TCG Harbor QR poster</li><li><span>3</span>Scan, confirm, and meet your local crew</li></ol><p><Icon name="shield"/>The code contains a revocable public join token — never credentials.</p></div><div><Button variant="secondary" onClick={() => navigate('/scan')} icon="camera">Open scanner</Button><button onClick={() => navigate(`/join/${store.code}`)}>Simulate demo scan</button></div></article></div><aside className="store-facts panel"><h3>Store information</h3><dl><div><dt><Icon name="map"/>Address</dt><dd>{store.address}</dd></div><div><dt><Icon name="clock"/>Opening hours</dt><dd><strong>Monday–Thursday</strong><span>12:00–21:00</span><strong>Friday–Saturday</strong><span>10:00–23:00</span><strong>Sunday</strong><span>11:00–18:00</span></dd></div><div><dt><Icon name="message"/>Contact</dt><dd><a href={`mailto:${store.email}`}>{store.email}</a><a href={`tel:${store.phone}`}>{store.phone}</a></dd></div></dl><p className="demo-address"><DemoBadge compact />Illustrative store used for this demo.</p></aside></section></div>;
 }
 
@@ -623,17 +685,20 @@ function MessagesPage({ conversationId, conversations, setConversations, navigat
   return <div className="page messages-page"><section className="dm-privacy"><Icon name="lock"/><span><strong>End-to-end private access policy</strong><small>Only you and the other participant can access this conversation. Store staff cannot read messages.</small></span><Chip tone="positive"><Icon name="shield" size={13}/>Shared community verified</Chip></section><div className={`messages-layout ${conversationId ? 'conversation-open' : ''}`}><aside className="conversation-list panel"><header><div><p className="eyebrow">Inbox</p><h2>Conversations</h2></div><Button variant="ghost" size="icon" aria-label="Start conversation" onClick={() => notify('Open a community member profile to start a verified conversation')}><Icon name="plus"/></Button></header><label className="search-field"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search conversations" /></label><div>{visible.map((conversation, index) => { const last = conversation.messages.at(-1); return <button key={conversation.id} className={active.id === conversation.id && conversationId ? 'active' : ''} onClick={() => navigate(`/messages/${conversation.id}`)}><span className="avatar-presence"><Avatar initials={conversation.initials} tone={index}/><i className={conversation.online ? 'online' : ''}/></span><span><strong>{conversation.user}<small>{last?.time}</small></strong><em>{conversation.community}</em><p>{last?.own ? 'You: ' : ''}{last?.text}</p></span>{conversation.unread > 0 && <b>{conversation.unread}</b>}</button>; })}</div><footer><Icon name="shield"/><span><strong>Server-enforced access</strong><small>A shared active store membership is required.</small></span></footer></aside><section className="conversation panel"><header><button className="mobile-back" onClick={() => navigate('/messages')} aria-label="Back to conversations"><Icon name="chevron"/></button><span className="avatar-presence"><Avatar initials={active.initials}/><i className={active.online ? 'online' : ''}/></span><div><strong>{active.user}</strong><small>{active.online ? 'Online now' : 'Last active yesterday'} · via {active.community}</small></div><div className="conversation-actions"><Button variant="ghost" size="icon" aria-label="Report user" onClick={() => notify(`${active.user} reported for review`)}><Icon name="shield"/></Button><Button variant="ghost" size="icon" aria-label="Conversation options" onClick={() => setBlocked((value) => !value)}><Icon name="more"/></Button></div></header><div className="shared-context"><Icon name="users"/><span>You can message because you both belong to <strong>{active.community}</strong>.</span></div><div className="dm-messages"><div className="chat-date"><span>Today</span></div>{active.messages.map((message, index) => <div className={`chat-message ${message.own ? 'own' : ''}`} key={message.id}>{!message.own && <Avatar initials={message.initials} size="sm" tone={index}/>}<div><p>{message.text}</p><time>{message.time}{message.own && ' · Delivered'}</time></div></div>)}</div>{blocked ? <div className="blocked-composer"><Icon name="lock"/><span><strong>You blocked {active.user}</strong><small>They cannot message you and this composer is disabled.</small></span><Button variant="secondary" size="sm" onClick={() => setBlocked(false)}>Unblock</Button></div> : <form className="message-composer dm-composer" onSubmit={send}><label><span className="sr-only">Private message</span><textarea value={text} onChange={(event) => setText(event.target.value)} placeholder={`Message ${active.user}…`} rows={1} maxLength={1000}/><small>{text.length}/1000</small></label><Button size="icon" disabled={!text.trim()} aria-label="Send private message"><Icon name="send"/></Button></form>}<p className="realtime-note"><span className="live-pulse"/>Private realtime channel connected · visible only to both participants</p></section></div></div>;
 }
 
-function SettingsPage({ market, setMarket, notify, signOut }: { market: Market; setMarket: (market: Market) => void; notify: (message: string) => void; signOut: () => void }) {
+function SettingsPage({ market, setMarket, notify, signOut, identity }: { market: Market; setMarket: (market: Market) => void; notify: (message: string) => void; signOut: () => void; identity?: AppRuntimeIdentity }) {
   const [currency, setCurrency] = useState(currencyFor(market));
   const [preferences, setPreferences] = useState({ dm: true, chat: true, matches: true, status: true, email: false });
   const save = (event: FormEvent) => { event.preventDefault(); notify('Profile and preferences saved'); };
+  const displayName = identity?.displayName || identity?.username || 'Mario Delor';
+  const initials = displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'P';
+  const roleLabel = identity?.roles.includes('platform_administrator') ? 'Platform administrator' : identity?.roles.includes('store_administrator') ? 'Player and store operator' : identity?.accountKind === 'store' ? 'Player and store applicant' : 'Player';
   return <div className="page settings-page"><div className="settings-layout">
     <aside className="settings-nav panel"><button className="active"><Icon name="settings"/>Profile & market</button><button><Icon name="bell"/>Notifications</button><button><Icon name="lock"/>Privacy & safety</button><button><Icon name="shield"/>Account security</button></aside>
     <div className="settings-content">
       <form className="panel settings-card" onSubmit={save}>
-        <div className="panel-header"><div><p className="eyebrow">Collector identity</p><h2>Profile</h2></div><Chip tone="positive"><Icon name="shield" size={13}/>Verified demo account</Chip></div>
-        <div className="profile-editor"><Avatar initials="MD" size="lg"/><div><Button type="button" variant="secondary" size="sm" onClick={() => notify('Avatar upload dialog is ready in the Supabase-backed adapter')} icon="upload">Change avatar</Button><small>JPG or PNG · max 2 MB</small></div></div>
-        <div className="form-grid"><label>Username<input defaultValue="MarioDelor" /></label><label>Email<input type="email" defaultValue="mario@tcgharbor.demo" disabled/><small>Managed by authentication provider</small></label><label>Approximate city or postcode<input defaultValue="Dresden"/><small>Never shown publicly</small></label><label>Role<input value="Collector" disabled/></label></div>
+        <div className="panel-header"><div><p className="eyebrow">Player identity</p><h2>Profile</h2></div><Chip tone="positive"><Icon name="shield" size={13}/>{identity ? 'Authenticated account' : 'Verified demo account'}</Chip></div>
+        <div className="profile-editor"><Avatar initials={initials} size="lg"/><div><Button type="button" variant="secondary" size="sm" onClick={() => notify('Avatar upload will use the account-owned Supabase Storage path')} icon="upload">Change avatar</Button><small>JPG or PNG · max 2 MB</small></div></div>
+        <div className="form-grid"><label>Username<input defaultValue={identity?.username ?? 'MarioDelor'} /></label><label>Email<input type="email" defaultValue={identity?.email ?? 'mario@tcgharbor.demo'} disabled/><small>Managed by authentication provider</small></label><label>Approximate city or postcode<input defaultValue="Dresden"/><small>Never shown publicly</small></label><label>Role<input value={roleLabel} disabled/></label></div>
         <hr/>
         <div className="panel-header"><div><p className="eyebrow">Valuation defaults</p><h2>Market & currency</h2></div><MarketDataBadge compact/></div>
         <div className="preference-options">
@@ -645,9 +710,13 @@ function SettingsPage({ market, setMarket, notify, signOut }: { market: Market; 
       </form>
       <section className="panel settings-card"><div className="panel-header"><div><p className="eyebrow">Stay in the loop</p><h2>In-app notifications</h2></div></div><div className="toggle-list"><Toggle label="Private messages" detail="When another verified collector messages you" checked={preferences.dm} onChange={(dm) => setPreferences({ ...preferences, dm })}/><Toggle label="Community replies" detail="Replies and mentions in store chat" checked={preferences.chat} onChange={(chat) => setPreferences({ ...preferences, chat })}/><Toggle label="Collection trade matches" detail="Someone is looking for a card you own" checked={preferences.matches} onChange={(matches) => setPreferences({ ...preferences, matches })}/><Toggle label="Trade status changes" detail="When a post moves to discussing, completed, or closed" checked={preferences.status} onChange={(status) => setPreferences({ ...preferences, status })}/><Toggle label="Email digest" detail="Delivery structure ready; no email is sent in demo mode" checked={preferences.email} onChange={(email) => setPreferences({ ...preferences, email })}/></div><Button variant="secondary" onClick={() => notify('Notification preferences saved')}>Save notification preferences</Button></section>
       <section className="panel privacy-card"><span><Icon name="lock"/></span><div><h2>Your collection is private</h2><p>Portfolio value, cost basis, acquisition dates, and notes are restricted to your account. Communities see only trade cards you explicitly publish.</p><div><Chip tone="positive">RLS protected</Chip><Chip tone="positive">Private by default</Chip><Chip tone="neutral">No exact location</Chip></div></div></section>
-      <section className="panel danger-zone"><div><h2>Session</h2><p>Sign out on this device. Your locally persisted demo collection remains available for the next demo sign-in.</p></div><Button variant="danger" onClick={signOut} icon="logout">Sign out</Button></section>
+      <section className="panel danger-zone"><div><h2>Session</h2><p>{identity ? 'Sign out of the authenticated session on this device.' : 'Sign out on this device. Your locally persisted demo collection remains available for the next demo sign-in.'}</p></div><Button variant="danger" onClick={signOut} icon="logout">Sign out</Button></section>
     </div>
   </div></div>;
+}
+
+function StorePortalDenied({ navigate }: { navigate: (path: string) => void }) {
+  return <div className="page join-page"><section className="join-result panel"><span><Icon name="lock" size={34}/></span><p className="eyebrow">Player account</p><h2>Store tools require an approved store</h2><p>Your player features are ready. To operate a store community, create a store account or ask an approved store owner to add you through the protected administration workflow.</p><div><Button variant="secondary" onClick={() => navigate('/dashboard')}>Back to dashboard</Button></div></section></div>;
 }
 
 function StoreAdminPage({ notify }: { notify: (message: string) => void }) {
@@ -697,12 +766,17 @@ function JoinPage({ code, joinedIds, setJoinedIds, navigate, notify }: { code: s
   const store = stores.find((item) => item.code.toUpperCase() === code.toUpperCase());
   const already = store ? joinedIds.has(store.id) : false;
   const revoked = code.toUpperCase().includes('REVOKED') || code.toUpperCase().includes('EXPIRED');
+  const clearIntent = () => clearStoredStoreJoinIntent(window.sessionStorage, window.localStorage);
+  useEffect(() => {
+    if (!store || revoked || already) clearIntent();
+  }, [already, revoked, store]);
   const join = () => {
     if (!store || revoked || already) return;
+    clearIntent();
     setJoinedIds(new Set([...joinedIds, store.id]));
     notify(`Welcome to ${store.name}`);
     navigate(`/communities/${store.id}`);
   };
-  if (!store || revoked) return <div className="page join-page"><section className="join-result panel error"><span><Icon name="close" size={34}/></span><p className="eyebrow">Code not accepted</p><h2>{revoked ? 'This store code has expired' : 'We could not validate this code'}</h2><p>{revoked ? 'A store administrator revoked or regenerated this physical code.' : 'Check the printed code, scan again, or ask store staff for the current poster.'}</p><div><Button variant="secondary" onClick={() => navigate('/scan')}>Try another code</Button><Button onClick={() => navigate('/stores')}>Find a store</Button></div></section></div>;
-  return <div className="page join-page"><section className={`join-identity store-${store.accent}`}><div className="join-brand"><span className="brand-mark"><span/></span><strong>TCG Harbor</strong></div><StoreVisual store={store}/><Chip tone="positive"><Icon name="shield" size={13}/>Valid store identity</Chip><h2>{store.name}</h2><p>{store.address}</p><div className="join-code"><span>Verified join token</span><strong>{code}</strong></div></section><section className="join-confirm panel">{already ? <><span className="join-success"><Icon name="check" size={30}/></span><p className="eyebrow">Already aboard</p><h2>You’re already a member</h2><p>Duplicate memberships are prevented. Your existing access remains active.</p><Button onClick={() => navigate(`/communities/${store.id}`)} icon="users">Open community</Button></> : <><p className="eyebrow">Confirm membership</p><h2>Join the local collector crew?</h2><p>Membership unlocks private store chat, local trade posts, the member directory, and direct messaging with collectors you meet here.</p><ul><li><Icon name="message"/><span><strong>Community chat</strong><small>Realtime updates from verified local members</small></span></li><li><Icon name="trade"/><span><strong>Card-for-card trades</strong><small>No sales, prices, payments, or auctions</small></span></li><li><Icon name="lock"/><span><strong>Your collection stays private</strong><small>Only cards you deliberately offer become visible</small></span></li></ul><label className="join-checkbox"><input type="checkbox" defaultChecked/><span>I confirm I am physically visiting {store.name} and agree to the community guidelines.</span></label><Button className="full-width" onClick={join} icon="users">Join {store.name}</Button><button className="cancel-link" onClick={() => navigate(`/stores/${store.id}`)}>Not now — view store profile</button></>}</section></div>;
+  if (!store || revoked) return <div className="page join-page"><section className="join-result panel error"><span><Icon name="close" size={34}/></span><p className="eyebrow">Code not accepted</p><h2>{revoked ? 'This store code has expired' : 'We could not validate this code'}</h2><p>{revoked ? 'A store administrator revoked or regenerated this physical code.' : 'Check the printed code, scan again, or ask store staff for the current poster.'}</p><div><Button variant="secondary" onClick={() => { clearIntent(); navigate('/scan'); }}>Try another code</Button><Button onClick={() => { clearIntent(); navigate('/stores'); }}>Find a store</Button></div></section></div>;
+  return <div className="page join-page"><section className={`join-identity store-${store.accent}`}><div className="join-brand"><span className="brand-mark"><span/></span><strong>TCG Harbor</strong></div><StoreVisual store={store}/><Chip tone="positive"><Icon name="shield" size={13}/>Valid store identity</Chip><h2>{store.name}</h2><p>{store.address}</p><div className="join-code"><span>Verified join token</span><strong>{code}</strong></div></section><section className="join-confirm panel">{already ? <><span className="join-success"><Icon name="check" size={30}/></span><p className="eyebrow">Already aboard</p><h2>You’re already a member</h2><p>Duplicate memberships are prevented. Your existing access remains active.</p><Button onClick={() => { clearIntent(); navigate(`/communities/${store.id}`); }} icon="users">Open community</Button></> : <><p className="eyebrow">Confirm membership</p><h2>Join the local collector crew?</h2><p>Membership unlocks private store chat, local trade posts, the member directory, and direct messaging with collectors you meet here.</p><ul><li><Icon name="message"/><span><strong>Community chat</strong><small>Realtime updates from verified local members</small></span></li><li><Icon name="trade"/><span><strong>Card-for-card trades</strong><small>No sales, prices, payments, or auctions</small></span></li><li><Icon name="lock"/><span><strong>Your collection stays private</strong><small>Only cards you deliberately offer become visible</small></span></li></ul><label className="join-checkbox"><input type="checkbox" defaultChecked/><span>I confirm I am physically visiting {store.name} and agree to the community guidelines.</span></label><Button className="full-width" onClick={join} icon="users">Join {store.name}</Button><button className="cancel-link" onClick={() => { clearIntent(); navigate(`/stores/${store.id}`); }}>Not now — view store profile</button></>}</section></div>;
 }

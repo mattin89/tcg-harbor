@@ -1691,12 +1691,18 @@ declare
   v_membership public.community_memberships%rowtype;
   v_store_id uuid;
 begin
-  select m, c.store_id into v_membership, v_store_id
+  select m.* into v_membership
   from public.community_memberships m
   join public.communities c on c.id = m.community_id
   where m.id = p_membership_id
   for update of m;
-  if not found or not (
+  if not found then
+    raise exception 'Store administrator access required';
+  end if;
+  select c.store_id into v_store_id
+  from public.communities c
+  where c.id = v_membership.community_id;
+  if not (
     private.is_store_administrator(v_store_id, auth.uid())
     or private.has_app_role('platform_administrator', auth.uid())
   ) then raise exception 'Store administrator access required'; end if;

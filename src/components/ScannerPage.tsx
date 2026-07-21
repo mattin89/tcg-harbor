@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { stores } from '../data/demo';
 import { Icon } from './Icon';
 import { Button, Chip, DemoBadge } from './ui';
+import { persistStoreJoinSessionIntent, storeJoinTokenFromPayload, storeJoinUrl } from '../production/storeJoinRoute';
 
 interface ScannerPageProps {
   navigate: (path: string) => void;
@@ -9,14 +10,17 @@ interface ScannerPageProps {
 }
 
 function codeFromPayload(payload: string): string {
-  const value = payload.trim();
-  try {
-    const url = new URL(value, window.location.origin);
-    const match = url.pathname.match(/\/join\/([^/?#]+)/i);
-    return match ? decodeURIComponent(match[1]) : value;
-  } catch {
-    return value;
+  return storeJoinTokenFromPayload(payload, window.location.origin) ?? payload.trim();
+}
+
+function navigateToJoin(code: string, navigate: (path: string) => void) {
+  if (/^th[qj]_/i.test(code)) {
+    if (persistStoreJoinSessionIntent(code, window.sessionStorage)) navigate('/join/store');
+    else window.history.pushState({}, '', storeJoinUrl(window.location.origin, code));
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    return;
   }
+  navigate(`/join/${encodeURIComponent(code)}`);
 }
 
 export function ScannerPage({ navigate, notify }: ScannerPageProps) {
@@ -34,7 +38,7 @@ export function ScannerPage({ navigate, notify }: ScannerPageProps) {
     const code = codeFromPayload(payload);
     scannerControlsRef.current?.stop();
     notify('Store QR detected — validating its revocable join token');
-    navigate(`/join/${encodeURIComponent(code)}`);
+    navigateToJoin(code, navigate);
   };
 
   const startCamera = async () => {
@@ -81,7 +85,7 @@ export function ScannerPage({ navigate, notify }: ScannerPageProps) {
 
   const submitManual = (event: FormEvent) => {
     event.preventDefault();
-    navigate(`/join/${encodeURIComponent(manual.trim().toUpperCase())}`);
+    navigateToJoin(codeFromPayload(manual), navigate);
   };
 
   return <div className="page scanner-page">
@@ -103,7 +107,7 @@ export function ScannerPage({ navigate, notify }: ScannerPageProps) {
         <section className="panel">
           <span className="fallback-icon"><Icon name="upload" /></span><div><h3>Upload a QR image</h3><p>Choose a photo or screenshot of the in-store poster.</p></div>
           <label className="upload-button"><input type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) void decodeUpload(file); }} />{uploaded ? 'Image loaded' : 'Choose image'}</label>
-          {uploadResult && <div className="upload-result"><Icon name="check" /><span><strong>{uploaded}</strong><small>Code detected: {uploadResult}</small></span><Button size="sm" onClick={() => navigate(`/join/${encodeURIComponent(uploadResult)}`)}>Continue</Button></div>}
+          {uploadResult && <div className="upload-result"><Icon name="check" /><span><strong>{uploaded}</strong><small>Code detected: {uploadResult}</small></span><Button size="sm" onClick={() => navigateToJoin(uploadResult, navigate)}>Continue</Button></div>}
           {uploadError && <div className="upload-result upload-failed"><Icon name="info" /><span><strong>Could not decode image</strong><small>{uploadError}</small></span></div>}
         </section>
         <section className="panel">

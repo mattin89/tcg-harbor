@@ -145,6 +145,7 @@ export interface Store {
   phone: string;
   email: string;
   accent: string;
+  source?: 'demo' | 'registered';
 }
 
 export interface CommunityMessage {

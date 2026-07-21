@@ -1,6 +1,6 @@
 import type { SVGProps } from 'react';
 
-type IconName = 'dashboard' | 'collection' | 'plus' | 'store' | 'users' | 'message' | 'settings' | 'search' | 'bell' | 'chevron' | 'arrow-up' | 'arrow-down' | 'cards' | 'box' | 'chart' | 'clock' | 'grid' | 'list' | 'filter' | 'close' | 'edit' | 'trash' | 'map' | 'locate' | 'scan' | 'qr' | 'send' | 'trade' | 'check' | 'more' | 'logout' | 'shield' | 'camera' | 'upload' | 'lock' | 'sparkle' | 'menu' | 'download' | 'refresh' | 'info';
+type IconName = 'dashboard' | 'collection' | 'plus' | 'store' | 'users' | 'message' | 'settings' | 'search' | 'bell' | 'chevron' | 'arrow-up' | 'arrow-down' | 'cards' | 'box' | 'chart' | 'clock' | 'grid' | 'list' | 'filter' | 'close' | 'edit' | 'trash' | 'map' | 'locate' | 'scan' | 'qr' | 'send' | 'trade' | 'check' | 'more' | 'logout' | 'shield' | 'camera' | 'upload' | 'lock' | 'sparkle' | 'menu' | 'download' | 'copy' | 'refresh' | 'info';
 
 const paths: Record<IconName, React.ReactNode> = {
   dashboard: <><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="4" rx="2"/><rect x="14" y="11" width="7" height="10" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/></>,
@@ -41,6 +41,7 @@ const paths: Record<IconName, React.ReactNode> = {
   sparkle: <><path d="m12 3 1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2L12 3Z"/><path d="m19 14 .7 2.3L22 17l-2.3.7L19 20l-.7-2.3L16 17l2.3-.7L19 14Z"/></>,
   menu: <path d="M4 6h16M4 12h16M4 18h16"/>,
   download: <><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 21h16"/></>,
+  copy: <><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></>,
   refresh: <><path d="M20 11a8 8 0 1 0-2 5.3"/><path d="M20 4v7h-7"/></>,
   info: <><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></>,
 };

@@ -15,9 +15,14 @@ import "./production-access.css";
 
 export interface ProductionAccessGateProps {
   children: ReactNode;
+  renderGuest?: (context: ProductionGuestRenderContextV4) => ReactNode;
   renderPlayer?: (snapshot: ProductionAccessSnapshot) => ReactNode;
   renderStoreWorkspace?: (snapshot: ProductionAccessSnapshot) => ReactNode;
   renderPlatformApprovals?: (snapshot: ProductionAccessSnapshot) => ReactNode;
+}
+
+export interface ProductionGuestRenderContextV4 {
+  requestAuthentication(): void;
 }
 
 /** Self-contained gate for a root-level integration. */
@@ -26,9 +31,10 @@ export function ProductionAccessGate(props: ProductionAccessGateProps) {
 }
 
 /** Use inside an existing ProductionAccessProvider when App also needs the context hook. */
-export function ProductionAccessBoundary({ children, renderPlayer, renderStoreWorkspace, renderPlatformApprovals }: ProductionAccessGateProps) {
+export function ProductionAccessBoundary({ children, renderGuest, renderPlayer, renderStoreWorkspace, renderPlatformApprovals }: ProductionAccessGateProps) {
   const access = useProductionAccessContext();
   const [area, setArea] = useState<PortalAreaV2>("player");
+  const [authRequested, setAuthRequested] = useState(false);
   const [storeJoinIntent, setStoreJoinIntent] = useState(() => typeof window === "undefined" || !access.configured ? null : captureStoreJoinIntentFromBrowser());
   const [pathname, setPathname] = useState(() => typeof window === "undefined" ? "/" : window.location.pathname);
   const snapshot = access.snapshot;
@@ -69,6 +75,10 @@ export function ProductionAccessBoundary({ children, renderPlayer, renderStoreWo
     setArea(preferredArea);
   }, [preferredArea, snapshot?.profile.id]);
 
+  useEffect(() => {
+    if (snapshot) setAuthRequested(false);
+  }, [snapshot]);
+
   if (!access.configured || access.phase === "unconfigured") {
     return (
       <main className="production-loading-page">
@@ -104,15 +114,30 @@ export function ProductionAccessBoundary({ children, renderPlayer, renderStoreWo
     );
   }
 
+  if (access.passwordRecovery) {
+    return <ProductionAuthPanel access={access} />;
+  }
+
   if (onCanonicalJoinRoute && !storeJoinToken) {
     return <ProductionStoreJoinPage access={access} rawToken={null} onClearStoredIntent={clearJoinStorage} />;
   }
 
   if (access.phase === "signed-out" || !snapshot) {
+    if (!storeJoinToken && renderGuest && !authRequested) {
+      return <>{renderGuest({ requestAuthentication: () => {
+        access.clearError();
+        setAuthRequested(true);
+      } })}</>;
+    }
+
     return <ProductionAuthPanel
       access={access}
       pendingStoreJoin={Boolean(storeJoinToken)}
       onCancelPendingStoreJoin={cancelJoin}
+      onBrowseAsGuest={!storeJoinToken && renderGuest ? () => {
+        access.clearError();
+        setAuthRequested(false);
+      } : undefined}
       onEmailConfirmationHandoff={() => storeJoinToken
         ? persistStoreJoinEmailHandoff(storeJoinToken, window.localStorage)
         : false}

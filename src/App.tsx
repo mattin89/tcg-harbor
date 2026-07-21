@@ -13,6 +13,7 @@ import { resolvePrivateNoteForAddV2 } from './domain/collectionDraftV2';
 import { resolvePortfolioValuationV2 } from './domain/portfolioValuationV2';
 import { resolveActiveNavPathV2 } from './domain/navigationV2';
 import { resolveAccountBootstrapSeedsV2 } from './domain/accountBootstrapV2';
+import { resolveViewerPathV4, viewerMutationDecisionV4 } from './domain/guestAccessV4';
 import { useProductionCollectionV2, type ProductionCollectionRuntimeV2 } from './services/supabase/useProductionCollectionV2';
 import { useProductionDirectMessagesV2, type ProductionDirectMessagesRuntimeV2 } from './services/supabase/useProductionDirectMessagesV2';
 import type { ProductionDirectConversationV2 } from './services/supabase/directMessageRepositoryV2';
@@ -56,8 +57,17 @@ export interface AppRuntimeIdentity {
   storePortal?: ReactNode;
 }
 
+export interface AppGuestAccessV4 {
+  registeredStores: Store[];
+  storesLoading: boolean;
+  storesError: string | null;
+  storesRefresh(): Promise<void>;
+  onRequestAuthentication: () => void;
+}
+
 interface AppProps {
   identity?: AppRuntimeIdentity;
+  guest?: AppGuestAccessV4;
 }
 
 function marketSourceLabel(market: Market): string {
@@ -129,6 +139,11 @@ const navItems = [
   { path: '/messages', label: 'Messages', icon: 'message' as const },
 ];
 
+const guestNavItems = [
+  { path: '/cards', label: 'Cards', icon: 'cards' as const },
+  { path: '/stores', label: 'Stores', icon: 'store' as const },
+];
+
 function safeAssets(): DemoAsset[] {
   try {
     const saved = localStorage.getItem('tcg-harbor-assets-source-backed-v5');
@@ -168,26 +183,35 @@ function usePath() {
   return { path, navigate };
 }
 
-export default function App({ identity }: AppProps = {}) {
-  const { path, navigate } = usePath();
+export default function App({ identity, guest }: AppProps = {}) {
+  const { path: requestedPath, navigate: navigateToPath } = usePath();
+  const isGuest = Boolean(guest);
+  const path = resolveViewerPathV4(requestedPath, isGuest ? 'guest' : 'authenticated');
+  const navigate = (next: string) => navigateToPath(isGuest ? resolveViewerPathV4(next, 'guest') : next);
+
+  useEffect(() => {
+    if (!isGuest || requestedPath === path) return;
+    window.history.replaceState({}, '', path);
+  }, [isGuest, path, requestedPath]);
+
   const sanitizedJoinToken = path === '/join/store' ? peekStoreJoinIntent(window.sessionStorage)?.token ?? '' : '';
-  const storeDirectory = identity?.registeredStores ?? stores;
-  const [accountSeeds] = useState(() => resolveAccountBootstrapSeedsV2(identity, {
+  const storeDirectory = guest?.registeredStores ?? identity?.registeredStores ?? stores;
+  const [accountSeeds] = useState(() => resolveAccountBootstrapSeedsV2(isGuest ? { userId: 'guest-v4', accountKind: 'player' } : identity, {
     communityMessages: initialCommunityMessages,
     tradePosts: initialTradePosts,
     conversations: initialConversations,
     notifications,
     recentActivity,
   }));
-  const [demoAuthenticated, setDemoAuthenticated] = useState(() => localStorage.getItem('tcg-harbor-session') === 'signed-in');
-  const [demoAssets, setDemoAssets] = useState<DemoAsset[]>(() => identity ? [] : safeAssets());
+  const [demoAuthenticated, setDemoAuthenticated] = useState(() => identity || isGuest ? false : localStorage.getItem('tcg-harbor-session') === 'signed-in');
+  const [demoAssets, setDemoAssets] = useState<DemoAsset[]>(() => identity || isGuest ? [] : safeAssets());
   const productionCollection = useProductionCollectionV2(Boolean(identity), identity?.userId);
   const productionDirectMessages = useProductionDirectMessagesV2(Boolean(identity), identity?.userId);
-  const assets = identity ? productionCollection.assets : demoAssets;
+  const assets = identity ? productionCollection.assets : isGuest ? [] : demoAssets;
   const [market, setMarket] = useState<Market>('cardmarket');
   const [period, setPeriod] = useState<Period>('1M');
   const [kind, setKind] = useState<AssetKind | 'all'>('all');
-  const [joinedIds, setJoinedIds] = useState(() => new Set(storeDirectory.filter((store) => store.joined).map((store) => store.id)));
+  const [joinedIds, setJoinedIds] = useState(() => new Set(isGuest ? [] : storeDirectory.filter((store) => store.joined).map((store) => store.id)));
   const [communityMessages, setCommunityMessages] = useState<Record<string, CommunityMessage[]>>(accountSeeds.communityMessages);
   const [tradePosts, setTradePosts] = useState<TradePost[]>(accountSeeds.tradePosts);
   const [demoConversations, setDemoConversations] = useState<Conversation[]>(accountSeeds.conversations);
@@ -195,14 +219,14 @@ export default function App({ identity }: AppProps = {}) {
     () => directConversationsToViewV2(productionDirectMessages.conversations),
     [productionDirectMessages.conversations],
   );
-  const conversations = identity ? productionConversations : demoConversations;
-  const setConversations = identity ? () => undefined : setDemoConversations;
+  const conversations = identity ? productionConversations : isGuest ? [] : demoConversations;
+  const setConversations = identity || isGuest ? () => undefined : setDemoConversations;
   const [toast, setToast] = useState('');
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   useEffect(() => {
-    if (!identity) localStorage.setItem('tcg-harbor-assets-source-backed-v5', JSON.stringify(demoAssets));
-  }, [demoAssets, identity]);
+    if (!identity && !isGuest) localStorage.setItem('tcg-harbor-assets-source-backed-v5', JSON.stringify(demoAssets));
+  }, [demoAssets, identity, isGuest]);
   useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(''), 3500);
@@ -210,7 +234,7 @@ export default function App({ identity }: AppProps = {}) {
   }, [toast]);
 
   const notify = (message: string) => setToast(message);
-  const authenticated = Boolean(identity) || demoAuthenticated;
+  const authenticated = Boolean(identity) || isGuest || demoAuthenticated;
   const profileName = identity?.displayName || identity?.username || 'Player';
   const profileInitials = profileName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'P';
   const unreadMessageCount = conversations.reduce((sum, conversation) => sum + conversation.unread, 0);
@@ -220,9 +244,13 @@ export default function App({ identity }: AppProps = {}) {
   // Production store/approval navigation is owned by ProductionAccessGate.
   // The embedded route remains available only to the local demo or to a future
   // caller that deliberately supplies a production store portal node.
-  const canOpenStorePortal = !identity || Boolean(identity.storePortal);
+  const canOpenStorePortal = !isGuest && (!identity || Boolean(identity.storePortal));
   const accountLabel = isPlatformAdministrator ? 'Platform administrator' : isApprovedStoreAdministrator ? 'Player · Store operator' : identity?.accountKind === 'store' ? 'Player · Store applicant' : 'Player · Europe';
   const signOut = () => {
+    if (isGuest) {
+      guest?.onRequestAuthentication();
+      return;
+    }
     if (identity) {
       void identity.onSignOut();
       return;
@@ -232,6 +260,10 @@ export default function App({ identity }: AppProps = {}) {
     navigate('/signin');
   };
   const signIn = () => {
+    if (isGuest) {
+      guest?.onRequestAuthentication();
+      return;
+    }
     localStorage.setItem('tcg-harbor-session', 'demo');
     setDemoAuthenticated(true);
     const pending = sessionStorage.getItem('tcg-harbor-pending-join');
@@ -244,8 +276,10 @@ export default function App({ identity }: AppProps = {}) {
     return <AuthPage onSignIn={signIn} />;
   }
 
-  const activeNavPath = resolveActiveNavPathV2(path, navItems.map((item) => item.path), '/dashboard');
-  const title = path.startsWith('/collection/add') ? ['Add to collection', 'Search the catalog or add a sealed product']
+  const visibleNavItems = isGuest ? guestNavItems : navItems;
+  const activeNavPath = resolveActiveNavPathV2(path, visibleNavItems.map((item) => item.path), isGuest ? '/cards' : '/dashboard');
+  const title = path === '/cards' ? ['Browse the card catalog', 'Explore every sourced printing and current market reference without an account']
+    : path.startsWith('/collection/add') ? ['Add to collection', 'Search the catalog or add a sealed product']
     : path.startsWith('/collection') ? ['Your collection', 'Private by default · only you can see portfolio details']
     : path === '/market-comparison' ? ['Market comparison', 'Find the largest exact-printing price ratios across Cardmarket and TCGplayer']
     : path.startsWith('/stores/') ? ['Store profile', 'Discover the community behind your local game store']
@@ -259,16 +293,20 @@ export default function App({ identity }: AppProps = {}) {
     : path.startsWith('/join/') ? ['Join community', 'Confirm the store you are visiting']
     : ['Portfolio overview', `Welcome back, ${profileName} — your collection moved today`];
 
-  const page = path.startsWith('/collection/add')
+  const page = path === '/cards'
+    ? <AddItemsPage key={`cards:${identity?.userId ?? (isGuest ? 'guest-v4' : 'demo')}`} assets={assets} setAssets={setDemoAssets} productionCollection={identity ? productionCollection : undefined} market={market} navigate={navigate} notify={notify} browseOnly={isGuest} onRequestAuthentication={guest?.onRequestAuthentication} />
+    : path.startsWith('/collection/add')
     ? <AddItemsPage key={`add-items:${identity?.userId ?? 'demo'}`} assets={assets} setAssets={setDemoAssets} productionCollection={identity ? productionCollection : undefined} market={market} navigate={navigate} notify={notify} />
     : path === '/collection'
       ? <CollectionPage key={`collection:${identity?.userId ?? 'demo'}`} assets={assets} setAssets={setDemoAssets} productionCollection={identity ? productionCollection : undefined} market={market} navigate={navigate} notify={notify} />
       : path === '/market-comparison'
         ? <MarketComparisonPage />
       : path === '/stores'
-        ? <StoresPage stores={storeDirectory} joinedIds={joinedIds} navigate={navigate} notify={notify} />
+        ? <StoresPage stores={storeDirectory} joinedIds={joinedIds} navigate={navigate} browseOnly={isGuest} onRequestAuthentication={guest?.onRequestAuthentication} />
         : path.startsWith('/stores/')
-          ? <StoreProfilePage stores={storeDirectory} storeId={path.split('/')[2]} joinedIds={joinedIds} navigate={navigate} />
+          ? isGuest && guest?.storesLoading
+            ? <div className="page" role="status" aria-live="polite"><EmptyState icon="refresh" title="Loading store" detail="Retrieving this approved store from the public directory…" /></div>
+            : <StoreProfilePage stores={storeDirectory} storeId={path.split('/')[2]} joinedIds={joinedIds} navigate={navigate} browseOnly={isGuest} onRequestAuthentication={guest?.onRequestAuthentication} />
           : path === '/communities'
             ? <CommunitiesPage joinedIds={joinedIds} navigate={navigate} />
             : path.startsWith('/communities/')
@@ -289,19 +327,21 @@ export default function App({ identity }: AppProps = {}) {
                         ? <JoinPage code={decodeURIComponent(path.split('/')[2] ?? '')} joinedIds={joinedIds} setJoinedIds={setJoinedIds} navigate={navigate} notify={notify} />
                         : <DashboardPage assets={assets} dailySnapshots={identity ? productionCollection.dailySnapshots : []} activity={accountSeeds.recentActivity} market={market} setMarket={setMarket} period={period} setPeriod={setPeriod} kind={kind} setKind={setKind} navigate={navigate} />;
 
-  return <div className="app-shell">
+  return <div className={`app-shell${isGuest ? ' guest-shell' : ''}`}>
     <aside className="sidebar">
-      <button className="brand" onClick={() => navigate('/dashboard')} aria-label="TCG Harbor dashboard"><span className="brand-mark"><span /></span><span><strong>TCG Harbor</strong><small>Collector community</small></span></button>
-      <nav aria-label="Primary navigation">{navItems.map((item) => <button key={item.path} className={activeNavPath === item.path ? 'active' : ''} onClick={() => navigate(item.path)}><Icon name={item.icon} /><span>{item.label}</span>{item.path === '/messages' && unreadMessageCount > 0 && <em>{unreadMessageCount}</em>}</button>)}</nav>
+      <button className="brand" onClick={() => navigate(isGuest ? '/cards' : '/dashboard')} aria-label={isGuest ? 'TCG Harbor card catalog' : 'TCG Harbor dashboard'}><span className="brand-mark"><span /></span><span><strong>TCG Harbor</strong><small>Collector community</small></span></button>
+      <nav aria-label="Primary navigation">{visibleNavItems.map((item) => <button key={item.path} className={activeNavPath === item.path ? 'active' : ''} aria-current={activeNavPath === item.path ? 'page' : undefined} onClick={() => navigate(item.path)}><Icon name={item.icon} /><span>{item.label}</span>{item.path === '/messages' && unreadMessageCount > 0 && <em>{unreadMessageCount}</em>}</button>)}</nav>
       <div className="sidebar-grow" />
-      {canOpenStorePortal && <button className={`side-utility ${path === '/store-admin' ? 'active' : ''}`} onClick={() => navigate('/store-admin')}><Icon name="shield" /><span>{isPlatformAdministrator ? 'Store approvals' : isApprovedStoreAdministrator ? 'Store admin' : identity ? 'Register store' : 'Store admin'}</span></button>}
-      <button className={`profile-card ${path === '/settings' ? 'active' : ''}`} onClick={() => navigate('/settings')}><Avatar initials={profileInitials} size="md" /><span><strong>{profileName}</strong><small>{accountLabel}</small></span><Icon name="more" size={18} /></button>
-      <p className="unofficial">Unofficial collector/community {identity ? 'platform' : 'demo'}<br />Not affiliated with any publisher or marketplace.</p>
+      {isGuest ? <section className="guest-auth-card"><Icon name="lock"/><div><strong>Browsing as a guest</strong><small>Sign in to save cards or join a store community.</small></div><Button type="button" size="sm" onClick={guest?.onRequestAuthentication}>Sign in / Create account</Button></section> : <>
+        {canOpenStorePortal && <button className={`side-utility ${path === '/store-admin' ? 'active' : ''}`} aria-current={path === '/store-admin' ? 'page' : undefined} onClick={() => navigate('/store-admin')}><Icon name="shield" /><span>{isPlatformAdministrator ? 'Store approvals' : isApprovedStoreAdministrator ? 'Store admin' : identity ? 'Register store' : 'Store admin'}</span></button>}
+        <button className={`profile-card ${path === '/settings' ? 'active' : ''}`} aria-current={path === '/settings' ? 'page' : undefined} onClick={() => navigate('/settings')}><Avatar initials={profileInitials} size="md" /><span><strong>{profileName}</strong><small>{accountLabel}</small></span><Icon name="more" size={18} /></button>
+      </>}
+      <p className="unofficial">Unofficial collector/community {isGuest ? 'public preview' : identity ? 'platform' : 'demo'}<br />Not affiliated with any publisher or marketplace.</p>
     </aside>
     <div className="app-main">
       <header className="topbar">
         <div><p className="eyebrow mobile-only">TCG Harbor</p><h1>{title[0]}</h1><p>{title[1]}</p></div>
-        <div className="top-actions">{!identity && <DemoBadge compact />}<button className="icon-button notification-button" onClick={() => setNotificationsOpen((open) => !open)} aria-label="Notifications"><Icon name="bell" />{unreadNotificationCount > 0 && <span>{unreadNotificationCount}</span>}</button><AccountMenuButton initials={profileInitials} active={path === '/settings'} onOpen={() => navigate('/settings')} /></div>
+        <div className="top-actions">{isGuest ? <div className="guest-top-actions"><Chip tone="neutral">Guest · browse only</Chip><Button type="button" size="sm" onClick={guest?.onRequestAuthentication}>Sign in / Create account</Button></div> : <>{!identity && <DemoBadge compact />}<button className="icon-button notification-button" onClick={() => setNotificationsOpen((open) => !open)} aria-label="Notifications"><Icon name="bell" />{unreadNotificationCount > 0 && <span>{unreadNotificationCount}</span>}</button><AccountMenuButton initials={profileInitials} active={path === '/settings'} onOpen={() => navigate('/settings')} /></>}</div>
       </header>
       <main id="main-content">
         {identity && (productionCollection.loading || productionCollection.error) && <div className={`collection-sync-banner ${productionCollection.error ? 'is-error' : ''}`} role={productionCollection.error ? 'alert' : 'status'}>
@@ -309,11 +349,16 @@ export default function App({ identity }: AppProps = {}) {
           <span><strong>{productionCollection.error ? 'Collection sync needs attention' : 'Loading your private collection'}</strong><small>{productionCollection.error ?? 'Retrieving account-owned holdings and valuation history…'}</small></span>
           {productionCollection.error && <Button type="button" variant="ghost" size="sm" onClick={() => void productionCollection.refresh()}>Try again</Button>}
         </div>}
+        {isGuest && path.startsWith('/stores') && (guest?.storesLoading || guest?.storesError) && <div className={`guest-access-banner ${guest.storesError ? 'is-error' : ''}`} role={guest.storesError ? 'alert' : 'status'}>
+          <Icon name={guest.storesError ? 'info' : 'refresh'} size={16}/>
+          <span><strong>{guest.storesError ? 'The public store directory is unavailable' : 'Loading approved stores'}</strong><small>{guest.storesError ?? 'Retrieving public store locations…'}</small></span>
+          {guest.storesError && <Button type="button" variant="ghost" size="sm" onClick={() => void guest.storesRefresh()}>Try again</Button>}
+        </div>}
         {page}
       </main>
     </div>
-    <nav className="bottom-nav" aria-label="Mobile navigation">{navItems.filter((item) => item.path !== '/collection/add').map((item) => <button key={item.path} className={activeNavPath === item.path ? 'active' : ''} onClick={() => navigate(item.path)}><Icon name={item.icon} size={20}/><span>{item.path === '/market-comparison' ? 'Markets' : item.label === 'Communities' ? 'Community' : item.label}</span>{item.path === '/messages' && unreadMessageCount > 0 && <em>{unreadMessageCount}</em>}</button>)}</nav>
-    {notificationsOpen && <div className="notification-panel"><header><div><p className="eyebrow">Activity</p><h2>Notifications</h2></div><Button variant="ghost" size="icon" onClick={() => setNotificationsOpen(false)} aria-label="Close notifications"><Icon name="close" /></Button></header><div className="notification-list">{accountSeeds.notifications.length === 0 ? <div className="notification-empty"><Icon name="bell" size={22}/><span><strong>No notifications yet</strong><small>Account activity will appear here.</small></span></div> : accountSeeds.notifications.map((note) => <button key={note.id} className={note.unread ? 'unread' : ''} onClick={() => { setNotificationsOpen(false); if (note.type === 'message') navigate('/messages/lena'); }}><span className={`notification-icon ${note.type}`}><Icon name={note.type === 'message' ? 'message' : note.type === 'trade' ? 'trade' : note.type === 'community' ? 'users' : 'check'} /></span><span><strong>{note.title}</strong><small>{note.detail}</small><time>{note.time}</time></span></button>)}</div>{accountSeeds.notifications.length > 0 && <footer><Button variant="secondary" onClick={() => notify('All notifications marked as read')}><Icon name="check"/>Mark all read</Button></footer>}</div>}
+    <nav className="bottom-nav" aria-label="Mobile navigation">{visibleNavItems.filter((item) => item.path !== '/collection/add').map((item) => <button key={item.path} className={activeNavPath === item.path ? 'active' : ''} aria-current={activeNavPath === item.path ? 'page' : undefined} onClick={() => navigate(item.path)}><Icon name={item.icon} size={20}/><span>{item.path === '/market-comparison' ? 'Markets' : item.label === 'Communities' ? 'Community' : item.label}</span>{item.path === '/messages' && unreadMessageCount > 0 && <em>{unreadMessageCount}</em>}</button>)}</nav>
+    {!isGuest && notificationsOpen && <div className="notification-panel"><header><div><p className="eyebrow">Activity</p><h2>Notifications</h2></div><Button variant="ghost" size="icon" onClick={() => setNotificationsOpen(false)} aria-label="Close notifications"><Icon name="close" /></Button></header><div className="notification-list">{accountSeeds.notifications.length === 0 ? <div className="notification-empty"><Icon name="bell" size={22}/><span><strong>No notifications yet</strong><small>Account activity will appear here.</small></span></div> : accountSeeds.notifications.map((note) => <button key={note.id} className={note.unread ? 'unread' : ''} onClick={() => { setNotificationsOpen(false); if (note.type === 'message') navigate('/messages/lena'); }}><span className={`notification-icon ${note.type}`}><Icon name={note.type === 'message' ? 'message' : note.type === 'trade' ? 'trade' : note.type === 'community' ? 'users' : 'check'} /></span><span><strong>{note.title}</strong><small>{note.detail}</small><time>{note.time}</time></span></button>)}</div>{accountSeeds.notifications.length > 0 && <footer><Button variant="secondary" onClick={() => notify('All notifications marked as read')}><Icon name="check"/>Mark all read</Button></footer>}</div>}
     {toast && <div className="toast" role="status"><span><Icon name="check" size={16} /></span>{toast}</div>}
   </div>;
 }
@@ -527,7 +572,7 @@ function CollectionPage({ assets, setAssets, productionCollection, market, navig
   </div>;
 }
 
-function AddItemsPage({ assets, setAssets, productionCollection, market, navigate, notify }: { assets: DemoAsset[]; setAssets: (assets: DemoAsset[]) => void; productionCollection?: ProductionCollectionRuntimeV2; market: Market; navigate: (path: string) => void; notify: (message: string) => void }) {
+function AddItemsPage({ assets, setAssets, productionCollection, market, navigate, notify, browseOnly = false, onRequestAuthentication }: { assets: DemoAsset[]; setAssets: (assets: DemoAsset[]) => void; productionCollection?: ProductionCollectionRuntimeV2; market: Market; navigate: (path: string) => void; notify: (message: string) => void; browseOnly?: boolean; onRequestAuthentication?: () => void }) {
   const [tab, setTab] = useState<AssetKind>('card');
   const [query, setQuery] = useState('');
   const [catalogSet, setCatalogSet] = useState('all');
@@ -592,6 +637,10 @@ function AddItemsPage({ assets, setAssets, productionCollection, market, navigat
 
   const reset = () => { setSelected(null); setQuery(''); setQuantity(1); setPurchase(''); setNote(''); setValidation(''); };
   const save = async (merge = false) => {
+    if (browseOnly && viewerMutationDecisionV4('guest', 'save_collection') === 'requires_auth') {
+      onRequestAuthentication?.();
+      return;
+    }
     if (!selected) { setValidation(`Select a ${tab === 'card' ? 'card' : 'sealed product'} first.`); return; }
     if (quantity < 1 || quantity > 999) { setValidation('Quantity must be between 1 and 999.'); return; }
     const existing = assets.find((asset) => (asset.catalogId ?? asset.id) === selected.id && asset.condition === condition && asset.language === selected.language);
@@ -674,8 +723,17 @@ function AddItemsPage({ assets, setAssets, productionCollection, market, navigat
     reset();
     navigate('/collection');
   };
+  const selectedCatalogDetails = selected ? <>
+    <div className="selected-preview"><CardArt asset={selected} size="md"/><div><Chip tone="neutral">{selected.setCode}</Chip><h3>{selected.name}</h3><p>{selected.set}</p><small>{selected.number ?? selected.productType} · {selected.rarity}</small></div></div>
+    {selected.kind === 'card' && <section className="art-picker" aria-labelledby="art-picker-title">
+      <header><span><strong id="art-picker-title">Choose the exact art</strong><small>{availableArts.length} sourced {availableArts.length === 1 ? 'printing' : 'printings'} for {selected.rulesCardId ?? selected.number}</small></span><Chip tone="blue">{selected.language} printing</Chip></header>
+      <div>{availableArts.map((art) => <button type="button" key={art.id} className={selected.id === art.id ? 'selected' : ''} aria-pressed={selected.id === art.id} onClick={() => { setSelected(art); setValidation(''); }}><CardArt asset={art} size="xs"/><span><strong>{art.variant}</strong><small>{art.language} · {art.setCode} · {formatMoney(art.quote.tcgplayer, 'USD')}</small></span>{selected.id === art.id && <i><Icon name="check"/></i>}</button>)}</div>
+    </section>}
+    <div className="reference-pair"><div><span>Cardmarket trend · EUR</span><strong>{formatMoney(selected.quote.cardmarket, 'EUR')}</strong><small><span className="live-pulse"/>Official daily guide · {marketSourceDate('cardmarket')}</small></div><div><span>{assetUsSourceLabel(selected)}</span><strong>{formatMoney(selected.quote.tcgplayer, 'USD')}</strong><small><span className="live-pulse"/>Daily source snapshot · {assetUsSourceDate(selected)}</small></div></div>
+    <p className="reference-note"><Icon name="info"/>Only exact product matches are shown. Source values are product-level market references and are not adjusted by condition; unavailable means no verified price was substituted.</p>
+  </> : null;
   return <div className="page add-page">
-    <section className="add-progress"><div className="active"><span>1</span><strong>Find item</strong></div><i /><div className={selected ? 'active' : ''}><span>2</span><strong>Add details</strong></div><i /><div><span>3</span><strong>Review</strong></div></section>
+    {!browseOnly && <section className="add-progress"><div className="active"><span>1</span><strong>Find item</strong></div><i /><div className={selected ? 'active' : ''}><span>2</span><strong>Add details</strong></div><i /><div><span>3</span><strong>Review</strong></div></section>}
     <div className="add-layout">
       <section className="add-catalog panel">
         <div className="panel-header"><div><p className="eyebrow">One Piece Card Game</p><h2>Search the complete catalog</h2></div><MarketDataBadge compact /></div>
@@ -704,15 +762,12 @@ function AddItemsPage({ assets, setAssets, productionCollection, market, navigat
         </footer>
       </section>
       <section className="add-details panel">
-        <div className="panel-header"><div><p className="eyebrow">Collection details</p><h2>{selected ? selected.name : `Select a ${tab === 'card' ? 'card' : 'product'}`}</h2></div>{selected && <Chip tone="gold">{selected.variant}</Chip>}</div>
-        {!selected ? <EmptyState icon={tab === 'card' ? 'cards' : 'box'} title="Choose a catalog entry" detail="Select an item on the left to choose its exact art and capture today’s market references." /> : <form onSubmit={(event) => { event.preventDefault(); void save(); }}>
-          <div className="selected-preview"><CardArt asset={selected} size="md"/><div><Chip tone="neutral">{selected.setCode}</Chip><h3>{selected.name}</h3><p>{selected.set}</p><small>{selected.number ?? selected.productType} · {selected.rarity}</small></div></div>
-          {selected.kind === 'card' && <section className="art-picker" aria-labelledby="art-picker-title">
-            <header><span><strong id="art-picker-title">Choose the exact art</strong><small>{availableArts.length} sourced {availableArts.length === 1 ? 'printing' : 'printings'} for {selected.rulesCardId ?? selected.number}</small></span><Chip tone="blue">{selected.language} printing</Chip></header>
-            <div>{availableArts.map((art) => <button type="button" key={art.id} className={selected.id === art.id ? 'selected' : ''} aria-pressed={selected.id === art.id} onClick={() => { setSelected(art); setValidation(''); }}><CardArt asset={art} size="xs"/><span><strong>{art.variant}</strong><small>{art.language} · {art.setCode} · {formatMoney(art.quote.tcgplayer, 'USD')}</small></span>{selected.id === art.id && <i><Icon name="check"/></i>}</button>)}</div>
-          </section>}
-          <div className="reference-pair"><div><span>Cardmarket trend · EUR</span><strong>{formatMoney(selected.quote.cardmarket, 'EUR')}</strong><small><span className="live-pulse"/>Official daily guide · {marketSourceDate('cardmarket')}</small></div><div><span>{assetUsSourceLabel(selected)}</span><strong>{formatMoney(selected.quote.tcgplayer, 'USD')}</strong><small><span className="live-pulse"/>Daily source snapshot · {assetUsSourceDate(selected)}</small></div></div>
-          <p className="reference-note"><Icon name="info"/>Only exact product matches are shown. Source values are product-level market references and are not adjusted by condition; unavailable means no verified price was substituted.</p>
+        <div className="panel-header"><div><p className="eyebrow">{browseOnly ? 'Catalog details' : 'Collection details'}</p><h2>{selected ? selected.name : `Select a ${tab === 'card' ? 'card' : 'product'}`}</h2></div>{selected && <Chip tone="gold">{selected.variant}</Chip>}</div>
+        {!selected ? <EmptyState icon={tab === 'card' ? 'cards' : 'box'} title="Choose a catalog entry" detail={browseOnly ? 'Select an item on the left to inspect its exact art, language, and current market references.' : 'Select an item on the left to choose its exact art and capture today’s market references.'} /> : browseOnly ? <div className="guest-card-details">
+          {selectedCatalogDetails}
+          <dl className="detail-facts"><div><dt>{selected.kind === 'card' ? 'Exact printing' : 'Product type'}</dt><dd>{selected.kind === 'card' ? selected.variant : selected.productType}</dd></div><div><dt>Language / region</dt><dd>{selected.language}</dd></div><div><dt>Set</dt><dd>{selected.setCode}</dd></div><div><dt>Card / product number</dt><dd>{selected.number ?? selected.productType}</dd></div></dl>
+        </div> : <form onSubmit={(event) => { event.preventDefault(); void save(); }}>
+          {selectedCatalogDetails}
           <div className="form-grid">
             <label className="read-only-field">{selected.kind === 'card' ? 'Exact printing' : 'Product type'}<output>{selected.kind === 'card' ? selected.variant : selected.productType}</output></label>
             <label className="read-only-field">Language / region<output>{selected.language}</output><small>Fixed by the English-release catalog</small></label>
@@ -727,33 +782,28 @@ function AddItemsPage({ assets, setAssets, productionCollection, market, navigat
         </form>}
       </section>
     </div>
-    <section className="privacy-banner"><span><Icon name="shield"/></span><div><strong>Private by design</strong><p>Purchase price, notes, and complete holdings are never exposed to store communities. Only cards you intentionally offer in a trade post become visible.</p></div><button onClick={() => navigate('/settings')}>Privacy settings <Icon name="chevron"/></button></section>
-    <Modal open={duplicateOpen} onClose={() => setDuplicateOpen(false)} title="You already own this item" eyebrow="Duplicate detected"><div className="duplicate-dialog">{selected && <div><CardArt asset={selected} size="sm"/><span><strong>{selected.name}</strong><small>{condition} · {selected.language}</small></span></div>}<p>An identical collection item already exists. Increasing its quantity will add a new timestamped market-value snapshot for these <strong>{quantity}</strong> copies.</p><div><Button variant="secondary" onClick={() => setDuplicateOpen(false)}>Review details</Button><Button disabled={saving || productionCollection?.mutating} onClick={() => void save(true)}>{saving ? 'Saving…' : 'Increase quantity'}</Button></div></div></Modal>
+    {browseOnly ? <section className="guest-save-gate"><span><Icon name="lock"/></span><div><strong>Browse freely — sign in only when you want to save</strong><p>Guest browsing never creates a collection or stores card activity. An account is required to save a card and track its value over time.</p></div><Button type="button" onClick={onRequestAuthentication}>Sign in / Create account</Button></section> : <section className="privacy-banner"><span><Icon name="shield"/></span><div><strong>Private by design</strong><p>Purchase price, notes, and complete holdings are never exposed to store communities. Only cards you intentionally offer in a trade post become visible.</p></div><button onClick={() => navigate('/settings')}>Privacy settings <Icon name="chevron"/></button></section>}
+    {!browseOnly && <Modal open={duplicateOpen} onClose={() => setDuplicateOpen(false)} title="You already own this item" eyebrow="Duplicate detected"><div className="duplicate-dialog">{selected && <div><CardArt asset={selected} size="sm"/><span><strong>{selected.name}</strong><small>{condition} · {selected.language}</small></span></div>}<p>An identical collection item already exists. Increasing its quantity will add a new timestamped market-value snapshot for these <strong>{quantity}</strong> copies.</p><div><Button variant="secondary" onClick={() => setDuplicateOpen(false)}>Review details</Button><Button disabled={saving || productionCollection?.mutating} onClick={() => void save(true)}>{saving ? 'Saving…' : 'Increase quantity'}</Button></div></div></Modal>}
   </div>;
 }
 
-function identityBadgeForStores(availableStores: Store[]) {
-  return availableStores.some((store) => store.source === 'registered')
+function identityBadgeForStores(availableStores: Store[], browseOnly = false) {
+  return browseOnly
+    ? <Chip tone="positive"><Icon name="shield" size={13}/>Public approved directory</Chip>
+    : availableStores.some((store) => store.source === 'registered')
     ? <Chip tone="positive"><Icon name="shield" size={13}/>Approved directory</Chip>
     : <DemoBadge compact />;
 }
 
-function StoresPage({ stores: availableStores, joinedIds, navigate, notify }: { stores: Store[]; joinedIds: Set<string>; navigate: (path: string) => void; notify: (message: string) => void }) {
+function StoresPage({ stores: availableStores, joinedIds, navigate, browseOnly = false, onRequestAuthentication }: { stores: Store[]; joinedIds: Set<string>; navigate: (path: string) => void; browseOnly?: boolean; onRequestAuthentication?: () => void }) {
   const [query, setQuery] = useState('');
-  const [distance, setDistance] = useState('50');
   const [selected, setSelected] = useState<Store | null>(null);
   const [mobileMode, setMobileMode] = useState<'list' | 'map'>('map');
-  const [locating, setLocating] = useState(false);
   const visible = availableStores.filter((store) => !query || `${store.name} ${store.city} ${store.country} ${store.address}`.toLowerCase().includes(query.toLowerCase()));
-  const nearMe = () => {
-    setLocating(true);
-    if (!navigator.geolocation) { setLocating(false); notify('Location is unavailable in this browser'); return; }
-    navigator.geolocation.getCurrentPosition(() => { setLocating(false); setSelected(availableStores[0] ?? null); notify('Showing stores near your approximate location'); }, () => { setLocating(false); notify('Location permission denied — search by city or postcode instead'); }, { timeout: 5000 });
-  };
   return <div className="page stores-page">
-    <section className="store-search panel"><label className="search-field"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search city, postcode, address, or store name" aria-label="Search stores" />{query && <button onClick={() => setQuery('')} aria-label="Clear search"><Icon name="close"/></button>}</label><Button variant="secondary" onClick={nearMe} disabled={locating} icon={locating ? 'refresh' : 'locate'}>{locating ? 'Locating…' : 'Near me'}</Button><label className="select-field"><span>Within</span><select value={distance} onChange={(event) => setDistance(event.target.value)}><option value="10">10 km</option><option value="25">25 km</option><option value="50">50 km</option><option value="100">100 km</option><option value="any">Any distance</option></select></label><Button onClick={() => navigate('/scan')} icon="scan">Scan store QR</Button></section>
+    <section className="store-search panel"><label className="search-field"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search city, postcode, address, or store name" aria-label="Search stores" />{query && <button onClick={() => setQuery('')} aria-label="Clear search"><Icon name="close"/></button>}</label>{browseOnly ? <Button type="button" onClick={onRequestAuthentication} icon="lock">Sign in to join</Button> : <Button onClick={() => navigate('/scan')} icon="scan">Scan store QR</Button>}</section>
     <div className="mobile-map-toggle"><Segmented value={mobileMode} onChange={setMobileMode} label="Store result view" options={[{ value: 'list', label: 'List', icon: 'list' }, { value: 'map', label: 'Map', icon: 'map' }]} /></div>
-    <section className="store-layout"><div className={`store-list ${mobileMode === 'map' ? 'mobile-hidden' : ''}`}><header><span><strong>{visible.length} registered stores</strong><small>Dresden · {distance === 'any' ? 'all distances' : `within ${distance} km`}</small></span>{identityBadgeForStores(availableStores)}</header>{visible.length === 0 ? <EmptyState icon="store" title="No stores found" detail="Try a broader location or remove the distance filter." action={<Button variant="secondary" onClick={() => setQuery('')}>Clear search</Button>} /> : visible.map((store) => <article key={store.id} className={selected?.id === store.id ? 'selected' : ''} onMouseEnter={() => setSelected(store)}><button className="store-card-main" onClick={() => setSelected(store)}><StoreVisual store={store}/><span className="store-info"><span className="store-status"><Chip tone={joinedIds.has(store.id) ? 'positive' : 'neutral'}>{joinedIds.has(store.id) ? 'Joined' : 'Visit to join'}</Chip><small>{store.distance}</small></span><strong>{store.name}</strong><small>{store.address}</small><span className="store-open"><i />{store.hours}</span><span className="store-stats">{store.source === 'registered' ? <><em><Icon name="shield"/> Approved store</em><em><Icon name="lock"/> Community stats private</em></> : <><em><Icon name="users"/> {store.members} members</em><em><Icon name="trade"/> {store.trades} active trades</em></>}</span></span></button><footer><Button variant="ghost" size="sm" onClick={() => window.open(`https://www.openstreetmap.org/?mlat=${store.latitude}&mlon=${store.longitude}#map=17/${store.latitude}/${store.longitude}`, '_blank')} icon="locate">Directions</Button><Button variant="secondary" size="sm" onClick={() => navigate(`/stores/${store.id}`)}>View store <Icon name="chevron"/></Button></footer></article>)}</div><div className={`map-panel ${mobileMode === 'list' ? 'mobile-hidden' : ''}`}><StoreMap stores={visible} selectedStoreId={selected?.id ?? null} onSelectStore={(store) => setSelected(availableStores.find((candidate) => candidate.id === store.id) ?? null)} height="100%" ariaLabel="Registered TCG Harbor stores in Dresden" active={mobileMode === 'map'} /></div></section>
+    <section className="store-layout"><div className={`store-list ${mobileMode === 'map' ? 'mobile-hidden' : ''}`}><header><span><strong>{visible.length} registered stores</strong><small>Dresden · all approved locations</small></span>{identityBadgeForStores(availableStores, browseOnly)}</header>{visible.length === 0 ? <EmptyState icon="store" title="No stores found" detail="Try another store, city, postcode, or address." action={<Button variant="secondary" onClick={() => setQuery('')}>Clear search</Button>} /> : visible.map((store) => <article key={store.id} className={selected?.id === store.id ? 'selected' : ''} onMouseEnter={() => setSelected(store)}><button className="store-card-main" onClick={() => setSelected(store)}><StoreVisual store={store}/><span className="store-info"><span className="store-status"><Chip tone={browseOnly ? 'neutral' : joinedIds.has(store.id) ? 'positive' : 'neutral'}>{browseOnly ? 'Browse only' : joinedIds.has(store.id) ? 'Joined' : 'Visit to join'}</Chip></span><strong>{store.name}</strong><small>{store.address}</small><span className="store-open"><i />{store.hours}</span><span className="store-stats">{store.source === 'registered' ? <><em><Icon name="shield"/> Approved store</em><em><Icon name="lock"/> Community stats private</em></> : browseOnly ? <><em><Icon name="store"/> Public store profile</em><em><Icon name="lock"/> Community stats private</em></> : <><em><Icon name="users"/> {store.members} members</em><em><Icon name="trade"/> {store.trades} active trades</em></>}</span></span></button><footer><Button variant="ghost" size="sm" onClick={() => window.open(`https://www.openstreetmap.org/?mlat=${store.latitude}&mlon=${store.longitude}#map=17/${store.latitude}/${store.longitude}`, '_blank')} icon="locate">Directions</Button><Button variant="secondary" size="sm" onClick={() => navigate(`/stores/${store.id}`)}>View store <Icon name="chevron"/></Button></footer></article>)}</div><div className={`map-panel ${mobileMode === 'list' ? 'mobile-hidden' : ''}`}><StoreMap stores={visible} selectedStoreId={selected?.id ?? null} onSelectStore={(store) => setSelected(availableStores.find((candidate) => candidate.id === store.id) ?? null)} height="100%" ariaLabel="All approved TCG Harbor stores in Dresden" active={mobileMode === 'map'} /></div></section>
     <section className="store-footnote"><Icon name="lock"/><span><strong>Location without exposure</strong><small>Your search and approximate location stay private. We never publish exact collector locations.</small></span></section>
   </div>;
 }
@@ -763,32 +813,32 @@ function StoreVisual({ store }: { store: Store }) {
 }
 
 function HarborMap({ visibleStores, selected, setSelected, navigate }: { visibleStores: Store[]; selected: Store | null; setSelected: (store: Store) => void; navigate: (path: string) => void }) {
-  return <div className="harbor-map" role="application" aria-label="Interactive store map"><div className="map-land land-one"/><div className="map-land land-two"/><div className="map-road road-one"/><div className="map-road road-two"/><div className="map-watermark">HARBOR MAP</div>{visibleStores.map((store) => <button key={store.id} className={`map-pin ${selected?.id === store.id ? 'active' : ''}`} style={{ left: `${store.x}%`, top: `${store.y}%` }} onClick={() => setSelected(store)} aria-label={`${store.name}, ${store.city}`}><span><Icon name="store" size={17}/></span></button>)}{selected && <article className="map-popover"><StoreVisual store={selected}/><div><strong>{selected.name}</strong><small>{selected.city} · {selected.distance}</small><span><Icon name="users"/> {selected.members} collectors</span></div><button onClick={() => navigate(`/stores/${selected.id}`)} aria-label={`Open ${selected.name}`}><Icon name="chevron"/></button></article>}<div className="map-controls"><button aria-label="Zoom in">+</button><button aria-label="Zoom out">−</button><button aria-label="Center map"><Icon name="locate" size={16}/></button></div></div>;
+  return <div className="harbor-map" role="application" aria-label="Interactive store map"><div className="map-land land-one"/><div className="map-land land-two"/><div className="map-road road-one"/><div className="map-road road-two"/><div className="map-watermark">HARBOR MAP</div>{visibleStores.map((store) => <button key={store.id} className={`map-pin ${selected?.id === store.id ? 'active' : ''}`} style={{ left: `${store.x}%`, top: `${store.y}%` }} onClick={() => setSelected(store)} aria-label={`${store.name}, ${store.city}`}><span><Icon name="store" size={17}/></span></button>)}{selected && <article className="map-popover"><StoreVisual store={selected}/><div><strong>{selected.name}</strong><small>{selected.city}</small><span><Icon name="users"/> {selected.members} collectors</span></div><button onClick={() => navigate(`/stores/${selected.id}`)} aria-label={`Open ${selected.name}`}><Icon name="chevron"/></button></article>}<div className="map-controls"><button aria-label="Zoom in">+</button><button aria-label="Zoom out">−</button><button aria-label="Center map"><Icon name="locate" size={16}/></button></div></div>;
 }
 
-function RegisteredStoreProfilePage({ store, navigate }: { store: Store; navigate: (path: string) => void }) {
+function RegisteredStoreProfilePage({ store, navigate, browseOnly = false, onRequestAuthentication }: { store: Store; navigate: (path: string) => void; browseOnly?: boolean; onRequestAuthentication?: () => void }) {
   return <div className="page store-profile-page">
     <button className="back-link" onClick={() => navigate('/stores')}><Icon name="chevron"/>Back to stores</button>
     <section className={`store-hero store-${store.accent}`}>
       <div className="store-hero-art"><StoreVisual store={store}/></div>
-      <div className="store-hero-copy"><div><Chip tone="positive"><Icon name="shield" size={13}/>Approved store</Chip><h2>{store.name}</h2><p>{store.address}</p></div><div className="store-hero-actions"><Button variant="secondary" onClick={() => window.open(`https://www.openstreetmap.org/?mlat=${store.latitude}&mlon=${store.longitude}#map=17/${store.latitude}/${store.longitude}`, '_blank')} icon="locate">Directions</Button><Button onClick={() => navigate('/scan')} icon="scan">Scan at the store</Button></div></div>
+      <div className="store-hero-copy"><div><Chip tone="positive"><Icon name="shield" size={13}/>Approved store</Chip><h2>{store.name}</h2><p>{store.address}</p></div><div className="store-hero-actions"><Button variant="secondary" onClick={() => window.open(`https://www.openstreetmap.org/?mlat=${store.latitude}&mlon=${store.longitude}#map=17/${store.latitude}/${store.longitude}`, '_blank')} icon="locate">Directions</Button>{browseOnly ? <Button type="button" onClick={onRequestAuthentication} icon="lock">Sign in to join</Button> : <Button onClick={() => navigate('/scan')} icon="scan">Scan at the store</Button>}</div></div>
     </section>
     <section className="store-profile-grid">
       <div className="store-profile-main">
-        <article className="panel"><div className="panel-header"><div><p className="eyebrow">Verified location</p><h2>Local player community</h2></div><span className="community-seal"><Icon name="users"/></span></div><p className="lead-copy">This store passed the TCG Harbor review workflow. Visit the location and scan its current QR code to unlock its private channels, trade posts, and member directory.</p><div className="locked-preview"><span><Icon name="lock"/></span><div><strong>Community details stay private</strong><p>Member counts, messages, and trades are disclosed only to active store-community members.</p></div></div></article>
-        <article className="panel qr-instructions"><span className="qr-placeholder"><Icon name="qr" size={42}/></span><div><p className="eyebrow">Join in person</p><h2>Scan the code at the counter</h2><ol><li><span>1</span>Visit {store.name}</li><li><span>2</span>Find the current TCG Harbor QR</li><li><span>3</span>Scan and confirm the local community</li></ol><p><Icon name="shield"/>The token is revocable and never contains credentials.</p></div><div><Button variant="secondary" onClick={() => navigate('/scan')} icon="camera">Open scanner</Button></div></article>
+        <article className="panel"><div className="panel-header"><div><p className="eyebrow">Verified location</p><h2>Local player community</h2></div><span className="community-seal"><Icon name="users"/></span></div><p className="lead-copy">{browseOnly ? 'This store passed the TCG Harbor review workflow. Guests can view its public location and opening information.' : 'This store passed the TCG Harbor review workflow. Visit the location and scan its current QR code to unlock its private channels, trade posts, and member directory.'}</p><div className="locked-preview"><span><Icon name="lock"/></span><div><strong>Community details stay private</strong><p>Member counts, messages, and trades are disclosed only to active store-community members.</p></div></div></article>
+        {browseOnly ? <article className="panel guest-store-gate"><span><Icon name="lock" size={28}/></span><div><p className="eyebrow">Account required</p><h2>Sign in before joining a store</h2><p>Guest browsing never creates a membership. Sign in or create an account first, then visit the store to use its physical join flow.</p></div><Button type="button" onClick={onRequestAuthentication}>Sign in / Create account</Button></article> : <article className="panel qr-instructions"><span className="qr-placeholder"><Icon name="qr" size={42}/></span><div><p className="eyebrow">Join in person</p><h2>Scan the code at the counter</h2><ol><li><span>1</span>Visit {store.name}</li><li><span>2</span>Find the current TCG Harbor QR</li><li><span>3</span>Scan and confirm the local community</li></ol><p><Icon name="shield"/>The token is revocable and never contains credentials.</p></div><div><Button variant="secondary" onClick={() => navigate('/scan')} icon="camera">Open scanner</Button></div></article>}
       </div>
       <aside className="store-facts panel"><h3>Store information</h3><dl><div><dt><Icon name="map"/>Address</dt><dd>{store.address}</dd></div><div><dt><Icon name="clock"/>Opening hours</dt><dd>{store.hours}</dd></div>{(store.email || store.phone) && <div><dt><Icon name="message"/>Contact</dt><dd>{store.email && <a href={`mailto:${store.email}`}>{store.email}</a>}{store.phone && <a href={`tel:${store.phone}`}>{store.phone}</a>}</dd></div>}</dl><p className="demo-address"><Chip tone="positive"><Icon name="shield" size={13}/>Database-approved location</Chip></p></aside>
     </section>
   </div>;
 }
 
-function StoreProfilePage({ stores: availableStores, storeId, joinedIds, navigate }: { stores: Store[]; storeId: string; joinedIds: Set<string>; navigate: (path: string) => void }) {
+function StoreProfilePage({ stores: availableStores, storeId, joinedIds, navigate, browseOnly = false, onRequestAuthentication }: { stores: Store[]; storeId: string; joinedIds: Set<string>; navigate: (path: string) => void; browseOnly?: boolean; onRequestAuthentication?: () => void }) {
   const store = availableStores.find((item) => item.id === storeId);
   if (!store) return <div className="page"><EmptyState icon="store" title="Store not found" detail="This store is unavailable or no longer approved." action={<Button onClick={() => navigate('/stores')}>Back to stores</Button>}/></div>;
   const joined = joinedIds.has(store.id);
   const registered = store.source === 'registered';
-  if (registered) return <RegisteredStoreProfilePage store={store} navigate={navigate}/>;
+  if (browseOnly || registered) return <RegisteredStoreProfilePage store={store} navigate={navigate} browseOnly={browseOnly} onRequestAuthentication={onRequestAuthentication}/>;
   return <div className="page store-profile-page"><button className="back-link" onClick={() => navigate('/stores')}><Icon name="chevron"/>Back to stores</button><section className={`store-hero store-${store.accent}`}><div className="store-hero-art"><StoreVisual store={store}/></div><div className="store-hero-copy"><div><Chip tone={joined ? 'positive' : 'gold'}>{joined ? 'Community member' : 'Physical visit required to join'}</Chip><h2>{store.name}</h2><p>{store.address}</p></div><div className="store-hero-actions"><Button variant="secondary" onClick={() => window.open(`https://www.openstreetmap.org/search?query=${encodeURIComponent(store.address)}`, '_blank')} icon="locate">Directions</Button>{joined ? <Button onClick={() => navigate(`/communities/${store.id}`)} icon="users">Open community</Button> : <Button onClick={() => navigate(`/join/${store.code}`)} icon="scan">Simulate demo scan</Button>}</div></div></section><section className="store-profile-grid"><div className="store-profile-main"><article className="panel"><div className="panel-header"><div><p className="eyebrow">Local community</p><h2>Your table is waiting</h2></div><span className="community-seal"><Icon name="users"/></span></div><p className="lead-copy">A verified community for collectors who play and trade at {store.name}. Scan the physical QR displayed in store to unlock member-only chat, trades, and direct messaging.</p><div className="community-metrics"><div><strong>{store.members}</strong><small>Active members</small></div><div><strong>{store.trades}</strong><small>Open trade posts</small></div><div><strong>4.8</strong><small>Community health</small></div></div><div className="locked-preview"><span><Icon name={joined ? 'check' : 'lock'}/></span><div><strong>{joined ? 'You have verified access' : 'Private community content'}</strong><p>{joined ? 'Chat, trades, and the member directory are available.' : 'Messages and member details are visible only after an in-store QR scan.'}</p></div>{joined && <Button size="sm" onClick={() => navigate(`/communities/${store.id}`)}>Enter community</Button>}</div></article><article className="panel qr-instructions"><span className="qr-placeholder"><Icon name="qr" size={42}/></span><div><p className="eyebrow">Join in person</p><h2>Scan the code at the counter</h2><ol><li><span>1</span>Visit {store.name}</li><li><span>2</span>Find the TCG Harbor QR poster</li><li><span>3</span>Scan, confirm, and meet your local crew</li></ol><p><Icon name="shield"/>The code contains a revocable public join token — never credentials.</p></div><div><Button variant="secondary" onClick={() => navigate('/scan')} icon="camera">Open scanner</Button><button onClick={() => navigate(`/join/${store.code}`)}>Simulate demo scan</button></div></article></div><aside className="store-facts panel"><h3>Store information</h3><dl><div><dt><Icon name="map"/>Address</dt><dd>{store.address}</dd></div><div><dt><Icon name="clock"/>Opening hours</dt><dd><strong>Monday–Thursday</strong><span>12:00–21:00</span><strong>Friday–Saturday</strong><span>10:00–23:00</span><strong>Sunday</strong><span>11:00–18:00</span></dd></div><div><dt><Icon name="message"/>Contact</dt><dd><a href={`mailto:${store.email}`}>{store.email}</a><a href={`tel:${store.phone}`}>{store.phone}</a></dd></div></dl><p className="demo-address"><DemoBadge compact />Illustrative store used for this demo.</p></aside></section></div>;
 }
 

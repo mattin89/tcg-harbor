@@ -28,7 +28,7 @@ describe('account bootstrap state', () => {
   });
 
   it('wires the production shell to empty-safe, account-owned sources', () => {
-    expect(appSource).toContain('() => identity ? [] : safeAssets()');
+    expect(appSource).toContain('() => identity || isGuest ? [] : safeAssets()');
     expect(appSource).toContain('useProductionDirectMessagesV2(Boolean(identity), identity?.userId)');
     expect(appSource).toContain('accountSeeds.notifications.length === 0');
     expect(appSource).toContain('if (!active) {');

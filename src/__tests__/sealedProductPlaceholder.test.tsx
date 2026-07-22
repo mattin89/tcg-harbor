@@ -43,10 +43,11 @@ describe('sealed product artwork placeholder', () => {
   });
 
   it('keeps a real source image authoritative when one is present', () => {
-    const sourceImage = 'https://images.example.test/official-product.jpg';
+    const sourceImage = '/catalog/sealed/v1/750070-123456789abc.webp';
     const markup = renderToStaticMarkup(<CardArt asset={makeAsset({ imageUrl: sourceImage, imageState: 'available', imageUnavailableReason: undefined })} />);
 
     expect(markup).toContain(`src="${sourceImage}"`);
+    expect(markup).toContain('is-sealed-product');
     expect(markup).not.toContain('is-sealed-placeholder');
     expect(markup).not.toContain('Placeholder image');
   });

@@ -12,6 +12,7 @@ import {
   pricingConditionForAsset,
   productLevelMappingMetadata,
   providerMappingStableSeed,
+  providerMappingVersionSeed,
 } from '../../scripts/lib/catalog-ingestion-plan.mjs';
 
 describe('catalog ingestion plan', () => {
@@ -36,6 +37,31 @@ describe('catalog ingestion plan', () => {
       'card-op01-001-base',
       'near_mint',
     )).toBe('cardmarket:card-op01-001-base:near_mint');
+  });
+
+  it('gives every replacement provider identity a distinct deterministic version seed', () => {
+    const first = providerMappingVersionSeed(
+      'cardmarket',
+      'card-op01-001-base',
+      'near_mint',
+      '719388',
+    );
+    const replacement = providerMappingVersionSeed(
+      'cardmarket',
+      'card-op01-001-base',
+      'near_mint',
+      '719387',
+      '11111111-1111-4111-8111-111111111111',
+    );
+    expect(first).toBe(providerMappingVersionSeed(
+      'cardmarket',
+      'card-op01-001-base',
+      'near_mint',
+      '719388',
+    ));
+    expect(replacement).not.toBe(first);
+    expect(() => providerMappingVersionSeed('', 'asset', 'near_mint', '1'))
+      .toThrow(/every identity component/i);
   });
 
   it('states explicitly that copied condition rows use a product-level reference', () => {
@@ -111,5 +137,14 @@ describe('catalog ingestion plan', () => {
     }]]);
     expect(activeCatalogRemovalApprovalIds(approvals, '2026-07-30T23:59:59.000Z')).toEqual(new Set(['sealed-future']));
     expect(activeCatalogRemovalApprovalIds(approvals, '2026-07-31T00:00:00.000Z')).toEqual(new Set());
+  });
+
+  it('keeps reviewed non-products permanently excluded without an arbitrary expiry', () => {
+    const approvals = new Map([['sealed-empty-box', {
+      reason: 'Empty packaging is not a sealed card-game product',
+      permanent: true,
+    }]]);
+    expect(activeCatalogRemovalApprovalIds(approvals, '2126-01-01T00:00:00.000Z'))
+      .toEqual(new Set(['sealed-empty-box']));
   });
 });

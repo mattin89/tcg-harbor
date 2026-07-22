@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { catalogAssets, initialAssets, marketDataMeta, stores } from '../data/demo';
+import {
+  catalogAssets,
+  initialAssets,
+  marketDataGeneratedAt,
+  marketDataMeta,
+  stores,
+} from '../data/demo';
 
 type CatalogAsset = (typeof catalogAssets)[number];
 type SourcePrintingAsset = CatalogAsset & { sourcePrintingId?: string };
@@ -145,25 +151,75 @@ describe('source-backed catalog snapshot', () => {
     expect(marketDataMeta.catalogCounts.unknownManifestOptcgCoreRecords).toBe(0);
   });
 
-  it('includes hundreds of real English Cardmarket sealed products', () => {
+  it('includes released sealed products with real source-backed imagery and honest language metadata', () => {
     const sealed = catalogAssets.filter((asset) => asset.kind === 'sealed');
-    expect(marketDataMeta.catalogCounts.englishSealedProducts).toBeGreaterThan(390);
-    expect(marketDataMeta.catalogCounts.englishSealedSourceCandidates).toBe(
-      marketDataMeta.catalogCounts.englishSealedProducts
-      + marketDataMeta.catalogCounts.futureEnglishSealedProductsExcluded,
+    expect(marketDataMeta.catalogCounts.releasedSealedProducts).toBeGreaterThan(350);
+    expect(marketDataMeta.catalogCounts.sealedSourceCandidates).toBe(
+      marketDataMeta.catalogCounts.releasedSealedProducts
+      + marketDataMeta.catalogCounts.futureSealedProductsExcluded
+      + marketDataMeta.catalogCounts.unknownManifestSealedProductsExcluded,
     );
-    expect(marketDataMeta.catalogCounts.futureEnglishSealedProductsExcluded).toBeGreaterThan(0);
-    expect(sealed).toHaveLength(marketDataMeta.catalogCounts.englishSealedProducts);
-    expect(sealed.every((asset) => asset.language === 'English')).toBe(true);
+    expect(sealed).toHaveLength(marketDataMeta.catalogCounts.releasedSealedProducts);
     expect(sealed.every((asset) => asset.cardmarketProductId && asset.productType)).toBe(true);
     expect(sealed.every((asset) => asset.productType !== 'Lots')).toBe(true);
     expect(sealed.every(
-      (asset) => asset.imageState === 'unavailable' && !asset.imageUrl && asset.imageUnavailableReason,
+      (asset) => ['English', 'French', 'Japanese'].includes(asset.language)
+        && typeof asset.languageEvidence === 'string'
+        && asset.languageEvidence.length > 0
+        && typeof asset.region === 'string'
+        && asset.region.length > 0,
     )).toBe(true);
+    expect(sealed.every(
+      (asset) => asset.imageState === 'available'
+        && /^\/catalog\/sealed\/v1\/\d+-[a-f0-9]{12}\.webp$/.test(asset.imageUrl ?? '')
+        && (asset.imageSourceRelationship === 'exact-product'
+          ? asset.imageSourceProductId === asset.cardmarketProductId
+          : asset.imageSourceRelationship === 'contained-unit'
+            && asset.imageSourceProductId !== asset.cardmarketProductId)
+        && /^[a-f0-9]{64}$/.test(asset.imageSourceDigest ?? '')
+        && /^[a-f0-9]{64}$/.test(asset.imageOutputDigest ?? '')
+        && !asset.imageUnavailableReason,
+    )).toBe(true);
+    expect(marketDataMeta.catalogCounts.releasedSealedProductsWithImages).toBe(sealed.length);
+    expect(marketDataMeta.catalogCounts.releasedSealedProductsWithoutImages).toBe(0);
+    const sealedIds = new Set(sealed.map((asset) => asset.cardmarketProductId));
+    for (const future of marketDataMeta.cardmarket.futureSealedProductsExcluded ?? []) {
+      expect(sealedIds.has(future.cardmarketProductId), String(future.cardmarketProductId)).toBe(false);
+    }
+    for (const [productId, gate] of Object.entries(
+      marketDataMeta.cardmarket.exactSealedReleaseGates ?? {},
+    )) {
+      const released = Date.parse(marketDataGeneratedAt) >= Date.parse(`${gate.releasedOn}T00:00:00.000Z`);
+      expect(sealedIds.has(Number(productId)), `${productId} @ ${gate.releasedOn}`).toBe(released);
+    }
+    expect(sealed.find((asset) => asset.cardmarketProductId === 761165)).toMatchObject({
+      imageSourceName: 'Bandai official product page',
+      imageSourceUrl: 'https://en.onepiece-cardgame.com/images/products/other/cardcollection_bcgfest23-24/mv_01.jpg',
+    });
+    expect(sealed.find((asset) => asset.cardmarketProductId === 695312)?.language).toBe('Japanese');
+    expect(sealed.find((asset) => asset.cardmarketProductId === 837881)?.language).toBe('French');
+    expect(sealed.find((asset) => asset.cardmarketProductId === 837882)?.language).toBe('French');
+    for (const productId of [845917, 869914, 896426, 896427]) {
+      expect(sealed.find((asset) => asset.cardmarketProductId === productId)?.language, String(productId))
+        .toBe('Japanese');
+    }
+    for (const productId of [821595, 848354, 894157]) {
+      expect(sealed.find((asset) => asset.cardmarketProductId === productId), String(productId))
+        .toMatchObject({ language: 'English', region: 'Asia excluding Japan' });
+    }
+    const sealedPriceLanguageScope = marketDataMeta.cardmarket.cardmarketSealedPriceLanguageScope;
+    expect(sealedPriceLanguageScope).toMatch(/product-level/i);
+    expect(sealedPriceLanguageScope).toMatch(/not represented as language-specific/i);
+    const byProductId = new Map(sealed.map((asset) => [asset.cardmarketProductId, asset]));
+    for (const asset of sealed.filter((candidate) => candidate.imageSourceRelationship === 'contained-unit')) {
+      const source = byProductId.get(asset.imageSourceProductId);
+      expect(source, asset.id).toBeDefined();
+      expect(source?.imageSourceDigest, asset.id).toBe(asset.imageSourceDigest);
+      expect(source?.imageSourceRelationship, asset.id).toBe('exact-product');
+    }
     expect(sealed.filter((asset) => asset.quote.cardmarket === null)).toHaveLength(
-      marketDataMeta.catalogCounts.englishSealedProductsWithoutTrend,
+      marketDataMeta.catalogCounts.releasedSealedProductsWithoutTrend,
     );
-    expect(marketDataMeta.catalogCounts.englishSealedProductsWithoutTrend).toBeGreaterThan(0);
     expect(sealed.some((asset) => !/^(?:OP|ST|EB|PRB)\d{2}$/.test(asset.setCode))).toBe(true);
     expect(sealed.some(
       (asset) => asset.setCode === 'ST05' && asset.name === 'Starter Deck: ST05-ST06: Deck Set',
@@ -189,7 +245,7 @@ describe('source-backed catalog snapshot', () => {
     expect(cards.filter((asset) => !asset.id.startsWith('card-tcgplayer-')).every(
       (asset) => asset.language === 'English',
     )).toBe(true);
-    expect(catalogAssets.every((asset) => asset.language === 'English' || asset.language === 'Japanese')).toBe(true);
+    expect(catalogAssets.every((asset) => ['English', 'French', 'Japanese'].includes(asset.language))).toBe(true);
     expect(catalogAssets.some((asset) => asset.language === 'German')).toBe(false);
   });
 
@@ -266,11 +322,22 @@ describe('source-backed catalog snapshot', () => {
       (asset) => asset.rulesCardId === 'OP01-004' && asset.variant !== 'Standard',
     );
     expect(alternateArts.length).toBeGreaterThan(0);
-    expect(alternateArts.every((asset) => asset.cardmarketProductId == null)).toBe(true);
-    expect(alternateArts.every((asset) => asset.quote.cardmarket === null)).toBe(true);
+    for (const artwork of alternateArts) {
+      const reference = artwork.cardmarketArtworkReference ?? artwork.cardmarketRegularArtReference;
+      if (!reference) {
+        expect(artwork.cardmarketProductId).toBeNull();
+        expect(artwork.quote.cardmarket).toBeNull();
+        continue;
+      }
+
+      expect(artwork.cardmarketProductId).toBe(reference.productId);
+      expect(artwork.cardmarketExpansionId).toBe(reference.expansionId);
+      expect(artwork.quote.cardmarket).toBe(reference.trend);
+      expect(artwork.pricing?.cardmarket.trend).toBe(reference.trend);
+    }
   });
 
-  it('adds only artwork-safe v8 Cardmarket mappings and explains every price state', () => {
+  it('uses only artwork-safe Cardmarket mappings and explains every price state', () => {
     const cards = catalogAssets.filter((asset) => asset.kind === 'card');
     const exact = cards.filter((asset) => asset.cardmarketProductId != null);
     const available = cards.filter((asset) => asset.cardmarketPriceState === 'available');
@@ -280,7 +347,18 @@ describe('source-backed catalog snapshot', () => {
 
     expect(cards.every((asset) => asset.cardmarketPriceReason)).toBe(true);
     expect(exact).toHaveLength(marketDataMeta.catalogCounts.cardmarketMappedCardPrintings);
-    expect(new Set(exact.map((asset) => asset.cardmarketProductId)).size).toBe(exact.length);
+    const exactByProduct = new Map<number, typeof exact>();
+    for (const asset of exact) {
+      const productId = Number(asset.cardmarketProductId);
+      exactByProduct.set(productId, [...(exactByProduct.get(productId) ?? []), asset]);
+    }
+    for (const [productId, productAssets] of exactByProduct) {
+      if (productAssets.length === 1) continue;
+      const canonical = productAssets.filter((asset) => !asset.catalogAliasOf);
+      expect(canonical, String(productId)).toHaveLength(1);
+      expect(productAssets.every((asset) => asset === canonical[0]
+        || asset.catalogAliasOf === canonical[0].id), String(productId)).toBe(true);
+    }
     expect(available).toHaveLength(marketDataMeta.catalogCounts.cardmarketPricedCardPrintings);
     expect(trendUnavailable).toHaveLength(
       marketDataMeta.catalogCounts.cardmarketTrendUnavailableCardPrintings,
@@ -304,9 +382,18 @@ describe('source-backed catalog snapshot', () => {
     })).toBe(true);
     expect(marketDataMeta.catalogCounts.cardmarketAdditionalExactBoosterMappings).toBeGreaterThanOrEqual(150);
     expect(marketDataMeta.catalogCounts.cardmarketAdditionalExactStarterMappings).toBeGreaterThan(0);
+
+    const aliases = cards.filter((asset) => asset.catalogAliasOf);
+    const byId = new Map(cards.map((asset) => [asset.id, asset]));
+    for (const alias of aliases) {
+      const canonical = byId.get(alias.catalogAliasOf!);
+      expect(canonical, alias.id).toBeDefined();
+      expect(canonical?.catalogAliasOf, alias.id).toBeFalsy();
+      expect(canonical?.rulesCardId, alias.id).toBe(alias.rulesCardId);
+    }
   });
 
-  it('keeps Cardmarket V.1/V.2 products ambiguous instead of sorting product IDs', () => {
+  it('stores the independently image-verified V.1/V.2 price for each Fire Fist artwork', () => {
     const fireFistPrintings = catalogAssets.filter(
       (asset) => asset.kind === 'card'
         && asset.setCode === 'OP03'
@@ -314,10 +401,20 @@ describe('source-backed catalog snapshot', () => {
     );
 
     expect(fireFistPrintings).toHaveLength(2);
+    expect(new Set(fireFistPrintings.map((asset) => asset.cardmarketProductId))).toEqual(
+      new Set([719387, 719388]),
+    );
     for (const asset of fireFistPrintings) {
-      expect(asset.cardmarketPriceState).toBe('ambiguous-artwork');
-      expect(asset.cardmarketProductId).toBeNull();
-      expect(asset.quote.cardmarket).toBeNull();
+      const reference = asset.cardmarketArtworkReference;
+      expect(reference).toMatchObject({
+        productId: asset.cardmarketProductId,
+        expansionId: 5364,
+        matchPolicy: 'cardmarket-image-correlation-v2-complete-candidates',
+        candidateCount: 2,
+      });
+      expect(asset.cardmarketPriceState).toBe('available');
+      expect(asset.quote.cardmarket).toBe(reference?.trend);
+      expect(asset.pricing?.cardmarket.trend).toBe(reference?.trend);
       expect(asset.cardmarketCandidates).toEqual([
         { productId: 719387, trend: expect.any(Number) },
         { productId: 719388, trend: expect.any(Number) },

@@ -11,20 +11,43 @@ on:
         default: false
         type: boolean
 
-permissions:
-  contents: write
+# Each job declares only the repository permission it needs. In particular,
+# untrusted remote catalog data is fetched and validated without a write token.
+permissions: {}
 
 concurrency:
   group: onepiece-catalog-sync
   cancel-in-progress: false
 
 jobs:
-  sync:
+  verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 40
+    permissions:
+      contents: read
     env:
       SHOULD_PUBLISH: ${{ github.event_name == 'schedule' || inputs.publish == true }}
+    outputs:
+      artifact_name: ${{ steps.package.outputs.artifact_name }}
+      archive_sha256: ${{ steps.package.outputs.archive_sha256 }}
+      base_sha: ${{ steps.verification_context.outputs.base_sha }}
+      should_publish: ${{ steps.verification_context.outputs.should_publish }}
     steps:
+      - name: Check out the selected branch without persisted credentials
+        id: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.event_name == 'schedule' && github.event.repository.default_branch || github.ref }}
+
+      - name: Record verification context
+        id: verification_context
+        shell: bash
+        run: |
+          echo "base_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "should_publish=${SHOULD_PUBLISH}" >> "$GITHUB_OUTPUT"
+
       - name: Validate publication context and secrets
         id: preflight
         if: ${{ env.SHOULD_PUBLISH == 'true' }}
@@ -48,16 +71,9 @@ jobs:
             exit 1
           fi
 
-      - name: Check out the selected branch
-        id: checkout
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event_name == 'schedule' && github.event.repository.default_branch || github.ref }}
-
       - name: Use Node.js 22
         id: setup_node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.0.0
         with:
           node-version: '22'
           cache: npm
@@ -79,77 +95,63 @@ jobs:
         id: build
         run: npm run build
 
-      - name: Prepare the verified snapshot commit
-        id: catalog_commit
-        if: ${{ env.SHOULD_PUBLISH == 'true' }}
+      # Normalize archive metadata so identical verified inputs produce the
+      # same tar digest. The artifact contains only the generated snapshot,
+      # source cache, and immutable sealed-product image cache.
+      - name: Package the deterministic verified catalog artifact
+        id: package
         shell: bash
         run: |
-          echo "base_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          git add src/data/generated/onepiece-market-v9.json scripts/data/optcg-source-cache-v1.json
-          if git diff --cached --quiet; then
-            echo "Catalog snapshot is already current."
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          git config user.name "tcg-harbor-data-bot"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "chore(data): daily One Piece catalog sync [skip ci]"
-          echo "changed=true" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          ARTIFACT_ROOT="${RUNNER_TEMP}/verified-onepiece-catalog"
+          ARCHIVE="${RUNNER_TEMP}/verified-onepiece-catalog.tar"
+          ARTIFACT_NAME="onepiece-catalog-verified-${{ steps.verification_context.outputs.base_sha }}"
 
-      # Refuse a branch race before touching Supabase. A remote change after
-      # this check can still reject the final non-force push and leave the
-      # database ahead until the next successful deterministic run; the catalog
-      # ingestion path documents that remaining atomic-publication limitation.
-      - name: Verify the default branch has not moved
-        id: branch_guard
-        if: ${{ env.SHOULD_PUBLISH == 'true' }}
-        shell: bash
-        env:
-          BASE_SHA: ${{ steps.catalog_commit.outputs.base_sha }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-        run: |
-          git fetch --no-tags origin "${DEFAULT_BRANCH}"
-          REMOTE_SHA="$(git rev-parse "origin/${DEFAULT_BRANCH}")"
-          if [ "${REMOTE_SHA}" != "${BASE_SHA}" ]; then
-            echo "Default branch moved during catalog verification; aborting before database ingestion." >&2
+          mkdir -p \
+            "${ARTIFACT_ROOT}/src/data/generated" \
+            "${ARTIFACT_ROOT}/scripts/data" \
+            "${ARTIFACT_ROOT}/public/catalog/sealed/v1"
+          cp src/data/generated/onepiece-market-v10.json "${ARTIFACT_ROOT}/src/data/generated/"
+          cp scripts/data/optcg-source-cache-v1.json "${ARTIFACT_ROOT}/scripts/data/"
+          cp -a public/catalog/sealed/v1/. "${ARTIFACT_ROOT}/public/catalog/sealed/v1/"
+
+          if find "${ARTIFACT_ROOT}" -type l -print -quit | grep -q .; then
+            echo "::error title=Unsafe catalog artifact::Symbolic links are not permitted in the verified catalog artifact."
             exit 1
           fi
 
-      - name: Ingest the verified snapshot into Supabase
-        id: ingest
-        if: ${{ env.SHOULD_PUBLISH == 'true' }}
-        run: npm run sync:ingest
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          chmod -R u=rwX,go=rX "${ARTIFACT_ROOT}"
+          find "${ARTIFACT_ROOT}" -type f -exec touch -d '@0' {} +
+          find "${ARTIFACT_ROOT}" -type d -exec touch -d '@0' {} +
+          LC_ALL=C tar \
+            --sort=name \
+            --mtime='@0' \
+            --owner=0 \
+            --group=0 \
+            --numeric-owner \
+            --format=ustar \
+            -cf "${ARCHIVE}" \
+            -C "${ARTIFACT_ROOT}" .
+          ARCHIVE_SHA256="$(sha256sum "${ARCHIVE}" | cut -d ' ' -f 1)"
+          printf '%s  %s\n' "${ARCHIVE_SHA256}" 'verified-onepiece-catalog.tar' \
+            > "${ARCHIVE}.sha256"
 
-      # A branch update during ingestion cannot be rolled back across GitHub
-      # and Supabase, but catching it explicitly prevents a force/stale push.
-      # The next deterministic run safely completes the publication pair.
-      - name: Recheck the default branch before publication
-        id: final_branch_guard
-        if: ${{ env.SHOULD_PUBLISH == 'true' }}
-        shell: bash
-        env:
-          BASE_SHA: ${{ steps.catalog_commit.outputs.base_sha }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-        run: |
-          git fetch --no-tags origin "${DEFAULT_BRANCH}"
-          REMOTE_SHA="$(git rev-parse "origin/${DEFAULT_BRANCH}")"
-          if [[ "${REMOTE_SHA}" != "${BASE_SHA}" ]]; then
-            echo "::error title=Publication race::Default branch moved during Supabase ingestion; refusing a stale push. The next run will reconcile the idempotent ingestion."
-            exit 1
-          fi
+          echo "artifact_name=${ARTIFACT_NAME}" >> "$GITHUB_OUTPUT"
+          echo "archive_sha256=${ARCHIVE_SHA256}" >> "$GITHUB_OUTPUT"
 
-      - name: Publish the ingested snapshot
-        id: publish
-        if: ${{ success() && env.SHOULD_PUBLISH == 'true' && steps.catalog_commit.outputs.changed == 'true' }}
-        shell: bash
-        env:
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-        run: git push origin "HEAD:${DEFAULT_BRANCH}"
+      - name: Upload the verified catalog artifact
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${{ steps.package.outputs.artifact_name }}
+          path: |
+            ${{ runner.temp }}/verified-onepiece-catalog.tar
+            ${{ runner.temp }}/verified-onepiece-catalog.tar.sha256
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
 
-      - name: Record safe failure details
+      - name: Record safe verification failure details
         if: ${{ failure() }}
         shell: bash
         env:
@@ -157,13 +159,13 @@ jobs:
           REFRESH_OUTCOME: ${{ steps.refresh.outcome }}
           TEST_OUTCOME: ${{ steps.test.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
-          INGEST_OUTCOME: ${{ steps.ingest.outcome }}
-          PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
+          PACKAGE_OUTCOME: ${{ steps.package.outcome }}
+          UPLOAD_OUTCOME: ${{ steps.upload.outcome }}
         run: |
           {
-            echo "## Catalog sync failed safely"
+            echo "## Catalog verification failed safely"
             echo
-            echo "No unverified snapshot was pushed. Transient source failures are retried inside the synchronizer; persistent source, validation, configuration, or ingestion failures remain red by design."
+            echo "No unverified snapshot was ingested or pushed. Transient source failures are retried inside the synchronizer; persistent source, validation, configuration, packaging, or build failures remain red by design."
             echo
             echo "| Stage | Outcome |"
             echo "| --- | --- |"
@@ -171,8 +173,602 @@ jobs:
             echo "| Source refresh | ${REFRESH_OUTCOME} |"
             echo "| Tests | ${TEST_OUTCOME} |"
             echo "| Build | ${BUILD_OUTCOME} |"
+            echo "| Artifact packaging | ${PACKAGE_OUTCOME} |"
+            echo "| Artifact upload | ${UPLOAD_OUTCOME} |"
+            echo
+            echo "[Open this workflow run](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+  ingest:
+    needs: verify
+    if: ${{ needs.verify.result == 'success' && needs.verify.outputs.should_publish == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions: {}
+    outputs:
+      base_sha: ${{ steps.package_publication.outputs.base_sha }}
+      changed: ${{ steps.catalog_commit.outputs.changed }}
+      publish_sha: ${{ steps.catalog_commit.outputs.publish_sha }}
+      publish_tree_sha: ${{ steps.catalog_commit.outputs.publish_tree_sha }}
+      publication_artifact_name: ${{ steps.package_publication.outputs.artifact_name }}
+      publication_bundle_sha256: ${{ steps.package_publication.outputs.bundle_sha256 }}
+      publication_manifest_sha256: ${{ steps.package_publication.outputs.manifest_sha256 }}
+    steps:
+      - name: Download the verified catalog artifact
+        id: download
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ needs.verify.outputs.artifact_name }}
+          path: ${{ runner.temp }}/verified-catalog-artifact
+
+      - name: Verify and extract the catalog artifact
+        id: artifact_integrity
+        shell: bash
+        env:
+          EXPECTED_ARCHIVE_SHA256: ${{ needs.verify.outputs.archive_sha256 }}
+        run: |
+          set -euo pipefail
+          ARTIFACT_DIR="${RUNNER_TEMP}/verified-catalog-artifact"
+          cd "${ARTIFACT_DIR}"
+          sha256sum --check verified-onepiece-catalog.tar.sha256
+          ACTUAL_ARCHIVE_SHA256="$(sha256sum verified-onepiece-catalog.tar | cut -d ' ' -f 1)"
+          if [[ "${ACTUAL_ARCHIVE_SHA256}" != "${EXPECTED_ARCHIVE_SHA256}" ]]; then
+            echo "::error title=Catalog artifact integrity failure::The downloaded archive does not match the digest produced by the verification job."
+            exit 1
+          fi
+
+          tar -tf verified-onepiece-catalog.tar > verified-onepiece-catalog.entries
+          if grep -Eq '(^/|(^|/)\.\.(/|$))' verified-onepiece-catalog.entries; then
+            echo "::error title=Unsafe catalog artifact::The verified archive contains an unsafe path."
+            exit 1
+          fi
+          grep -Fx './src/data/generated/onepiece-market-v10.json' verified-onepiece-catalog.entries >/dev/null
+          grep -Fx './scripts/data/optcg-source-cache-v1.json' verified-onepiece-catalog.entries >/dev/null
+          grep -Fx './public/catalog/sealed/v1/' verified-onepiece-catalog.entries >/dev/null
+
+      # The repository is public, so publication can obtain the verified base
+      # anonymously. The write-capable token is not supplied to checkout,
+      # dependency installation, artifact handling, or Supabase ingestion.
+      - name: Check out the verified default-branch base without credentials
+        id: checkout_verified_base
+        shell: bash
+        env:
+          BASE_SHA: ${{ needs.verify.outputs.base_sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          git init
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git fetch --no-tags --depth=1 origin "refs/heads/${DEFAULT_BRANCH}"
+          REMOTE_SHA="$(git rev-parse FETCH_HEAD)"
+          if [[ "${REMOTE_SHA}" != "${BASE_SHA}" ]]; then
+            echo "::error title=Publication race::Default branch moved after catalog verification; aborting before database ingestion."
+            exit 1
+          fi
+          git checkout --detach "${REMOTE_SHA}"
+
+      - name: Use Node.js 22 for verified ingestion
+        id: setup_node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.0.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install pinned ingestion dependencies
+        id: install
+        # The following step must execute the reviewed ingestion entry point,
+        # but dependency lifecycle hooks never need access to this job's later
+        # Supabase credentials or environment-file channels.
+        run: npm ci --ignore-scripts
+
+      # Recheck the immutable digest after dependency lifecycle scripts, then
+      # extract into a fresh directory and compare every selected byte/path.
+      # This prevents pre-ingestion code from turning an unverified mutation
+      # into the catalog commit.
+      - name: Reverify and apply only the verified catalog artifact
+        id: apply_artifact
+        shell: bash
+        env:
+          EXPECTED_ARCHIVE_SHA256: ${{ needs.verify.outputs.archive_sha256 }}
+        run: |
+          set -euo pipefail
+          ARTIFACT_DIR="${RUNNER_TEMP}/verified-catalog-artifact"
+          VERIFIED_TREE="${RUNNER_TEMP}/verified-catalog-tree-after-install"
+          ARCHIVE="${ARTIFACT_DIR}/verified-onepiece-catalog.tar"
+
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            echo "::error title=Unsafe dependency mutation::Dependency installation modified tracked repository files."
+            exit 1
+          fi
+          ACTUAL_ARCHIVE_SHA256="$(sha256sum "${ARCHIVE}" | cut -d ' ' -f 1)"
+          if [[ "${ACTUAL_ARCHIVE_SHA256}" != "${EXPECTED_ARCHIVE_SHA256}" ]]; then
+            echo "::error title=Catalog artifact integrity failure::The verified archive changed during dependency installation."
+            exit 1
+          fi
+
+          mkdir -p "${VERIFIED_TREE}"
+          tar -xf "${ARCHIVE}" -C "${VERIFIED_TREE}"
+          if find \
+            src/data/generated/onepiece-market-v10.json \
+            scripts/data/optcg-source-cache-v1.json \
+            public/catalog/sealed/v1 \
+            -type l -print -quit | grep -q .; then
+            echo "::error title=Unsafe publication path::Catalog publication paths may not contain symbolic links."
+            exit 1
+          fi
+
+          cp "${VERIFIED_TREE}/src/data/generated/onepiece-market-v10.json" src/data/generated/
+          cp "${VERIFIED_TREE}/scripts/data/optcg-source-cache-v1.json" scripts/data/
+          cp -a "${VERIFIED_TREE}/public/catalog/sealed/v1/." public/catalog/sealed/v1/
+          cmp --silent \
+            "${VERIFIED_TREE}/src/data/generated/onepiece-market-v10.json" \
+            src/data/generated/onepiece-market-v10.json
+          cmp --silent \
+            "${VERIFIED_TREE}/scripts/data/optcg-source-cache-v1.json" \
+            scripts/data/optcg-source-cache-v1.json
+          diff --recursive --no-dereference \
+            "${VERIFIED_TREE}/public/catalog/sealed/v1" \
+            public/catalog/sealed/v1
+
+      - name: Prepare the verified snapshot commit
+        id: catalog_commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add src/data/generated/onepiece-market-v10.json scripts/data/optcg-source-cache-v1.json public/catalog/sealed/v1
+          if git diff --cached --quiet; then
+            echo "Catalog snapshot is already current."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "publish_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            echo "publish_tree_sha=$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name "tcg-harbor-data-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -c core.hooksPath=/dev/null commit -m "chore(data): daily One Piece catalog sync [skip ci]"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "publish_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "publish_tree_sha=$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_OUTPUT"
+
+      # Refuse a branch race before touching Supabase. A remote change after
+      # this check can still reject the final non-force push and leave the
+      # database ahead until the next successful deterministic run.
+      - name: Verify the default branch has not moved
+        id: branch_guard
+        shell: bash
+        env:
+          BASE_SHA: ${{ needs.verify.outputs.base_sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git fetch --no-tags origin "+refs/heads/${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}"
+          REMOTE_SHA="$(git rev-parse "origin/${DEFAULT_BRANCH}")"
+          if [[ "${REMOTE_SHA}" != "${BASE_SHA}" ]]; then
+            echo "::error title=Publication race::Default branch moved during catalog verification; aborting before database ingestion."
+            exit 1
+          fi
+
+      - name: Ingest the verified snapshot into Supabase
+        id: ingest
+        run: npm run sync:ingest
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+
+      - name: Verify ingestion did not mutate the committed snapshot
+        id: post_ingest_integrity
+        shell: bash
+        env:
+          EXPECTED_ARCHIVE_SHA256: ${{ needs.verify.outputs.archive_sha256 }}
+          EXPECTED_PUBLISH_SHA: ${{ steps.catalog_commit.outputs.publish_sha }}
+        run: |
+          set -euo pipefail
+          ARCHIVE="${RUNNER_TEMP}/verified-catalog-artifact/verified-onepiece-catalog.tar"
+          VERIFIED_TREE="${RUNNER_TEMP}/verified-catalog-tree-after-ingest"
+
+          if [[ "$(git rev-parse HEAD)" != "${EXPECTED_PUBLISH_SHA}" ]]; then
+            echo "::error title=Unsafe ingestion mutation::Ingestion changed the verified publication commit."
+            exit 1
+          fi
+          git diff --exit-code
+          git diff --cached --exit-code
+          ACTUAL_ARCHIVE_SHA256="$(sha256sum "${ARCHIVE}" | cut -d ' ' -f 1)"
+          if [[ "${ACTUAL_ARCHIVE_SHA256}" != "${EXPECTED_ARCHIVE_SHA256}" ]]; then
+            echo "::error title=Catalog artifact integrity failure::The verified archive changed during ingestion."
+            exit 1
+          fi
+          mkdir -p "${VERIFIED_TREE}"
+          tar -xf "${ARCHIVE}" -C "${VERIFIED_TREE}"
+          cmp --silent \
+            "${VERIFIED_TREE}/src/data/generated/onepiece-market-v10.json" \
+            src/data/generated/onepiece-market-v10.json
+          cmp --silent \
+            "${VERIFIED_TREE}/scripts/data/optcg-source-cache-v1.json" \
+            scripts/data/optcg-source-cache-v1.json
+          diff --recursive --no-dereference \
+            "${VERIFIED_TREE}/public/catalog/sealed/v1" \
+            public/catalog/sealed/v1
+
+      # A branch update during ingestion cannot be rolled back across GitHub
+      # and Supabase, but catching it explicitly prevents a force/stale push.
+      # The next deterministic run safely completes the publication pair.
+      - name: Recheck the default branch before publication
+        id: final_branch_guard
+        shell: bash
+        env:
+          BASE_SHA: ${{ needs.verify.outputs.base_sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git fetch --no-tags origin "+refs/heads/${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}"
+          REMOTE_SHA="$(git rev-parse "origin/${DEFAULT_BRANCH}")"
+          if [[ "${REMOTE_SHA}" != "${BASE_SHA}" ]]; then
+            echo "::error title=Publication race::Default branch moved during Supabase ingestion; refusing to package a stale commit. The next run will reconcile the idempotent ingestion."
+            exit 1
+          fi
+
+      # Package only the single verified catalog commit. The bundle is thin
+      # against the recorded base, and the write-capable job independently
+      # validates its parent, tree, paths, and reconstructed payload digest.
+      - name: Package the ingested catalog commit
+        id: package_publication
+        if: ${{ success() && steps.catalog_commit.outputs.changed == 'true' }}
+        shell: bash
+        env:
+          BASE_SHA: ${{ needs.verify.outputs.base_sha }}
+          PUBLISH_SHA: ${{ steps.catalog_commit.outputs.publish_sha }}
+          PUBLISH_TREE_SHA: ${{ steps.catalog_commit.outputs.publish_tree_sha }}
+          VERIFIED_CATALOG_SHA256: ${{ needs.verify.outputs.archive_sha256 }}
+        run: |
+          set -euo pipefail
+          PUBLICATION_DIR="${RUNNER_TEMP}/catalog-publication"
+          BUNDLE="${PUBLICATION_DIR}/catalog-publication.bundle"
+          MANIFEST="${PUBLICATION_DIR}/catalog-publication.manifest"
+          ARTIFACT_NAME="onepiece-catalog-publication-${BASE_SHA}-${PUBLISH_SHA}"
+
+          if ! [[ "${BASE_SHA}" =~ ^[0-9a-f]{40}$ \
+            && "${PUBLISH_SHA}" =~ ^[0-9a-f]{40}$ \
+            && "${PUBLISH_TREE_SHA}" =~ ^[0-9a-f]{40}$ \
+            && "${VERIFIED_CATALOG_SHA256}" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "::error title=Invalid publication identity::Publication hashes must use their canonical hexadecimal form."
+            exit 1
+          fi
+          if [[ "$(git rev-parse "${PUBLISH_SHA}^")" != "${BASE_SHA}" ]] \
+            || [[ "$(git rev-list --count "${BASE_SHA}..${PUBLISH_SHA}")" != "1" ]] \
+            || [[ "$(git rev-parse "${PUBLISH_SHA}^{tree}")" != "${PUBLISH_TREE_SHA}" ]]; then
+            echo "::error title=Unsafe publication history::The catalog publication must be exactly one commit on the verified base."
+            exit 1
+          fi
+
+          mkdir -p "${PUBLICATION_DIR}"
+          git update-ref refs/heads/catalog-publication "${PUBLISH_SHA}"
+          git bundle create "${BUNDLE}" refs/heads/catalog-publication "^${BASE_SHA}"
+          printf '%s\n' \
+            "base_sha=${BASE_SHA}" \
+            "publish_sha=${PUBLISH_SHA}" \
+            "publish_tree_sha=${PUBLISH_TREE_SHA}" \
+            "verified_catalog_sha256=${VERIFIED_CATALOG_SHA256}" \
+            > "${MANIFEST}"
+
+          BUNDLE_SHA256="$(sha256sum "${BUNDLE}" | cut -d ' ' -f 1)"
+          MANIFEST_SHA256="$(sha256sum "${MANIFEST}" | cut -d ' ' -f 1)"
+          printf '%s  %s\n%s  %s\n' \
+            "${BUNDLE_SHA256}" 'catalog-publication.bundle' \
+            "${MANIFEST_SHA256}" 'catalog-publication.manifest' \
+            > "${PUBLICATION_DIR}/catalog-publication.sha256"
+
+          echo "artifact_name=${ARTIFACT_NAME}" >> "$GITHUB_OUTPUT"
+          echo "base_sha=${BASE_SHA}" >> "$GITHUB_OUTPUT"
+          echo "bundle_sha256=${BUNDLE_SHA256}" >> "$GITHUB_OUTPUT"
+          echo "manifest_sha256=${MANIFEST_SHA256}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the narrow publication artifact
+        id: upload_publication
+        if: ${{ success() && steps.catalog_commit.outputs.changed == 'true' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${{ steps.package_publication.outputs.artifact_name }}
+          path: |
+            ${{ runner.temp }}/catalog-publication/catalog-publication.bundle
+            ${{ runner.temp }}/catalog-publication/catalog-publication.manifest
+            ${{ runner.temp }}/catalog-publication/catalog-publication.sha256
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+
+      - name: Record safe ingestion failure details
+        if: ${{ failure() }}
+        shell: bash
+        env:
+          DOWNLOAD_OUTCOME: ${{ steps.download.outcome }}
+          ARTIFACT_OUTCOME: ${{ steps.artifact_integrity.outcome }}
+          CHECKOUT_OUTCOME: ${{ steps.checkout_verified_base.outcome }}
+          BRANCH_GUARD_OUTCOME: ${{ steps.branch_guard.outcome }}
+          INGEST_OUTCOME: ${{ steps.ingest.outcome }}
+          POST_INGEST_OUTCOME: ${{ steps.post_ingest_integrity.outcome }}
+          FINAL_GUARD_OUTCOME: ${{ steps.final_branch_guard.outcome }}
+          PACKAGE_OUTCOME: ${{ steps.package_publication.outcome }}
+          UPLOAD_OUTCOME: ${{ steps.upload_publication.outcome }}
+        run: |
+          {
+            echo "## Catalog ingestion failed safely"
+            echo
+            echo "No publication token was available and no commit was pushed. If idempotent Supabase ingestion completed before a later failure, the next successful deterministic run will reconcile GitHub publication."
+            echo
+            echo "| Stage | Outcome |"
+            echo "| --- | --- |"
+            echo "| Artifact download | ${DOWNLOAD_OUTCOME} |"
+            echo "| Artifact integrity | ${ARTIFACT_OUTCOME} |"
+            echo "| Verified-base checkout | ${CHECKOUT_OUTCOME} |"
+            echo "| Pre-ingestion branch guard | ${BRANCH_GUARD_OUTCOME} |"
             echo "| Supabase ingestion | ${INGEST_OUTCOME} |"
-            echo "| GitHub publication | ${PUBLISH_OUTCOME} |"
+            echo "| Post-ingestion integrity | ${POST_INGEST_OUTCOME} |"
+            echo "| Final branch guard | ${FINAL_GUARD_OUTCOME} |"
+            echo "| Commit packaging | ${PACKAGE_OUTCOME} |"
+            echo "| Publication artifact upload | ${UPLOAD_OUTCOME} |"
+            echo
+            echo "[Open this workflow run](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+  push:
+    needs: [verify, ingest]
+    if: ${{ needs.ingest.result == 'success' && needs.ingest.outputs.changed == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      # This pinned action receives only the narrow commit bundle artifact. No
+      # repository checkout, package manager, dependency, or repository code
+      # runs anywhere in this write-capable job.
+      - name: Download the narrow publication artifact
+        id: download_publication
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ needs.ingest.outputs.publication_artifact_name }}
+          path: ${{ runner.temp }}/catalog-publication
+
+      - name: Validate the commit, tree, paths, and verified catalog payload
+        id: validate_publication
+        shell: bash
+        env:
+          BASE_SHA: ${{ needs.ingest.outputs.base_sha }}
+          VERIFIED_BASE_SHA: ${{ needs.verify.outputs.base_sha }}
+          PUBLISH_SHA: ${{ needs.ingest.outputs.publish_sha }}
+          PUBLISH_TREE_SHA: ${{ needs.ingest.outputs.publish_tree_sha }}
+          EXPECTED_BUNDLE_SHA256: ${{ needs.ingest.outputs.publication_bundle_sha256 }}
+          EXPECTED_MANIFEST_SHA256: ${{ needs.ingest.outputs.publication_manifest_sha256 }}
+          VERIFIED_CATALOG_SHA256: ${{ needs.verify.outputs.archive_sha256 }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          ARTIFACT_DIR="${RUNNER_TEMP}/catalog-publication"
+          BUNDLE="${ARTIFACT_DIR}/catalog-publication.bundle"
+          MANIFEST="${ARTIFACT_DIR}/catalog-publication.manifest"
+          REPOSITORY="${RUNNER_TEMP}/publication-repository"
+          RECONSTRUCTED_ROOT="${RUNNER_TEMP}/reconstructed-verified-catalog"
+          RECONSTRUCTED_ARCHIVE="${RUNNER_TEMP}/reconstructed-verified-catalog.tar"
+          TARGET_URL="https://github.com/${GITHUB_REPOSITORY}.git"
+
+          if ! [[ "${BASE_SHA}" =~ ^[0-9a-f]{40}$ \
+            && "${VERIFIED_BASE_SHA}" =~ ^[0-9a-f]{40}$ \
+            && "${PUBLISH_SHA}" =~ ^[0-9a-f]{40}$ \
+            && "${PUBLISH_TREE_SHA}" =~ ^[0-9a-f]{40}$ \
+            && "${EXPECTED_BUNDLE_SHA256}" =~ ^[0-9a-f]{64}$ \
+            && "${EXPECTED_MANIFEST_SHA256}" =~ ^[0-9a-f]{64}$ \
+            && "${VERIFIED_CATALOG_SHA256}" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "::error title=Invalid publication identity::Publication hashes must use their canonical hexadecimal form."
+            exit 1
+          fi
+          if [[ "${BASE_SHA}" != "${VERIFIED_BASE_SHA}" ]]; then
+            echo "::error title=Publication base mismatch::The ingest job did not preserve the base verified by the source-validation job."
+            exit 1
+          fi
+          git check-ref-format --branch "${DEFAULT_BRANCH}" >/dev/null
+
+          mapfile -t ARTIFACT_FILES < <(find "${ARTIFACT_DIR}" -maxdepth 1 -type f -printf '%f\n' | LC_ALL=C sort)
+          EXPECTED_FILES=(
+            catalog-publication.bundle
+            catalog-publication.manifest
+            catalog-publication.sha256
+          )
+          if [[ "${ARTIFACT_FILES[*]}" != "${EXPECTED_FILES[*]}" ]] \
+            || find "${ARTIFACT_DIR}" -mindepth 1 -maxdepth 1 ! -type f -print -quit | grep -q . \
+            || find "${ARTIFACT_DIR}" -mindepth 1 -type l -print -quit | grep -q .; then
+            echo "::error title=Unsafe publication artifact::The publication artifact contains unexpected files or symbolic links."
+            exit 1
+          fi
+          if (( $(stat -c '%s' "${BUNDLE}") > 134217728 )); then
+            echo "::error title=Oversized publication artifact::The catalog commit bundle exceeds the 128 MiB safety limit."
+            exit 1
+          fi
+
+          cd "${ARTIFACT_DIR}"
+          diff --unified \
+            <(printf '%s  %s\n%s  %s\n' \
+              "${EXPECTED_BUNDLE_SHA256}" 'catalog-publication.bundle' \
+              "${EXPECTED_MANIFEST_SHA256}" 'catalog-publication.manifest') \
+            catalog-publication.sha256
+          sha256sum --check catalog-publication.sha256
+          [[ "$(sha256sum catalog-publication.bundle | cut -d ' ' -f 1)" == "${EXPECTED_BUNDLE_SHA256}" ]]
+          [[ "$(sha256sum catalog-publication.manifest | cut -d ' ' -f 1)" == "${EXPECTED_MANIFEST_SHA256}" ]]
+          diff --unified \
+            <(printf '%s\n' \
+              "base_sha=${BASE_SHA}" \
+              "publish_sha=${PUBLISH_SHA}" \
+              "publish_tree_sha=${PUBLISH_TREE_SHA}" \
+              "verified_catalog_sha256=${VERIFIED_CATALOG_SHA256}") \
+            "${MANIFEST}"
+
+          mkdir -p "${REPOSITORY}"
+          cd "${REPOSITORY}"
+          GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null git \
+            -c core.hooksPath=/dev/null \
+            -c credential.helper= \
+            init
+          GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null git \
+            -c core.hooksPath=/dev/null \
+            -c credential.helper= \
+            remote add origin "${TARGET_URL}"
+          GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null git \
+            -c core.hooksPath=/dev/null \
+            -c credential.helper= \
+            fetch --no-tags --depth=1 origin "refs/heads/${DEFAULT_BRANCH}"
+          REMOTE_SHA="$(git rev-parse FETCH_HEAD)"
+          if [[ "${REMOTE_SHA}" != "${BASE_SHA}" ]]; then
+            echo "::error title=Publication race::Default branch moved after verification; refusing the stale commit bundle."
+            exit 1
+          fi
+
+          GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null git \
+            -c core.hooksPath=/dev/null \
+            -c credential.helper= \
+            bundle verify "${BUNDLE}"
+          mapfile -t BUNDLE_HEADS < <(git bundle list-heads "${BUNDLE}")
+          if [[ "${#BUNDLE_HEADS[@]}" != "1" ]] \
+            || [[ "${BUNDLE_HEADS[0]}" != "${PUBLISH_SHA} refs/heads/catalog-publication" ]]; then
+            echo "::error title=Unsafe publication bundle::The bundle must expose exactly the expected catalog commit."
+            exit 1
+          fi
+          GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null git \
+            -c core.hooksPath=/dev/null \
+            -c credential.helper= \
+            -c protocol.file.allow=always \
+            fetch --no-tags "${BUNDLE}" refs/heads/catalog-publication:refs/heads/catalog-publication
+
+          if [[ "$(git rev-parse refs/heads/catalog-publication)" != "${PUBLISH_SHA}" ]] \
+            || [[ "$(git rev-parse "${PUBLISH_SHA}^{tree}")" != "${PUBLISH_TREE_SHA}" ]] \
+            || [[ "$(git rev-parse "${PUBLISH_SHA}^")" != "${BASE_SHA}" ]] \
+            || [[ "$(git rev-list --count "${BASE_SHA}..${PUBLISH_SHA}")" != "1" ]]; then
+            echo "::error title=Unsafe publication history::The bundle is not exactly one commit on the verified base and tree."
+            exit 1
+          fi
+          if [[ "$(git show -s --format=%an "${PUBLISH_SHA}")" != 'tcg-harbor-data-bot' ]] \
+            || [[ "$(git show -s --format=%ae "${PUBLISH_SHA}")" != '41898282+github-actions[bot]@users.noreply.github.com' ]] \
+            || [[ "$(git show -s --format=%s "${PUBLISH_SHA}")" != 'chore(data): daily One Piece catalog sync [skip ci]' ]]; then
+            echo "::error title=Unsafe publication commit::Unexpected catalog commit identity or subject."
+            exit 1
+          fi
+
+          CHANGED_PATH_COUNT=0
+          while IFS= read -r -d '' path; do
+            ((CHANGED_PATH_COUNT += 1))
+            case "${path}" in
+              src/data/generated/onepiece-market-v10.json|scripts/data/optcg-source-cache-v1.json)
+                ;;
+              public/catalog/sealed/v1/*.webp)
+                if ! [[ "${path}" =~ ^public/catalog/sealed/v1/[0-9]+-[0-9a-f]{12}\.webp$ ]]; then
+                  echo "::error title=Unsafe publication path::Unexpected sealed image path: ${path}"
+                  exit 1
+                fi
+                ;;
+              *)
+                echo "::error title=Unsafe publication path::The commit changes a path outside the generated catalog allowlist: ${path}"
+                exit 1
+                ;;
+            esac
+          done < <(git diff --no-renames --name-only -z "${BASE_SHA}" "${PUBLISH_SHA}")
+          if (( CHANGED_PATH_COUNT == 0 )); then
+            echo "::error title=Empty publication commit::The proposed catalog commit has no changed paths."
+            exit 1
+          fi
+
+          for required_path in \
+            src/data/generated/onepiece-market-v10.json \
+            scripts/data/optcg-source-cache-v1.json; do
+            git cat-file -e "${PUBLISH_SHA}:${required_path}"
+          done
+          while IFS=$'\t' read -r -d '' metadata path; do
+            mode="${metadata%% *}"
+            remainder="${metadata#* }"
+            type="${remainder%% *}"
+            if [[ "${mode}" != '100644' || "${type}" != 'blob' ]]; then
+              echo "::error title=Unsafe publication mode::Catalog payload entries must be regular, non-executable blobs: ${path}"
+              exit 1
+            fi
+          done < <(git ls-tree -r -z "${PUBLISH_SHA}" -- \
+            src/data/generated/onepiece-market-v10.json \
+            scripts/data/optcg-source-cache-v1.json \
+            public/catalog/sealed/v1)
+
+          mkdir -p "${RECONSTRUCTED_ROOT}"
+          git archive "${PUBLISH_SHA}" -- \
+            src/data/generated/onepiece-market-v10.json \
+            scripts/data/optcg-source-cache-v1.json \
+            public/catalog/sealed/v1 \
+            | tar -xf - -C "${RECONSTRUCTED_ROOT}"
+          chmod -R u=rwX,go=rX "${RECONSTRUCTED_ROOT}"
+          find "${RECONSTRUCTED_ROOT}" -type f -exec touch -d '@0' {} +
+          find "${RECONSTRUCTED_ROOT}" -type d -exec touch -d '@0' {} +
+          LC_ALL=C tar \
+            --sort=name \
+            --mtime='@0' \
+            --owner=0 \
+            --group=0 \
+            --numeric-owner \
+            --format=ustar \
+            -cf "${RECONSTRUCTED_ARCHIVE}" \
+            -C "${RECONSTRUCTED_ROOT}" .
+          if [[ "$(sha256sum "${RECONSTRUCTED_ARCHIVE}" | cut -d ' ' -f 1)" != "${VERIFIED_CATALOG_SHA256}" ]]; then
+            echo "::error title=Catalog payload mismatch::The proposed commit does not reproduce the catalog artifact verified before ingestion."
+            exit 1
+          fi
+
+      - name: Push the independently validated catalog commit
+        id: push
+        shell: bash
+        env:
+          BASE_SHA: ${{ needs.ingest.outputs.base_sha }}
+          PUBLISH_SHA: ${{ needs.ingest.outputs.publish_sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          REPOSITORY="${RUNNER_TEMP}/publication-repository"
+          TARGET_URL="https://github.com/${GITHUB_REPOSITORY}.git"
+          cd "${REPOSITORY}"
+          if [[ "$(GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null git remote get-url origin)" != "${TARGET_URL}" ]] \
+            || [[ "$(GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null git remote get-url --push origin)" != "${TARGET_URL}" ]]; then
+            echo "::error title=Unsafe publication remote::The repository remote changed before publication."
+            exit 1
+          fi
+          UNSAFE_LOCAL_CONFIG="$(GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null git config --local --name-only --get-regexp '^(url\..*\.insteadof|http\..*|credential\..*|core\.hooksPath)$' || true)"
+          if [[ -n "${UNSAFE_LOCAL_CONFIG}" ]]; then
+            echo "::error title=Unsafe Git configuration::Security-sensitive local Git configuration changed before publication."
+            exit 1
+          fi
+          REMOTE_SHA="$(GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null git \
+            -c core.hooksPath=/dev/null \
+            -c credential.helper= \
+            ls-remote "${TARGET_URL}" "refs/heads/${DEFAULT_BRANCH}" | cut -f 1)"
+          if [[ "${REMOTE_SHA}" != "${BASE_SHA}" ]]; then
+            echo "::error title=Publication race::Default branch moved after bundle validation; refusing a stale push."
+            exit 1
+          fi
+          AUTH_HEADER="$(printf 'x-access-token:%s' "${GITHUB_TOKEN}" | base64 -w0)"
+          GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null git \
+            -c core.hooksPath=/dev/null \
+            -c credential.helper= \
+            -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${AUTH_HEADER}" \
+            push "${TARGET_URL}" "${PUBLISH_SHA}:refs/heads/${DEFAULT_BRANCH}"
+
+      - name: Record safe push failure details
+        if: ${{ failure() }}
+        shell: bash
+        env:
+          DOWNLOAD_OUTCOME: ${{ steps.download_publication.outcome }}
+          VALIDATION_OUTCOME: ${{ steps.validate_publication.outcome }}
+          PUSH_OUTCOME: ${{ steps.push.outcome }}
+        run: |
+          {
+            echo "## Catalog publication failed safely"
+            echo
+            echo "No unverified snapshot was pushed. Supabase ingestion may already be current; the next successful deterministic run will reconcile GitHub publication."
+            echo
+            echo "| Stage | Outcome |"
+            echo "| --- | --- |"
+            echo "| Commit artifact download | ${DOWNLOAD_OUTCOME} |"
+            echo "| Independent commit validation | ${VALIDATION_OUTCOME} |"
+            echo "| GitHub publication | ${PUSH_OUTCOME} |"
             echo
             echo "[Open this workflow run](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})"
           } >> "${GITHUB_STEP_SUMMARY}"

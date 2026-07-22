@@ -35,6 +35,21 @@ export function cardmarketProductImageUrlsV1(groupCode, productId) {
   });
 }
 
+export function hasCompleteArtworkCandidateSetV2(requestedCandidates, availableCandidates) {
+  if (!Array.isArray(requestedCandidates) || !Array.isArray(availableCandidates)) return false;
+  const requestedIds = requestedCandidates.map((candidate) => positiveInteger(candidate?.productId));
+  const availableIds = availableCandidates.map((candidate) => positiveInteger(candidate?.productId));
+  if (
+    requestedIds.some((productId) => productId == null)
+    || availableIds.some((productId) => productId == null)
+    || new Set(requestedIds).size !== requestedIds.length
+    || new Set(availableIds).size !== availableIds.length
+    || requestedIds.length !== availableIds.length
+  ) return false;
+  const available = new Set(availableIds);
+  return requestedIds.every((productId) => available.has(productId));
+}
+
 export async function fingerprintArtworkImageV1(bytes) {
   const input = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes ?? []);
   if (input.length === 0 || input.length > CARDMARKET_REGULAR_ART_POLICY_V1.maximumImageBytes) {

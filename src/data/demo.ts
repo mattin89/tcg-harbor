@@ -1,4 +1,4 @@
-import marketSnapshotRaw from './generated/onepiece-market-v7.json?raw';
+import marketSnapshotRaw from './generated/onepiece-market-v8.json?raw';
 
 export type Market = 'cardmarket' | 'tcgplayer';
 export type Currency = 'EUR' | 'USD';
@@ -18,6 +18,7 @@ export interface AcquisitionLot {
 export interface MarketDataMeta {
   matchingPolicy: string;
   englishExpansionIds: Record<string, number>;
+  englishStarterExpansionIds: Record<string, number>;
   englishReleaseManifest: {
     source: string;
     auditedAt: string;
@@ -32,6 +33,31 @@ export interface MarketDataMeta {
     exactMappingsByGroup: Record<string, number>;
     releasedGroupsWithoutExactStandardMappings: string[];
     ambiguityPolicy: string;
+  };
+  cardmarketCoverage: {
+    exactMappingsByGroup: Record<string, number>;
+    additionalExactMappingsByGroup: Record<string, number>;
+    coverageByGroup: Record<string, {
+      groupKind: 'booster' | 'starter-deck';
+      expansionId: number;
+      seededExactMappings: number;
+      exactMappings: number;
+      exactMappingsWithTrend: number;
+      ambiguousCardPrintings: number;
+      unavailableCardPrintings: number;
+      ambiguousGroups: number;
+    }>;
+    starterExpansionEvidence: Record<string, {
+      setCode: string;
+      idExpansion: number;
+      policy: string;
+      evidenceProductIds: number[];
+    }>;
+    ambiguousStarterExpansionEvidence: Array<Record<string, unknown>>;
+    mappingPolicy: string;
+    ambiguityPolicy: string;
+    ambiguousArtworkSamples: Array<Record<string, unknown>>;
+    unavailableSamples: Array<Record<string, unknown>>;
   };
   catalogCounts: Record<string, number>;
   cardmarket: {
@@ -67,6 +93,14 @@ export interface MarketDataMeta {
     source: string;
     feeds: string[];
     createdAt: string;
+    retrievalMode: 'live' | 'integrity-checked-cache-fallback';
+    cacheFetchedAt: string | null;
+    liveFetchError: {
+      name: string;
+      message: string;
+      lastFailureKind: string | null;
+      attempts: number | null;
+    } | null;
     priceField: string;
     currency: string;
     role: string;
@@ -115,8 +149,20 @@ export interface DemoAsset {
   imageUnavailableReason?: string;
   rulesCardId?: string;
   printingId?: string;
+  sourcePrintingId?: string;
   cardmarketProductId?: number;
   cardmarketExpansionId?: number;
+  cardmarketPriceState?: 'available' | 'trend-unavailable' | 'ambiguous-artwork' | 'unmapped';
+  cardmarketPriceReason?: string;
+  cardmarketMappingEvidence?: string;
+  cardmarketCandidateExpansionId?: number;
+  cardmarketCandidates?: Array<{ productId: number; trend: number | null }>;
+  cardmarketCandidatePriceRange?: {
+    minimumTrend: number | null;
+    maximumTrend: number | null;
+    pricedCandidates: number;
+    totalCandidates: number;
+  };
   tcgplayerProductId?: number;
   tcgplayerGroupId?: number;
   tcgplayerMappingEvidence?: string;

@@ -30,6 +30,17 @@ function percentAgainst(current: number | null, comparison: number | null): numb
 }
 
 describe('source-backed catalog snapshot', () => {
+  it('records whether OPTCG was live or an integrity-checked fallback', () => {
+    expect(['live', 'integrity-checked-cache-fallback']).toContain(marketDataMeta.optcg.retrievalMode);
+    if (marketDataMeta.optcg.retrievalMode === 'integrity-checked-cache-fallback') {
+      expect(Number.isNaN(Date.parse(marketDataMeta.optcg.cacheFetchedAt ?? ''))).toBe(false);
+      expect(marketDataMeta.optcg.liveFetchError?.message).toBeTruthy();
+    } else {
+      expect(marketDataMeta.optcg.cacheFetchedAt).toBeNull();
+      expect(marketDataMeta.optcg.liveFetchError).toBeNull();
+    }
+  });
+
   it('keeps the owned collection separate from the complete searchable catalog', () => {
     expect(initialAssets).toHaveLength(40);
     expect(catalogAssets.length).toBeGreaterThan(5_500);
@@ -257,6 +268,90 @@ describe('source-backed catalog snapshot', () => {
     expect(alternateArts.length).toBeGreaterThan(0);
     expect(alternateArts.every((asset) => asset.cardmarketProductId == null)).toBe(true);
     expect(alternateArts.every((asset) => asset.quote.cardmarket === null)).toBe(true);
+  });
+
+  it('adds only artwork-safe v8 Cardmarket mappings and explains every price state', () => {
+    const cards = catalogAssets.filter((asset) => asset.kind === 'card');
+    const exact = cards.filter((asset) => asset.cardmarketProductId != null);
+    const available = cards.filter((asset) => asset.cardmarketPriceState === 'available');
+    const trendUnavailable = cards.filter((asset) => asset.cardmarketPriceState === 'trend-unavailable');
+    const ambiguous = cards.filter((asset) => asset.cardmarketPriceState === 'ambiguous-artwork');
+    const unmapped = cards.filter((asset) => asset.cardmarketPriceState === 'unmapped');
+
+    expect(cards.every((asset) => asset.cardmarketPriceReason)).toBe(true);
+    expect(exact).toHaveLength(marketDataMeta.catalogCounts.cardmarketMappedCardPrintings);
+    expect(new Set(exact.map((asset) => asset.cardmarketProductId)).size).toBe(exact.length);
+    expect(available).toHaveLength(marketDataMeta.catalogCounts.cardmarketPricedCardPrintings);
+    expect(trendUnavailable).toHaveLength(
+      marketDataMeta.catalogCounts.cardmarketTrendUnavailableCardPrintings,
+    );
+    expect(ambiguous).toHaveLength(marketDataMeta.catalogCounts.cardmarketAmbiguousCardPrintings);
+    expect(unmapped).toHaveLength(marketDataMeta.catalogCounts.cardmarketUnmappedCardPrintings);
+    expect(available.every(
+      (asset) => asset.cardmarketProductId != null && asset.quote.cardmarket != null,
+    )).toBe(true);
+    expect(ambiguous.every(
+      (asset) => asset.cardmarketProductId == null
+        && asset.quote.cardmarket == null
+        && (asset.cardmarketCandidates?.length ?? 0) > 0,
+    )).toBe(true);
+    expect(ambiguous.every((asset) => {
+      const range = asset.cardmarketCandidatePriceRange;
+      return !range
+        || range.minimumTrend == null
+        || range.maximumTrend == null
+        || range.minimumTrend <= range.maximumTrend;
+    })).toBe(true);
+    expect(marketDataMeta.catalogCounts.cardmarketAdditionalExactBoosterMappings).toBeGreaterThanOrEqual(150);
+    expect(marketDataMeta.catalogCounts.cardmarketAdditionalExactStarterMappings).toBeGreaterThan(0);
+  });
+
+  it('keeps Cardmarket V.1/V.2 products ambiguous instead of sorting product IDs', () => {
+    const fireFistPrintings = catalogAssets.filter(
+      (asset) => asset.kind === 'card'
+        && asset.setCode === 'OP03'
+        && asset.number === 'OP03-018',
+    );
+
+    expect(fireFistPrintings).toHaveLength(2);
+    for (const asset of fireFistPrintings) {
+      expect(asset.cardmarketPriceState).toBe('ambiguous-artwork');
+      expect(asset.cardmarketProductId).toBeNull();
+      expect(asset.quote.cardmarket).toBeNull();
+      expect(asset.cardmarketCandidates).toEqual([
+        { productId: 719387, trend: expect.any(Number) },
+        { productId: 719388, trend: expect.any(Number) },
+      ]);
+      expect(asset.cardmarketCandidatePriceRange?.totalCandidates).toBe(2);
+    }
+  });
+
+  it('maps unique booster and starter-deck printings, including Katakuri, without title guessing', () => {
+    const uniqueSpecial = catalogAssets.find(
+      (asset) => asset.kind === 'card'
+        && asset.setCode === 'OP03'
+        && asset.sourcePrintingId === 'ST01-012_p1',
+    );
+    expect(uniqueSpecial).toMatchObject({
+      cardmarketProductId: 720061,
+      cardmarketPriceState: 'available',
+    });
+
+    for (const [setCode, sourcePrintingId] of [
+      ['ST07', 'ST07-003'],
+      ['ST16', 'ST16-003'],
+      ['ST20', 'OP03-099_p2'],
+    ] as const) {
+      const katakuri = catalogAssets.find(
+        (asset) => asset.kind === 'card'
+          && asset.setCode === setCode
+          && asset.sourcePrintingId === sourcePrintingId,
+      );
+      expect(katakuri?.name).toMatch(/Katakuri/i);
+      expect(katakuri?.cardmarketProductId, `${setCode} ${sourcePrintingId}`).toBeTruthy();
+      expect(katakuri?.cardmarketPriceState, `${setCode} ${sourcePrintingId}`).toBe('available');
+      expect(katakuri?.quote.cardmarket, `${setCode} ${sourcePrintingId}`).not.toBeNull();
+    }
   });
 
   it('has hundreds of exact direct Cardmarket and TCGplayer comparison pairs', () => {

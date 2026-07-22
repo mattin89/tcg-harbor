@@ -4,6 +4,12 @@ on:
   schedule:
     - cron: '17 3 * * *'
   workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Ingest into Supabase and publish the verified snapshot'
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -14,39 +20,72 @@ concurrency:
 
 jobs:
   sync:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
+    env:
+      SHOULD_PUBLISH: ${{ github.event_name == 'schedule' || inputs.publish == true }}
     steps:
-      - name: Check out the default branch
-        uses: actions/checkout@v4
+      - name: Validate publication context and secrets
+        id: preflight
+        if: ${{ env.SHOULD_PUBLISH == 'true' }}
+        shell: bash
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: |
+          if [[ "${GITHUB_REF_NAME}" != "${DEFAULT_BRANCH}" ]]; then
+            echo "::error title=Unsafe publication ref::Publication is allowed only from ${DEFAULT_BRANCH}, not ${GITHUB_REF_NAME}."
+            exit 1
+          fi
+
+          missing=()
+          [[ -n "${SUPABASE_URL}" ]] || missing+=(SUPABASE_URL)
+          [[ -n "${SUPABASE_SECRET_KEY}" ]] || missing+=(SUPABASE_SECRET_KEY)
+          if ((${#missing[@]})); then
+            joined="$(IFS=', '; echo "${missing[*]}")"
+            echo "::error title=Missing required Actions secrets::Configure repository Actions secrets: ${joined}"
+            exit 1
+          fi
+
+      - name: Check out the selected branch
+        id: checkout
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ github.event_name == 'schedule' && github.event.repository.default_branch || github.ref }}
 
       - name: Use Node.js 22
-        uses: actions/setup-node@v4
+        id: setup_node
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: npm
+          cache-dependency-path: package-lock.json
 
       - name: Install pinned dependencies
+        id: install
         run: npm ci
 
       - name: Refresh trusted market and catalog sources
+        id: refresh
         run: npm run sync:data
 
       - name: Verify catalog and domain invariants
+        id: test
         run: npm test
 
       - name: Verify the production build
+        id: build
         run: npm run build
 
       - name: Prepare the verified snapshot commit
         id: catalog_commit
+        if: ${{ env.SHOULD_PUBLISH == 'true' }}
         shell: bash
         run: |
           echo "base_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          git add src/data/generated/onepiece-market-v7.json
+          git add src/data/generated/onepiece-market-v8.json scripts/data/optcg-source-cache-v1.json
           if git diff --cached --quiet; then
             echo "Catalog snapshot is already current."
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -62,6 +101,8 @@ jobs:
       # database ahead until the next successful deterministic run; the catalog
       # ingestion path documents that remaining atomic-publication limitation.
       - name: Verify the default branch has not moved
+        id: branch_guard
+        if: ${{ env.SHOULD_PUBLISH == 'true' }}
         shell: bash
         env:
           BASE_SHA: ${{ steps.catalog_commit.outputs.base_sha }}
@@ -75,15 +116,63 @@ jobs:
           fi
 
       - name: Ingest the verified snapshot into Supabase
+        id: ingest
+        if: ${{ env.SHOULD_PUBLISH == 'true' }}
         run: npm run sync:ingest
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      # A branch update during ingestion cannot be rolled back across GitHub
+      # and Supabase, but catching it explicitly prevents a force/stale push.
+      # The next deterministic run safely completes the publication pair.
+      - name: Recheck the default branch before publication
+        id: final_branch_guard
+        if: ${{ env.SHOULD_PUBLISH == 'true' }}
+        shell: bash
+        env:
+          BASE_SHA: ${{ steps.catalog_commit.outputs.base_sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git fetch --no-tags origin "${DEFAULT_BRANCH}"
+          REMOTE_SHA="$(git rev-parse "origin/${DEFAULT_BRANCH}")"
+          if [[ "${REMOTE_SHA}" != "${BASE_SHA}" ]]; then
+            echo "::error title=Publication race::Default branch moved during Supabase ingestion; refusing a stale push. The next run will reconcile the idempotent ingestion."
+            exit 1
+          fi
 
       - name: Publish the ingested snapshot
-        if: steps.catalog_commit.outputs.changed == 'true'
+        id: publish
+        if: ${{ success() && env.SHOULD_PUBLISH == 'true' && steps.catalog_commit.outputs.changed == 'true' }}
         shell: bash
         env:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: git push origin "HEAD:${DEFAULT_BRANCH}"
+
+      - name: Record safe failure details
+        if: ${{ failure() }}
+        shell: bash
+        env:
+          PREFLIGHT_OUTCOME: ${{ steps.preflight.outcome }}
+          REFRESH_OUTCOME: ${{ steps.refresh.outcome }}
+          TEST_OUTCOME: ${{ steps.test.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          INGEST_OUTCOME: ${{ steps.ingest.outcome }}
+          PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
+        run: |
+          {
+            echo "## Catalog sync failed safely"
+            echo
+            echo "No unverified snapshot was pushed. Transient source failures are retried inside the synchronizer; persistent source, validation, configuration, or ingestion failures remain red by design."
+            echo
+            echo "| Stage | Outcome |"
+            echo "| --- | --- |"
+            echo "| Preflight | ${PREFLIGHT_OUTCOME} |"
+            echo "| Source refresh | ${REFRESH_OUTCOME} |"
+            echo "| Tests | ${TEST_OUTCOME} |"
+            echo "| Build | ${BUILD_OUTCOME} |"
+            echo "| Supabase ingestion | ${INGEST_OUTCOME} |"
+            echo "| GitHub publication | ${PUBLISH_OUTCOME} |"
+            echo
+            echo "[Open this workflow run](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})"
+          } >> "${GITHUB_STEP_SUMMARY}"

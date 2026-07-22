@@ -30,6 +30,17 @@ function percentAgainst(current: number | null, comparison: number | null): numb
 }
 
 describe('source-backed catalog snapshot', () => {
+  it('records whether OPTCG was live or an integrity-checked fallback', () => {
+    expect(['live', 'integrity-checked-cache-fallback']).toContain(marketDataMeta.optcg.retrievalMode);
+    if (marketDataMeta.optcg.retrievalMode === 'integrity-checked-cache-fallback') {
+      expect(Number.isNaN(Date.parse(marketDataMeta.optcg.cacheFetchedAt ?? ''))).toBe(false);
+      expect(marketDataMeta.optcg.liveFetchError?.message).toBeTruthy();
+    } else {
+      expect(marketDataMeta.optcg.cacheFetchedAt).toBeNull();
+      expect(marketDataMeta.optcg.liveFetchError).toBeNull();
+    }
+  });
+
   it('keeps the owned collection separate from the complete searchable catalog', () => {
     expect(initialAssets).toHaveLength(40);
     expect(catalogAssets.length).toBeGreaterThan(5_500);

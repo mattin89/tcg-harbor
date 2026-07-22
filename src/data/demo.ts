@@ -93,6 +93,14 @@ export interface MarketDataMeta {
     source: string;
     feeds: string[];
     createdAt: string;
+    retrievalMode: 'live' | 'integrity-checked-cache-fallback';
+    cacheFetchedAt: string | null;
+    liveFetchError: {
+      name: string;
+      message: string;
+      lastFailureKind: string | null;
+      attempts: number | null;
+    } | null;
     priceField: string;
     currency: string;
     role: string;

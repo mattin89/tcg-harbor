@@ -29,6 +29,13 @@ import {
   previousBandaiReleaseContinuityV2,
   retryReleaseManifestValidationV2,
 } from './lib/bandai-release-continuity-v2.mjs';
+import {
+  assertOptcgCacheCoversReleasedSetsV1,
+  buildOptcgSourceCacheV1,
+  loadOptcgFeedsWithCacheV1,
+  OPTCG_FEEDS_V1,
+  serializeOptcgSourceCacheV1,
+} from './lib/optcg-source-cache-v1.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // v8 preserves the v7 snapshot while extending Cardmarket coverage only where
@@ -36,6 +43,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // V.1/V.2 products remain candidates and never enter portfolio valuation.
 const PREVIOUS_OUTPUT = resolve(ROOT, 'src/data/generated/onepiece-market-v7.json');
 const OUTPUT = resolve(ROOT, 'src/data/generated/onepiece-market-v8.json');
+const OPTCG_CACHE = resolve(ROOT, 'scripts/data/optcg-source-cache-v1.json');
 const CARDMARKET_PRODUCTS = 'https://downloads.s3.cardmarket.com/productCatalog/productList/products_singles_18.json';
 const CARDMARKET_NONSINGLES = 'https://downloads.s3.cardmarket.com/productCatalog/productList/products_nonsingles_18.json';
 const CARDMARKET_PRICES = 'https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_18.json';
@@ -144,12 +152,7 @@ const VERIFIED_HIGH_RES_TCGPLAYER_PRODUCT_IDS = new Set([
   668177, 668186, 668187, 668188, 668189, 668193, 683972, 684302, 686458, 690674,
   690675, 693122, 548415, 695447,
 ]);
-const OPTCG_FEEDS = [
-  { kind: 'set', url: 'https://optcgapi.com/api/allSetCards/' },
-  { kind: 'starter', url: 'https://optcgapi.com/api/allSTCards/' },
-  { kind: 'promo', url: 'https://optcgapi.com/api/allPromos/' },
-  { kind: 'don', url: 'https://optcgapi.com/api/allDonCards/' },
-];
+const OPTCG_FEEDS = OPTCG_FEEDS_V1;
 
 const GRADIENTS = ['coral', 'gold', 'violet', 'azure', 'jade', 'rose', 'indigo', 'amber'];
 const RARITIES = {
@@ -1051,16 +1054,26 @@ try {
   }
 }
 
-const [marketSources, tcgcsvBundle, feedResponses, ecbCsv] = await Promise.all([
+const [marketSources, tcgcsvBundle, optcgFeedResult, ecbCsv] = await Promise.all([
   Promise.all([
     fetchJson(CARDMARKET_PRODUCTS),
     fetchJson(CARDMARKET_NONSINGLES),
     fetchJson(CARDMARKET_PRICES),
   ]),
   fetchTcgcsvBundle(previousSnapshot),
-  fetchOptcgFeeds(),
+  loadOptcgFeedsWithCacheV1({
+    fetchLive: fetchOptcgFeeds,
+    readCache: () => readFile(OPTCG_CACHE, 'utf8'),
+  }),
   fetchText(ECB_USD_PER_EUR),
 ]);
+
+const feedResponses = optcgFeedResult.responses;
+if (optcgFeedResult.retrievalMode === 'integrity-checked-cache-fallback') {
+  console.warn(
+    `::warning title=Integrity-checked OPTCG cache fallback::The live OPTCG catalog was unreachable after bounded retries. Using the SHA-256 integrity-checked cache fetched at ${optcgFeedResult.cacheFetchedAt}; Cardmarket, TCGplayer, Bandai, and ECB data remain live.`,
+  );
+}
 
 const [productCatalog, nonSinglesCatalog, priceGuide] = marketSources;
 const {
@@ -1116,6 +1129,12 @@ const releasedOfficialCardSetCodes = new Set(bandaiCatalog.products
 const futureOfficialCardSetCodes = new Set(bandaiCatalog.products
   .filter((product) => product.officialCode && !officialProductAvailableAt(product, officialReleaseCutoff))
   .flatMap((product) => officialMemberSetCodes(product.officialCode)));
+if (optcgFeedResult.retrievalMode === 'integrity-checked-cache-fallback') {
+  assertOptcgCacheCoversReleasedSetsV1(
+    optcgFeedResult.cacheDocument,
+    [...releasedOfficialCardSetCodes],
+  );
+}
 const isReleasedOfficialCoreCard = (card) => {
   if (card.__source === 'don') return true;
   const number = rulesCardId(card);
@@ -2694,9 +2713,12 @@ const output = {
       source: 'https://optcgapi.com/documentation',
       feeds: OPTCG_FEEDS.map((feed) => feed.url),
       createdAt: optcgDates.at(-1) ?? generatedAt,
+      retrievalMode: optcgFeedResult.retrievalMode,
+      cacheFetchedAt: optcgFeedResult.cacheFetchedAt,
+      liveFetchError: optcgFeedResult.liveFetchError,
       priceField: 'market_price',
       currency: 'USD',
-      role: 'Set, starter-deck, and DON!! printing truth; promotional rules metadata joined by card number; US market reference for non-promo printings',
+      role: 'Set, starter-deck, and DON!! printing truth; promotional rules metadata joined by card number; US market reference for non-promo printings. A transient live-source outage may use only the checked-in SHA-256 integrity-checked cache for at most seven days, and that cache must already have been validated against every currently released official Bandai set before publication.',
     },
     exchangeRate: {
       ...exchangeRate,
@@ -2708,8 +2730,20 @@ const output = {
   assets: [...cardAssets, ...sealedAssets],
 };
 
+const optcgCacheDocumentToWrite = optcgFeedResult.retrievalMode === 'live'
+  ? buildOptcgSourceCacheV1(feedResponses, {
+    fetchedAt: optcgFeedResult.sourceFetchedAt,
+    releaseVerifiedAt: bandaiCatalog.fetchedAt,
+    releasedSetCodes: [...releasedOfficialCardSetCodes],
+  })
+  : null;
+
 await mkdir(dirname(OUTPUT), { recursive: true });
 await writeFile(OUTPUT, `${JSON.stringify(output, null, 2)}\n`, 'utf8');
+if (optcgCacheDocumentToWrite) {
+  await mkdir(dirname(OPTCG_CACHE), { recursive: true });
+  await writeFile(OPTCG_CACHE, serializeOptcgSourceCacheV1(optcgCacheDocumentToWrite), 'utf8');
+}
 await ingestSnapshotToSupabase(output, bandaiCatalog);
 console.log(`Wrote ${cardAssets.length} card printings (${output.provenance.catalogCounts.cardPrintingsWithImages} with images, ${output.provenance.catalogCounts.cardPrintingsWithoutImages} explicitly unavailable) and ${sealedAssets.length} English sealed products to ${OUTPUT}`);
 console.log(`TCGCSV promo printings: ${promoAssets.length} (${promoAssetsWithPrices.length} headline market prices, ${promoAssetsWithMultiplePriceSubtypes.length} multi-subtype price sets, ${promoAssetsWithoutPriceRows.length} without price rows, ${japanesePromoAssets.length} explicitly Japanese)`);
@@ -2721,4 +2755,5 @@ if (groupsWithoutExactMappings.length > 0) console.log(`Released groups with no 
 console.log(`Cardmarket snapshot: ${priceGuide.createdAt}`);
 console.log(`TCGCSV snapshot: ${tcgcsvCreatedAt}`);
 console.log(`OPTCG snapshot: ${output.provenance.optcg.createdAt}`);
+console.log(`OPTCG retrieval mode: ${output.provenance.optcg.retrievalMode}${output.provenance.optcg.cacheFetchedAt ? ` (${output.provenance.optcg.cacheFetchedAt})` : ''}`);
 console.log(`ECB USD per EUR: ${exchangeRate.usdPerEur} (${exchangeRate.observationDate})`);

@@ -18,6 +18,7 @@ describe('daily catalog workflow', () => {
     expect(workflow).toContain('uses: actions/setup-node@v6');
     expect(workflow).toContain("SHOULD_PUBLISH: ${{ github.event_name == 'schedule' || inputs.publish == true }}");
     expect(workflow).toContain("ref: ${{ github.event_name == 'schedule' && github.event.repository.default_branch || github.ref }}");
+    expect(workflow).toContain('git add src/data/generated/onepiece-market-v8.json scripts/data/optcg-source-cache-v1.json');
     expect(workflow).toContain('git push origin "HEAD:${DEFAULT_BRANCH}"');
     expect(preflightIndex).toBeGreaterThan(-1);
     expect(prepareIndex).toBeGreaterThan(-1);

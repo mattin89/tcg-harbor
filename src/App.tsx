@@ -15,7 +15,10 @@ import { resolveActiveNavPathV2 } from './domain/navigationV2';
 import { resolveAccountBootstrapSeedsV2 } from './domain/accountBootstrapV2';
 import { resolveViewerPathV4, viewerMutationDecisionV4 } from './domain/guestAccessV4';
 import { normalizeCatalogQueryV5, selectCardGroupMatchV5 } from './domain/catalogSearchV5';
-import { resolveCardmarketReferenceV8 } from './domain/cardmarketReferenceV8';
+import {
+  resolveCardmarketArtworkReferenceV9,
+  resolveCatalogCardmarketReferenceV9,
+} from './domain/cardmarketSearchReferenceV9';
 import { useProductionCollectionV2, type ProductionCollectionRuntimeV2 } from './services/supabase/useProductionCollectionV2';
 import { useProductionDirectMessagesV2, type ProductionDirectMessagesRuntimeV2 } from './services/supabase/useProductionDirectMessagesV2';
 import type { ProductionDirectConversationV2 } from './services/supabase/directMessageRepositoryV2';
@@ -631,7 +634,7 @@ function AddItemsPage({ assets, setAssets, productionCollection, market, navigat
     ? cardGroupIndex.get(selected.rulesCardId ?? selected.number ?? selected.id) ?? [selected]
     : [];
   const selectedCardmarketReference = selected
-    ? resolveCardmarketReferenceV8(selected)
+    ? resolveCardmarketArtworkReferenceV9(selected)
     : null;
 
   useEffect(() => { setResultLimit(40); }, [catalogSet, query, tab]);
@@ -729,7 +732,7 @@ function AddItemsPage({ assets, setAssets, productionCollection, market, navigat
     {selected.kind === 'card' && <section className="art-picker" aria-labelledby="art-picker-title">
       <header><span><strong id="art-picker-title">Choose the exact art</strong><small>{availableArts.length} sourced {availableArts.length === 1 ? 'printing' : 'printings'} for {selected.rulesCardId ?? selected.number}</small></span><Chip tone="blue">{selected.language} printing</Chip></header>
       <div>{availableArts.map((art) => {
-        const cardmarketReference = resolveCardmarketReferenceV8(art);
+        const cardmarketReference = resolveCardmarketArtworkReferenceV9(art);
         const displayedReference = market === 'cardmarket'
           ? cardmarketReference.displayValue
           : formatMoney(art.quote.tcgplayer, 'USD');
@@ -753,8 +756,9 @@ function AddItemsPage({ assets, setAssets, productionCollection, market, navigat
         <div className="catalog-results" aria-live="polite">
           {results.map((asset) => {
             const groupId = asset.rulesCardId ?? asset.number ?? asset.id;
-            const artCount = cardGroupIndex.get(groupId)?.length ?? 1;
-            const cardmarketReference = resolveCardmarketReferenceV8(asset);
+            const groupArts = tab === 'card' ? cardGroupIndex.get(groupId) ?? [asset] : [asset];
+            const artCount = groupArts.length;
+            const cardmarketReference = resolveCatalogCardmarketReferenceV9(asset, groupArts);
             const isSelected = tab === 'card'
               ? selected?.kind === 'card' && (selected.rulesCardId ?? selected.number ?? selected.id) === groupId
               : selected?.id === asset.id;

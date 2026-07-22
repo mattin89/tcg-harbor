@@ -1,4 +1,4 @@
-import marketSnapshotRaw from './generated/onepiece-market-v9.json?raw';
+import marketSnapshotRaw from './generated/onepiece-market-v10.json?raw';
 
 export type Market = 'cardmarket' | 'tcgplayer';
 export type Currency = 'EUR' | 'USD';
@@ -57,15 +57,42 @@ export interface MarketDataMeta {
     mappingPolicy: string;
     ambiguityPolicy: string;
     regularArtReferencePolicy: {
-      version: 'cardmarket-image-correlation-v1';
+      version: 'cardmarket-image-correlation-v1' | 'cardmarket-image-correlation-v2-complete-candidates';
       featureWidth: number;
       featureHeight: number;
       minimumCorrelation: number;
       minimumMargin: number;
+      candidateCoverage?: 'complete';
+      refreshBuckets?: number;
+      maximumEvidenceAgeDays?: number;
+      transientGraceDays?: number;
+      imageFetchAttempts?: number;
       persistedReferences: number;
+      migratedCompleteLegacyReferences?: number;
       discoveredReferences: number;
+      deferredRefreshes?: number;
       unresolvedReferences: number;
       unresolvedSamples: Array<Record<string, unknown>>;
+    };
+    artworkReferencePolicy: {
+      version: 'cardmarket-image-correlation-v1' | 'cardmarket-image-correlation-v2-complete-candidates';
+      featureWidth: number;
+      featureHeight: number;
+      minimumCorrelation: number;
+      minimumMargin: number;
+      candidateCoverage?: 'complete';
+      refreshBuckets?: number;
+      maximumEvidenceAgeDays?: number;
+      transientGraceDays?: number;
+      imageFetchAttempts?: number;
+      persistedReferences: number;
+      migratedCompleteLegacyReferences?: number;
+      discoveredReferences: number;
+      deferredRefreshes?: number;
+      unresolvedReferences: number;
+      unresolvedSamples: Array<Record<string, unknown>>;
+      rejectedProductConflicts: number;
+      rejectedProductConflictSamples: Array<Record<string, unknown>>;
     };
     ambiguousArtworkSamples: Array<Record<string, unknown>>;
     unavailableSamples: Array<Record<string, unknown>>;
@@ -78,6 +105,22 @@ export interface MarketDataMeta {
     createdAt: string;
     priceField: string;
     currency: string;
+    cardmarketSealedPriceLanguageScope?: string;
+    exactSealedReleaseGates?: Record<string, { releasedOn: string }>;
+    futureSealedProductsExcluded?: Array<{
+      cardmarketProductId: number;
+      name: string;
+      setCode: string;
+    }>;
+    unknownManifestSealedProductsExcluded?: Array<{
+      cardmarketProductId: number;
+      name: string;
+      setCode: string;
+    }>;
+    approvedCatalogRemovalReviews?: Record<string, {
+      reason: string;
+      expiresAt: string;
+    }>;
   };
   tcgcsv: {
     source: string;
@@ -124,6 +167,14 @@ export interface MarketDataMeta {
     source: string;
     direction: 'USD per EUR';
     role: string;
+    retrievalMode?: 'live' | 'verified-snapshot-fallback';
+    fallbackUsedAt?: string | null;
+    liveFetchError?: {
+      name: string;
+      message: string;
+      lastFailureKind: string | null;
+      attempts: number | null;
+    } | null;
   };
 }
 
@@ -134,11 +185,36 @@ interface MarketSnapshot {
   assets: DemoAsset[];
 }
 
+export interface CardmarketArtworkReference {
+  productId: number;
+  expansionId: number;
+  trend: number | null;
+  observedAt: string;
+  source: string;
+  matchPolicy: 'cardmarket-image-correlation-v1' | 'cardmarket-image-correlation-v2-complete-candidates';
+  candidateCount?: number;
+  imageVerifiedAt?: string;
+  refreshDeferredAt?: string;
+  refreshDeferredReason?: string;
+  correlation: number;
+  runnerUpCorrelation: number | null;
+  margin: number;
+  sourceImageUrl: string;
+  productImageUrl: string;
+  sourceImageDigest: string;
+  productImageDigest: string;
+  evidence: string;
+}
+
 export interface DemoAsset {
   id: string;
   /** Production-only owner-scoped row identifier. */
   collectionItemId?: string;
   catalogId?: string;
+  /** Existing-record alias hidden from new catalog adds; holdings remain loadable. */
+  catalogAliasOf?: string;
+  /** Production holding whose variant, card, set, or sealed product was retired. */
+  catalogArchived?: boolean;
   kind: AssetKind;
   name: string;
   set: string;
@@ -148,6 +224,9 @@ export interface DemoAsset {
   variant: string;
   productType?: string;
   language: string;
+  languageEvidence?: string;
+  region?: string;
+  regionEvidenceUrl?: string | null;
   condition: string;
   quantity: number;
   purchasePrice?: number;
@@ -158,6 +237,20 @@ export interface DemoAsset {
   imageUrl?: string;
   imageState?: 'available' | 'unavailable';
   imageUnavailableReason?: string;
+  imageSourceProductId?: number;
+  imageSourceRelationship?: 'exact-product' | 'contained-unit';
+  imageSourceUrl?: string;
+  imageEvidenceUrl?: string;
+  imageSourceName?: string;
+  imageSourceDigest?: string;
+  imageOutputDigest?: string;
+  imageObservedAt?: string;
+  imageRefreshDeferred?: boolean;
+  imageRefreshDeferredReason?: string;
+  imageSourceWidth?: number;
+  imageSourceHeight?: number;
+  imageWidth?: number;
+  imageHeight?: number;
   rulesCardId?: string;
   printingId?: string;
   sourcePrintingId?: string;
@@ -174,22 +267,8 @@ export interface DemoAsset {
     pricedCandidates: number;
     totalCandidates: number;
   };
-  cardmarketRegularArtReference?: {
-    productId: number;
-    expansionId: number;
-    trend: number | null;
-    observedAt: string;
-    source: string;
-    matchPolicy: 'cardmarket-image-correlation-v1';
-    correlation: number;
-    runnerUpCorrelation: number | null;
-    margin: number;
-    sourceImageUrl: string;
-    productImageUrl: string;
-    sourceImageDigest: string;
-    productImageDigest: string;
-    evidence: string;
-  };
+  cardmarketArtworkReference?: CardmarketArtworkReference;
+  cardmarketRegularArtReference?: CardmarketArtworkReference;
   tcgplayerProductId?: number;
   tcgplayerGroupId?: number;
   tcgplayerMappingEvidence?: string;
@@ -287,6 +366,7 @@ export const initialAssets: DemoAsset[] = sourceBackedCatalog
   }));
 
 export const marketDataMeta = marketSnapshot.provenance;
+export const marketDataGeneratedAt = marketSnapshot.generatedAt;
 
 export const stores: Store[] = [
   { id: 'berlin-dock', code: 'HARBOR-DRESDEN-7K2M', name: 'Dresden Card Dock', city: 'Dresden', country: 'Germany', address: 'Prager Straße, 01069 Dresden', distance: '0.7 km', members: 318, trades: 24, joined: true, x: 50, y: 42, latitude: 51.0455, longitude: 13.7352, hours: 'Today · 12:00–21:00', phone: '+49 351 555 0188', email: 'crew@dresdencarddock.demo', accent: 'coral' },

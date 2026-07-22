@@ -217,6 +217,25 @@ function nullPriceChange(): DemoAsset['change'] {
   };
 }
 
+function holdingCatalogIsArchived(item: CollectionRow): boolean {
+  if (item.card_variant_id !== null) {
+    const variant = item.card_variant;
+    const card = variant?.card;
+    const cardSet = card?.card_set;
+    return !variant
+      || !card
+      || !cardSet
+      || variant.archived_at !== null
+      || card.archived_at !== null
+      || cardSet.archived_at !== null;
+  }
+
+  const product = item.sealed_product;
+  return !product
+    || product.archived_at !== null
+    || (product.card_set !== null && product.card_set.archived_at !== null);
+}
+
 /**
  * Builds an owner-private display record when a holding no longer has a row in
  * the managed in-app catalog. It deliberately carries no current market price:
@@ -456,6 +475,7 @@ export class SupabaseCollectionRepositoryV2 {
         id: `holding-${item.id}`,
         collectionItemId: item.id,
         catalogId: sourceAssetId ?? displayAsset.catalogId,
+        catalogArchived: holdingCatalogIsArchived(item),
         condition: conditionFromDatabase(item.condition),
         quantity: item.quantity,
         purchasePrice: numberOrNull(item.purchase_unit_amount) ?? undefined,

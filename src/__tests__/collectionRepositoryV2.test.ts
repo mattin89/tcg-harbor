@@ -283,7 +283,7 @@ describe('SupabaseCollectionRepositoryV2', () => {
             product_type: 'booster_box',
             language: 'EN',
             region: 'Europe',
-            image_url: null,
+            image_url: '/catalog/sealed/v1/750070-123456789abc.webp',
             release_date: '2024-09-13',
             external_identifiers: {},
             archived_at: '2026-07-20T00:00:00.000Z',
@@ -329,6 +329,7 @@ describe('SupabaseCollectionRepositoryV2', () => {
       number: 'OP08-001',
       variant: 'Alternate Art',
       language: 'English',
+      catalogArchived: true,
       quantity: 2,
       purchasePrice: 4.5,
       purchaseCurrency: 'EUR',
@@ -347,8 +348,10 @@ describe('SupabaseCollectionRepositoryV2', () => {
       productType: 'Booster Box',
       language: 'English',
       condition: 'Factory sealed',
+      catalogArchived: true,
       quote: { cardmarket: null, tcgplayer: null },
-      imageState: 'unavailable',
+      imageUrl: '/catalog/sealed/v1/750070-123456789abc.webp',
+      imageState: 'available',
     });
 
     const collectionSelect = selectedColumns.collection_items.join('\n');

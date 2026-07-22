@@ -5,10 +5,15 @@ import {
   type CatalogCardmarketAssetV9,
 } from '../domain/cardmarketSearchReferenceV9';
 
-const cards = catalogAssets.filter((asset) => asset.kind === 'card') as CatalogCardmarketAssetV9[];
+type SnapshotCatalogCardV10 = CatalogCardmarketAssetV9 & Pick<
+  DemoAsset,
+  'cardmarketArtworkReference' | 'catalogAliasOf'
+>;
 
-function cardGroups(): CatalogCardmarketAssetV9[][] {
-  const groups = new Map<string, CatalogCardmarketAssetV9[]>();
+const cards = catalogAssets.filter((asset) => asset.kind === 'card') as SnapshotCatalogCardV10[];
+
+function cardGroups(): SnapshotCatalogCardV10[][] {
+  const groups = new Map<string, SnapshotCatalogCardV10[]>();
   for (const asset of cards) {
     const id = asset.rulesCardId ?? asset.number ?? asset.id;
     const group = groups.get(id) ?? [];
@@ -18,8 +23,8 @@ function cardGroups(): CatalogCardmarketAssetV9[][] {
   return [...groups.values()];
 }
 
-describe('Cardmarket regular-art snapshot v9', () => {
-  it('keeps every image-verified regular-art reference display-only and auditable', () => {
+describe('Cardmarket regular-art snapshot compatibility', () => {
+  it('keeps every complete-candidate image-verified regular-art mapping auditable', () => {
     const references = cards.filter((asset) => asset.cardmarketRegularArtReference != null);
     const policy = marketDataMeta.cardmarketCoverage.regularArtReferencePolicy;
 
@@ -39,14 +44,16 @@ describe('Cardmarket regular-art snapshot v9', () => {
 
       expect(asset.variant).toBe('Standard');
       expect(asset.sourcePrintingId).toBe(asset.rulesCardId);
-      expect(asset.cardmarketPriceState).toBe('ambiguous-artwork');
-      expect(asset.cardmarketProductId).toBeNull();
-      expect(asset.quote.cardmarket).toBeNull();
+      expect(reference.matchPolicy).toBe('cardmarket-image-correlation-v2-complete-candidates');
+      expect(asset.cardmarketPriceState).toBe(reference.trend == null ? 'trend-unavailable' : 'available');
+      expect(asset.cardmarketProductId).toBe(reference.productId);
+      expect(asset.quote.cardmarket).toBe(reference.trend);
       expect(candidate).toBeDefined();
       expect(reference.expansionId).toBe(asset.cardmarketCandidateExpansionId);
       expect(reference.trend).toBe(candidate?.trend ?? null);
       expect(reference.correlation).toBeGreaterThanOrEqual(policy.minimumCorrelation);
       expect(reference.margin).toBeGreaterThanOrEqual(policy.minimumMargin);
+      expect(reference.candidateCount).toBe(asset.cardmarketCandidates?.length);
       expect(reference.sourceImageUrl).toMatch(/^https:\/\/optcgapi\.com\//);
       expect(reference.productImageUrl).toMatch(
         /^https:\/\/product-images\.s3\.cardmarket\.com\//,
@@ -61,7 +68,7 @@ describe('Cardmarket regular-art snapshot v9', () => {
     const views = groups.map((group) => resolveCatalogCardmarketReferenceV9(group[0], group));
 
     expect(groups.length).toBeGreaterThan(2_500);
-    expect(views.filter((view) => view.state === 'regular-image-reference').length)
+    expect(views.filter((view) => view.state === 'regular-exact').length)
       .toBeGreaterThan(400);
     expect(views.every((view) => !view.displayValue.includes('–'))).toBe(true);
     expect(views.every((view) => !/^\d.+(?:-|–).+\d/.test(view.displayValue))).toBe(true);
@@ -84,7 +91,7 @@ describe('Cardmarket regular-art snapshot v9', () => {
     expect(fireFist).toHaveLength(2);
     expect(regularReference?.productId).toBe(719388);
     expect(view).toMatchObject({
-      state: 'regular-image-reference',
+      state: 'regular-exact',
       sourceAssetId: regular?.id,
     });
     expect(view.displayValue).toBe(`${new Intl.NumberFormat('de-DE', {
@@ -96,11 +103,13 @@ describe('Cardmarket regular-art snapshot v9', () => {
         alternate!.cardmarketCandidates!.find(({ productId }) => productId === 719387)!.trend!,
       ),
     );
-    expect(regular?.quote.cardmarket).toBeNull();
-    expect(alternate?.quote.cardmarket).toBeNull();
+    expect(regular?.quote.cardmarket).toBe(regularReference?.trend);
+    expect(alternate?.quote.cardmarket).toBe(
+      alternate?.cardmarketArtworkReference?.trend,
+    );
   });
 
-  it('keeps priced origin releases and equivalent duplicate source rows visible', () => {
+  it('keeps priced origin releases and values legacy duplicate rows through one canonical physical art', () => {
     const reprinted = cards.filter((asset) => asset.rulesCardId === 'OP10-063');
     const origin = reprinted.find((asset) => asset.setCode === 'OP10');
     const duplicateSources = cards.filter((asset) => asset.rulesCardId === 'OP13-084');
@@ -114,11 +123,15 @@ describe('Cardmarket regular-art snapshot v9', () => {
       displayValue: '0,11 €',
     });
     expect(duplicateReferences).toHaveLength(2);
-    expect(new Set(duplicateReferences.map(
-      (asset) => asset.cardmarketRegularArtReference?.productId,
-    )).size).toBe(1);
+    const canonical = duplicateReferences.find((asset) => !asset.catalogAliasOf);
+    const aliases = duplicateReferences.filter((asset) => asset.catalogAliasOf);
+    expect(canonical).toBeDefined();
+    expect(aliases).toHaveLength(1);
+    expect(aliases[0].catalogAliasOf).toBe(canonical?.id);
+    expect(aliases[0].cardmarketProductId).toBe(canonical?.cardmarketProductId);
+    expect(aliases[0].quote.cardmarket).toBe(canonical?.quote.cardmarket);
     expect(resolveCatalogCardmarketReferenceV9(duplicateSources[0], duplicateSources)).toMatchObject({
-      state: 'regular-image-reference',
+      state: 'regular-exact',
       displayValue: '0,26 €',
     });
   });

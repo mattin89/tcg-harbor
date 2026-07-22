@@ -4,6 +4,7 @@ import {
   cardmarketImageFolderV1,
   cardmarketProductImageUrlsV1,
   chooseRegularArtImageMatchV1,
+  hasCompleteArtworkCandidateSetV2,
   mapWithConcurrencyV1,
 } from '../../scripts/lib/cardmarket-regular-art-v1.mjs';
 
@@ -18,6 +19,19 @@ function fingerprint(values, digest = 'fixture') {
 }
 
 describe('Cardmarket regular-art image matching v1', () => {
+  it('fails closed unless every current candidate image is present exactly once', () => {
+    const requested = [{ productId: 1 }, { productId: 2 }, { productId: 3 }];
+    expect(hasCompleteArtworkCandidateSetV2(requested, [
+      { productId: 3 }, { productId: 1 }, { productId: 2 },
+    ])).toBe(true);
+    expect(hasCompleteArtworkCandidateSetV2(requested, [
+      { productId: 1 }, { productId: 2 },
+    ])).toBe(false);
+    expect(hasCompleteArtworkCandidateSetV2(requested, [
+      { productId: 1 }, { productId: 2 }, { productId: 2 },
+    ])).toBe(false);
+  });
+
   it('constructs only scoped One Piece product-image candidates', () => {
     expect(cardmarketImageFolderV1('EB-01')).toBe('EB01');
     expect(cardmarketImageFolderV1('PRB-02')).toBe('PRB02');

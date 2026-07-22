@@ -24,7 +24,7 @@ export function CardArt({ asset, size = 'md' }: { asset: DemoAsset; size?: 'xs' 
   const usesSealedPlaceholder = asset.kind === 'sealed' && !asset.imageUrl;
   const displayImageUrl = asset.imageUrl ?? (usesSealedPlaceholder ? sealedProductPlaceholder : undefined);
   const unavailableLabel = usesSealedPlaceholder ? ', placeholder image; official product artwork unavailable' : asset.imageState === 'unavailable' ? ', source artwork unavailable' : '';
-  return <div className={`card-art art-${asset.color} art-${size} ${displayImageUrl ? 'has-card-image' : ''} ${usesSealedPlaceholder ? 'is-sealed-placeholder' : ''} ${asset.imageState === 'unavailable' ? 'art-source-unavailable' : ''}`} role="img" aria-label={`${asset.name}${asset.number ? `, ${asset.number}` : ''}${unavailableLabel}`} title={usesSealedPlaceholder ? asset.imageUnavailableReason ?? 'Placeholder image · official product artwork unavailable' : asset.imageUnavailableReason}>
+  return <div className={`card-art art-${asset.color} art-${size} ${displayImageUrl ? 'has-card-image' : ''} ${asset.kind === 'sealed' ? 'is-sealed-product' : ''} ${usesSealedPlaceholder ? 'is-sealed-placeholder' : ''} ${asset.imageState === 'unavailable' ? 'art-source-unavailable' : ''}`} role="img" aria-label={`${asset.name}${asset.number ? `, ${asset.number}` : ''}${unavailableLabel}`} title={usesSealedPlaceholder ? asset.imageUnavailableReason ?? 'Placeholder image · official product artwork unavailable' : asset.imageUnavailableReason}>
     <div className="art-compass"><span>{monogram}</span></div>
     <div className="art-waves" />
     <div className="art-meta"><small>{asset.setCode}</small><strong>{asset.kind === 'card' ? asset.rarity : asset.productType}</strong></div>

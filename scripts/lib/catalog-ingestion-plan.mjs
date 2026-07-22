@@ -49,6 +49,26 @@ export function providerMappingStableSeed(providerSlug, assetId, condition) {
   return `${providerSlug}:${assetId}:${condition}`;
 }
 
+export function providerMappingVersionSeed(
+  providerSlug,
+  assetId,
+  condition,
+  providerProductId,
+  supersedesMappingId = 'initial',
+) {
+  const identityParts = [
+    providerSlug,
+    assetId,
+    condition,
+    String(providerProductId),
+    supersedesMappingId ?? 'initial',
+  ];
+  if (identityParts.some((part) => !String(part).trim())) {
+    throw new Error('Provider mapping version seeds require every identity component.');
+  }
+  return JSON.stringify(identityParts);
+}
+
 export function productLevelMappingMetadata({ assetId, source, syncRunId, syncGeneratedAt }) {
   return {
     tcg_harbor_asset_id: assetId,
@@ -105,6 +125,7 @@ export function activeCatalogRemovalApprovalIds(approvals, snapshotGeneratedAt) 
   if (!Number.isFinite(snapshotTime)) throw new Error('Catalog removal approvals require a valid snapshot timestamp.');
   return new Set([...approvals.entries()]
     .filter(([, approval]) => {
+      if (approval.permanent === true) return true;
       const expiresAt = Date.parse(approval.expiresAt);
       if (!Number.isFinite(expiresAt)) throw new Error('Catalog removal approval has an invalid expiry.');
       return snapshotTime < expiresAt;

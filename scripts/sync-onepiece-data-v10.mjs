@@ -15,6 +15,7 @@ import {
   officialSetCodeReleaseState,
   pricingConditionForAsset,
   productLevelMappingMetadata,
+  providerMappingCanReuseActiveIdentity,
   providerMappingVersionSeed,
 } from './lib/catalog-ingestion-plan.mjs';
 import {
@@ -3681,8 +3682,10 @@ async function ingestSnapshotToSupabase(snapshot, officialCatalog, { required = 
       const variantKey = isCard ? asset.id : 'sealed';
       const naturalKey = `${provider.id}|${targetId}|${condition}|${language}|${variantKey}`;
       const existing = existingMappingByNaturalKey.get(naturalKey);
-      const reusesActiveIdentity = existing?.disabled_at == null
-        && existing.provider_product_id === providerProductId;
+      const reusesActiveIdentity = providerMappingCanReuseActiveIdentity(
+        existing,
+        providerProductId,
+      );
       const mappingVersion = reusesActiveIdentity
         ? Number(existing.mapping_version ?? 1)
         : Number(existing?.mapping_version ?? 0) + 1;

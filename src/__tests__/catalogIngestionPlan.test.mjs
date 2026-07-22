@@ -11,6 +11,7 @@ import {
   officialSetCodeReleaseState,
   pricingConditionForAsset,
   productLevelMappingMetadata,
+  providerMappingCanReuseActiveIdentity,
   providerMappingStableSeed,
   providerMappingVersionSeed,
 } from '../../scripts/lib/catalog-ingestion-plan.mjs';
@@ -62,6 +63,23 @@ describe('catalog ingestion plan', () => {
     expect(replacement).not.toBe(first);
     expect(() => providerMappingVersionSeed('', 'asset', 'near_mint', '1'))
       .toThrow(/every identity component/i);
+  });
+
+  it('treats a missing prior provider mapping as a new identity instead of dereferencing it', () => {
+    expect(providerMappingCanReuseActiveIdentity(undefined, '719388')).toBe(false);
+    expect(providerMappingCanReuseActiveIdentity(null, '719388')).toBe(false);
+    expect(providerMappingCanReuseActiveIdentity({
+      disabled_at: null,
+      provider_product_id: '719388',
+    }, '719388')).toBe(true);
+    expect(providerMappingCanReuseActiveIdentity({
+      disabled_at: '2026-07-22T00:00:00.000Z',
+      provider_product_id: '719388',
+    }, '719388')).toBe(false);
+    expect(providerMappingCanReuseActiveIdentity({
+      disabled_at: null,
+      provider_product_id: '719387',
+    }, '719388')).toBe(false);
   });
 
   it('states explicitly that copied condition rows use a product-level reference', () => {

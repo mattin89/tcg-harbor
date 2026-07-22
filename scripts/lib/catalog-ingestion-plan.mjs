@@ -69,6 +69,12 @@ export function providerMappingVersionSeed(
   return JSON.stringify(identityParts);
 }
 
+export function providerMappingCanReuseActiveIdentity(existingMapping, providerProductId) {
+  return existingMapping != null
+    && existingMapping.disabled_at == null
+    && existingMapping.provider_product_id === providerProductId;
+}
+
 export function productLevelMappingMetadata({ assetId, source, syncRunId, syncGeneratedAt }) {
   return {
     tcg_harbor_asset_id: assetId,

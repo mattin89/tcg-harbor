@@ -76,7 +76,8 @@ describe('atomic catalog publish and provider mapping history v3', () => {
     expect(script).toContain(".rpc('abort_catalog_sync_v3'");
     expect(script).toContain("'append-only-provider-identity-v3'");
     expect(script).toContain('providerMappingVersionSeed(');
-    expect(script).toContain('existing.provider_product_id === providerProductId');
+    expect(script).toContain('providerMappingCanReuseActiveIdentity(');
+    expect(script).not.toContain('existing?.disabled_at == null');
     expect(script).not.toMatch(
       /upsertSupabaseRows\(supabase,\s*'(?:card_sets|cards|card_variants|sealed_products|provider_catalog_mappings|price_snapshots)'/,
     );

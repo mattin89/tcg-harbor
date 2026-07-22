@@ -6,8 +6,8 @@ const syncUrl = new URL('../../scripts/sync-onepiece-data-v10.mjs', import.meta.
 
 const CHECKOUT_SHA = '3d3c42e5aac5ba805825da76410c181273ba90b1';
 const SETUP_NODE_SHA = '249970729cb0ef3589644e2896645e5dc5ba9c38';
-const UPLOAD_ARTIFACT_SHA = 'ea165f8d65b6e75b540449e92b4886f43607fa02';
-const DOWNLOAD_ARTIFACT_SHA = 'd3f86a106a0bac45b974a628896c90dbdf5c8093';
+const UPLOAD_ARTIFACT_SHA = '043fb46d1a93c77aae656e7c1c64a875d1fc6a0a';
+const DOWNLOAD_ARTIFACT_SHA = '3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c';
 
 function workflowJobs(workflow) {
   const verifyIndex = workflow.indexOf('\n  verify:');

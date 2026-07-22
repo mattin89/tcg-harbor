@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-07-22",
+  "expansions": [
+    {
+      "idExpansion": 5267,
+      "name": "Unnumbered Promos",
+      "imageFolder": "PB-XX",
+      "language": "English",
+      "releasedOn": "2023-02-22",
+      "evidenceUrl": "https://www.cardmarket.com/en/OnePiece/Products/Singles/Unnumbered-Promos/Nami-OP01-016-V1",
+      "evidence": "Cardmarket's English product page identifies the release and its official image CDN serves expansion 5267 products from the PB-XX folder."
+    }
+  ],
+  "verifiedPairInvariants": [
+    {
+      "printedNumber": "OP01-016",
+      "tcgplayerProductId": 485265,
+      "cardmarketProductId": 698921,
+      "evidence": "The complete same-number candidate matrix independently matches the TCGplayer Nami alternate-art image to Cardmarket product 698921."
+    }
+  ]
+}

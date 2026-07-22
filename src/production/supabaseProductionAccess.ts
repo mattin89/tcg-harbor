@@ -9,7 +9,9 @@ import type {
   ManagedStore,
   PendingApplication,
   ProductionAccessSnapshot,
+  ProductionNotificationPreferences,
   ProductionProfile,
+  ProductionProfileSettingsDraft,
   RegisteredStore,
   SignUpDraft,
   SignUpResult,
@@ -37,6 +39,22 @@ function optionalText(row: Row, key: string): string | null {
 function number(row: Row, key: string): number {
   const value = row[key];
   return typeof value === "number" ? value : Number(value);
+}
+
+function boolean(row: Row, key: string, fallback: boolean): boolean {
+  const value = row[key];
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function mapNotificationPreferences(value: unknown): ProductionNotificationPreferences {
+  const row = asRow(value);
+  return {
+    directMessages: boolean(row, "direct_messages", true),
+    communityReplies: boolean(row, "community_replies", true),
+    matchingTrades: boolean(row, "matching_trades", true),
+    tradeUpdates: boolean(row, "trade_updates", true),
+    emailEnabled: boolean(row, "email_enabled", false),
+  };
 }
 
 function asRow(value: unknown): Row {
@@ -283,11 +301,80 @@ export class SupabaseProductionAccess {
     if (error) throw new ProductionAccessError("updatePassword", error);
   }
 
+  async changePassword(currentPassword: string, password: string): Promise<void> {
+    const { data: currentUserData, error: currentUserError } = await this.client.auth.getUser();
+    const currentUser = currentUserData.user;
+    if (currentUserError || !currentUser?.email) {
+      throw new ProductionAccessError("changePassword", currentUserError ?? new Error("A verified email account is required to change the password."));
+    }
+    const { data: verification, error: verificationError } = await this.client.auth.signInWithPassword({
+      email: currentUser.email,
+      password: currentPassword,
+    });
+    if (verificationError || verification.user?.id !== currentUser.id) {
+      throw new ProductionAccessError("changePassword", verificationError ?? new Error("The current password could not be verified."));
+    }
+    const { error } = await this.client.auth.updateUser({
+      current_password: currentPassword,
+      password,
+    });
+    if (error) throw new ProductionAccessError("changePassword", error);
+  }
+
+  async updateProfileSettings(userId: string, draft: ProductionProfileSettingsDraft): Promise<void> {
+    const username = draft.username.trim().toLowerCase();
+    if (!/^[a-z0-9][a-z0-9_.-]{2,29}$/.test(username)) {
+      throw new ProductionAccessError("updateProfileSettings", new Error("Username must be 3–30 lowercase letters, numbers, dots, dashes, or underscores."));
+    }
+    const approximateCity = draft.approximateCity.trim();
+    const approximatePostcode = draft.approximatePostcode.trim();
+    if (approximateCity.length > 120 || approximatePostcode.length > 24) {
+      throw new ProductionAccessError("updateProfileSettings", new Error("City or postcode is too long."));
+    }
+
+    const { data, error } = await this.client
+      .from("user_profiles")
+      .update({
+        username,
+        primary_market: draft.primaryMarket === "tcgplayer" ? "united_states" : "europe",
+        preferred_currency: draft.preferredCurrency,
+        approximate_city: approximateCity || null,
+        approximate_postcode: approximatePostcode || null,
+      })
+      .eq("user_id", userId)
+      .select("user_id")
+      .single();
+    if (error) throw new ProductionAccessError("updateProfileSettings", error);
+    if (text(asRow(data), "user_id") !== userId) {
+      throw new ProductionAccessError("updateProfileSettings", new Error("The account profile was not updated."));
+    }
+  }
+
+  async updateNotificationPreferences(userId: string, preferences: ProductionNotificationPreferences): Promise<void> {
+    const { data, error } = await this.client
+      .from("notification_preferences")
+      .update({
+        direct_messages: preferences.directMessages,
+        community_replies: preferences.communityReplies,
+        matching_trades: preferences.matchingTrades,
+        trade_updates: preferences.tradeUpdates,
+        email_enabled: preferences.emailEnabled,
+      })
+      .eq("user_id", userId)
+      .select("user_id")
+      .single();
+    if (error) throw new ProductionAccessError("updateNotificationPreferences", error);
+    if (text(asRow(data), "user_id") !== userId) {
+      throw new ProductionAccessError("updateNotificationPreferences", new Error("Notification preferences were not updated."));
+    }
+  }
+
   async loadSnapshot(session: Session): Promise<ProductionAccessSnapshot> {
     const userId = session.user.id;
-    const [appUserResult, profileResult, applicationResult, storesResult, registeredStoresResult] = await Promise.all([
+    const [appUserResult, profileResult, preferencesResult, applicationResult, storesResult, registeredStoresResult] = await Promise.all([
       this.client.from("app_users").select("status,roles").eq("id", userId).single(),
-      this.client.from("user_profiles").select("username,display_name,avatar_url,account_kind").eq("user_id", userId).single(),
+      this.client.from("user_profiles").select("username,display_name,avatar_url,account_kind,primary_market,preferred_currency,approximate_city,approximate_postcode").eq("user_id", userId).single(),
+      this.client.from("notification_preferences").select("direct_messages,community_replies,matching_trades,trade_updates,email_enabled").eq("user_id", userId).single(),
       this.client.from("store_applications").select("*").eq("applicant_user_id", userId).order("submitted_at", { ascending: false }).limit(1).maybeSingle(),
       this.client
         .from("store_administrators")
@@ -303,7 +390,7 @@ export class SupabaseProductionAccess {
         .order("name", { ascending: true }),
     ]);
 
-    for (const result of [appUserResult, profileResult, applicationResult, storesResult, registeredStoresResult]) {
+    for (const result of [appUserResult, profileResult, preferencesResult, applicationResult, storesResult, registeredStoresResult]) {
       if (result.error) throw new ProductionAccessError("loadSnapshot", result.error);
     }
 
@@ -318,6 +405,10 @@ export class SupabaseProductionAccess {
       displayName: optionalText(profile, "display_name"),
       avatarUrl: optionalText(profile, "avatar_url"),
       accountKind: text(profile, "account_kind") === "store" ? "store" : "player",
+      primaryMarket: text(profile, "primary_market") === "united_states" ? "tcgplayer" : "cardmarket",
+      preferredCurrency: text(profile, "preferred_currency") === "USD" ? "USD" : "EUR",
+      approximateCity: optionalText(profile, "approximate_city") ?? "",
+      approximatePostcode: optionalText(profile, "approximate_postcode") ?? "",
       roles,
       accountStatus: text(appUser, "status") as ProductionProfile["accountStatus"],
     };
@@ -325,6 +416,7 @@ export class SupabaseProductionAccess {
     return {
       session,
       profile: productionProfile,
+      notificationPreferences: mapNotificationPreferences(preferencesResult.data),
       application: applicationResult.data ? mapApplication(applicationResult.data) : null,
       managedStores: mapManagedStores(storesResult.data),
       registeredStores: mapRegisteredStores(registeredStoresResult.data),

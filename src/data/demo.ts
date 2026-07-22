@@ -31,8 +31,43 @@ export interface MarketDataMeta {
   };
   crossMarketCoverage: {
     exactMappingsByGroup: Record<string, number>;
+    exactArtworkMappingsByGroup?: Record<string, number>;
     releasedGroupsWithoutExactStandardMappings: string[];
     ambiguityPolicy: string;
+    artworkReferencePolicy?: {
+      version: 'cardmarket-tcgplayer-image-correlation-v1-complete-candidates';
+      featureWidth: number;
+      featureHeight: number;
+      minimumCorrelation: number;
+      minimumMargin: number;
+      candidateCoverage: 'complete';
+      discoveryBudgetSeconds: number;
+      persistencePolicy: string;
+      mappedReferences: number;
+      unresolvedReferences: number;
+      unresolvedSamples: Array<Record<string, unknown>>;
+    };
+    promoArtworkReferencePolicy?: {
+      version: 'cardmarket-tcgplayer-promo-bidirectional-image-correlation-v1-complete-candidates';
+      featureWidth: number;
+      featureHeight: number;
+      minimumCorrelation: number;
+      minimumMargin: number;
+      candidateCoverage: 'complete-both-providers';
+      refreshBuckets: number;
+      maximumEvidenceAgeDays: number;
+      transientGraceDays: number;
+      registryVersion: number;
+      reviewedExpansionIds: number[];
+      discoveryBudgetSeconds: number;
+      persistencePolicy: string;
+      mappedReferences: number;
+      persistedReferences: number;
+      discoveredReferences: number;
+      deferredReferences: number;
+      unresolvedReferences: number;
+      unresolvedSamples: Array<Record<string, unknown>>;
+    };
   };
   cardmarketCoverage: {
     exactMappingsByGroup: Record<string, number>;
@@ -141,6 +176,8 @@ export interface MarketDataMeta {
       memberSetCodes: string[];
       cardmarketExpansionId: number;
       exactMappings: number;
+      baseMappings?: number;
+      artworkMappings?: number;
     }>;
   };
   optcg: {
@@ -203,6 +240,41 @@ export interface CardmarketArtworkReference {
   productImageUrl: string;
   sourceImageDigest: string;
   productImageDigest: string;
+  evidence: string;
+}
+
+export interface TcgplayerArtworkReference {
+  productId: number;
+  groupId: number;
+  groupAbbreviation: string;
+  /** Released set identity used to reject stale evidence if the group mapping changes. */
+  setCode?: string;
+  number: string;
+  cardmarketProductId: number;
+  observedAt: string;
+  source: string;
+  matchPolicy:
+    | 'cardmarket-tcgplayer-image-correlation-v1-complete-candidates'
+    | 'cardmarket-tcgplayer-promo-bidirectional-image-correlation-v1-complete-candidates';
+  candidateCount: number;
+  candidateProductIds: number[];
+  cardmarketExpansionId?: number;
+  cardmarketCandidateCount?: number;
+  cardmarketCandidateProductIds?: number[];
+  imageVerifiedAt: string;
+  refreshDeferredAt?: string;
+  refreshDeferredReason?: string;
+  correlation: number;
+  runnerUpCorrelation: number | null;
+  margin: number;
+  cardmarketRunnerUpCorrelation?: number | null;
+  cardmarketMargin?: number;
+  tcgplayerRunnerUpCorrelation?: number | null;
+  tcgplayerMargin?: number;
+  cardmarketImageUrl: string;
+  tcgplayerImageUrl: string;
+  cardmarketImageDigest: string;
+  tcgplayerImageDigest: string;
   evidence: string;
 }
 
@@ -271,7 +343,10 @@ export interface DemoAsset {
   cardmarketRegularArtReference?: CardmarketArtworkReference;
   tcgplayerProductId?: number;
   tcgplayerGroupId?: number;
+  tcgplayerGroupAbbreviation?: string;
   tcgplayerMappingEvidence?: string;
+  tcgplayerArtworkReference?: TcgplayerArtworkReference;
+  tcgplayerPriceState?: 'available' | 'market-unavailable' | 'unavailable' | 'multiple-subtypes';
   usPriceSource?: string;
   sourceUpdatedAt?: { cardmarket: string; optcg: string; tcgcsv?: string };
   pricing?: {

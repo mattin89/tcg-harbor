@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Icon } from "../components/Icon";
 import { preferredPortalAreaV2, type PortalAreaV2 } from "../domain/portalAreaV2";
+import { resolvePostAuthLandingV5 } from "../domain/postAuthLandingV5";
 import { ProductionAccessProvider, useProductionAccessContext } from "./ProductionAccessContext";
 import { ProductionAuthPanel } from "./ProductionAuthPanel";
 import { ProductionStoreJoinPage } from "./ProductionStoreJoinPage";
@@ -40,6 +41,12 @@ export function ProductionAccessBoundary({ children, renderGuest, renderPlayer, 
   const snapshot = access.snapshot;
   const storeJoinToken = storeJoinIntent?.token ?? null;
   const onCanonicalJoinRoute = /^\/join\/store\/?$/i.test(pathname);
+  const postAuthLanding = resolvePostAuthLandingV5({
+    authenticationRequested: authRequested,
+    snapshotReady: Boolean(snapshot),
+    passwordRecovery: access.passwordRecovery,
+    pendingStoreJoin: Boolean(storeJoinToken),
+  });
 
   useEffect(() => {
     if (!access.configured) return;
@@ -76,8 +83,16 @@ export function ProductionAccessBoundary({ children, renderGuest, renderPlayer, 
   }, [preferredArea, snapshot?.profile.id]);
 
   useEffect(() => {
-    if (snapshot) setAuthRequested(false);
-  }, [snapshot]);
+    if (!snapshot) return;
+    if (postAuthLanding) {
+      window.history.replaceState({}, "", postAuthLanding);
+      setPathname(postAuthLanding);
+      // An explicit sign-in always opens the player's collection dashboard,
+      // even when this account can also operate a store or review approvals.
+      setArea("player");
+    }
+    setAuthRequested(false);
+  }, [postAuthLanding, snapshot]);
 
   if (!access.configured || access.phase === "unconfigured") {
     return (
@@ -116,6 +131,20 @@ export function ProductionAccessBoundary({ children, renderGuest, renderPlayer, 
 
   if (access.passwordRecovery) {
     return <ProductionAuthPanel access={access} />;
+  }
+
+  // Do not mount the authenticated App on the stale guest-only `/cards`
+  // route. App reads the pathname during its first render, so the history
+  // replacement must complete before playerContent is created.
+  if (postAuthLanding) {
+    return (
+      <main className="production-loading-page" aria-busy="true">
+        <span className="production-brand-mark"><Icon name="cards" size={26} /></span>
+        <h1>Opening your dashboard</h1>
+        <div className="production-loading-bar"><span /></div>
+        <p>Loading your private collection…</p>
+      </main>
+    );
   }
 
   if (onCanonicalJoinRoute && !storeJoinToken) {

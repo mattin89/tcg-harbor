@@ -38,6 +38,22 @@ import {
   sealedImageCacheSourceMatchesV1,
 } from './lib/cardmarket-sealed-images-v1.mjs';
 import {
+  chooseTcgplayerArtworkImageMatchV1,
+  compareTcgplayerArtworkDiscoveryPriorityV1,
+  hasCompleteTcgplayerArtworkCandidateSetV1,
+  reusableTcgplayerArtworkReferenceV1,
+  tcgplayerArtworkRefreshScheduledV1,
+  TCGPLAYER_ARTWORK_MAPPING_POLICY_V1,
+} from './lib/tcgplayer-artwork-mapping-v1.mjs';
+import {
+  cardmarketPromoPrintedNumberV1,
+  cardmarketPromoProductImageUrlsV1,
+  choosePromoCrossMarketImageMatchesV1,
+  hasCompletePromoArtworkCandidateMatrixV1,
+  PROMO_CROSS_MARKET_MAPPING_POLICY_V1,
+  validateCardmarketPromoExpansionRegistryV1,
+} from './lib/promo-cross-market-mapping-v1.mjs';
+import {
   cardmarketProductPageReleaseAuditV1,
   cardmarketProductPageUrlV1,
   isCanonicalCardmarketSealedProductV1,
@@ -68,6 +84,10 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PREVIOUS_OUTPUT = resolve(ROOT, 'src/data/generated/onepiece-market-v9.json');
 const OUTPUT = resolve(ROOT, 'src/data/generated/onepiece-market-v10.json');
 const OPTCG_CACHE = resolve(ROOT, 'scripts/data/optcg-source-cache-v1.json');
+const CARDMARKET_PROMO_EXPANSION_REGISTRY = resolve(
+  ROOT,
+  'scripts/data/cardmarket-promo-expansions-v1.json',
+);
 const SEALED_IMAGE_PUBLIC_ROOT = resolve(ROOT, 'public/catalog/sealed/v1');
 const CARDMARKET_PRODUCTS = 'https://downloads.s3.cardmarket.com/productCatalog/productList/products_singles_18.json';
 const CARDMARKET_NONSINGLES = 'https://downloads.s3.cardmarket.com/productCatalog/productList/products_nonsingles_18.json';
@@ -468,6 +488,8 @@ const ARTWORK_IMAGE_TIMEOUT_MS_V9 = 6_000;
 const OFFICIAL_ARTWORK_IMAGE_TIMEOUT_MS_V10 = 30_000;
 const ARTWORK_IMAGE_MAX_ATTEMPTS_V10 = 3;
 const ARTWORK_DISCOVERY_BUDGET_MS_V9 = 8 * 60_000;
+const TCGPLAYER_ARTWORK_DISCOVERY_BUDGET_MS_V1 = 6 * 60_000;
+const PROMO_CROSS_MARKET_DISCOVERY_BUDGET_MS_V1 = 3 * 60_000;
 const ARTWORK_EVIDENCE_MAX_AGE_MS_V10 = 14 * 24 * 60 * 60_000;
 const ARTWORK_EVIDENCE_TRANSIENT_GRACE_MS_V10 = 21 * 24 * 60 * 60_000;
 const SEALED_IMAGE_DISCOVERY_BUDGET_MS_V10 = 5 * 60_000;
@@ -603,6 +625,21 @@ async function cardmarketProductFingerprintV9(groupCode, productId) {
   }
   throw artworkImageErrorV10(
     `No Cardmarket artwork image could be fetched for ${groupCode} ${productId}: ${errors.map(({ url, error }) => `${url} (${error instanceof Error ? error.message : String(error)})`).join('; ') || 'no candidate URLs'}.`,
+    errors.some(({ error }) => artworkImageErrorIsTransientV10(error)),
+  );
+}
+
+async function cardmarketPromoProductFingerprintV1(imageFolder, productId) {
+  const errors = [];
+  for (const url of cardmarketPromoProductImageUrlsV1(imageFolder, productId)) {
+    try {
+      return { url, fingerprint: await artworkFingerprintFromUrlV9(url) };
+    } catch (error) {
+      errors.push({ url, error });
+    }
+  }
+  throw artworkImageErrorV10(
+    `No Cardmarket promotional artwork image could be fetched for ${imageFolder} ${productId}: ${errors.map(({ url, error }) => `${url} (${error instanceof Error ? error.message : String(error)})`).join('; ') || 'no candidate URLs'}.`,
     errors.some(({ error }) => artworkImageErrorIsTransientV10(error)),
   );
 }
@@ -1648,6 +1685,13 @@ try {
   previousSnapshot = baselineSnapshotV9;
 }
 
+const cardmarketPromoExpansionRegistryV1 = validateCardmarketPromoExpansionRegistryV1(
+  JSON.parse(await readFile(CARDMARKET_PROMO_EXPANSION_REGISTRY, 'utf8')),
+);
+const cardmarketPromoExpansionByIdV1 = new Map(
+  cardmarketPromoExpansionRegistryV1.expansions.map((entry) => [entry.idExpansion, entry]),
+);
+
 const [marketSources, tcgcsvBundle, optcgFeedResult, exchangeRate] = await Promise.all([
   Promise.all([
     fetchJson(CARDMARKET_PRODUCTS),
@@ -2422,6 +2466,441 @@ const regularArtworkReferenceFailuresV10 = artworkReferenceFailuresV10.filter(({
   return card?.card_image_id === regularRulesCardId(card);
 });
 
+// Preserve the conservative standard-art joins above. For every other exact
+// Cardmarket-mapped set printing, promote a TCGplayer identity only when the
+// Cardmarket product image independently selects one product from the complete
+// non-presale TCGCSV candidate set for that exact released group and number.
+// Names, source order, product IDs, and prices never participate in the match.
+const tcgplayerArtworkMatchesV1 = new Map();
+const tcgplayerArtworkReferenceFailuresV1 = [];
+const persistedTcgplayerArtworkReferenceIdentitiesV1 = new Set();
+const discoveredTcgplayerArtworkReferenceIdentitiesV1 = new Set();
+const deferredTcgplayerArtworkReferenceIdentitiesV1 = new Set();
+const tcgplayerArtworkMappingsByGroupV1 = new Map(
+  tcgcsvMarketSources.map((source) => [source.abbreviation, 0]),
+);
+const verifiedOp13LuffyArtworkPairsV1 = new Map([
+  [857338, 657403],
+  [857339, 657402],
+  [857340, 657401],
+  [857341, 657404],
+]);
+const TCGPLAYER_ARTWORK_BUDGET_EXHAUSTED_V1 = 'The bounded TCGplayer exact-artwork discovery budget was exhausted; optional mappings were deferred without aborting the catalog sync.';
+
+function exactCardmarketProductIdForIdentityV1(identity) {
+  const metadataMatch = cardmarketMatches.get(identity) ?? null;
+  const imageReference = cardmarketArtworkReferencesV10.get(identity) ?? null;
+  const productId = Number(metadataMatch?.product?.idProduct ?? imageReference?.productId);
+  return Number.isInteger(productId) && productId > 0 ? productId : null;
+}
+
+function tcgplayerArtworkImageUrlV1(product) {
+  const imageUrl = canonicalImageUrl(product?.imageUrl);
+  return imageUrl && isTrustedTcgplayerImage(imageUrl) ? imageUrl : null;
+}
+
+function currentCardmarketCandidateProductIdsV1(identity, cardmarketProductId) {
+  const ambiguity = cardmarketAmbiguities.get(identity) ?? null;
+  if (!ambiguity) return [cardmarketProductId];
+  const productIds = ambiguity.candidates
+    .map((candidate) => Number(candidate.productId))
+    .sort((left, right) => left - right);
+  return productIds.length > 0
+    && productIds.every((productId) => Number.isInteger(productId) && productId > 0)
+    && new Set(productIds).size === productIds.length
+    && productIds.includes(cardmarketProductId)
+    ? productIds
+    : [];
+}
+
+function persistedTcgplayerArtworkMatchV1(entry, reusable, deferredReason = null) {
+  const product = entry.candidates.find(
+    (candidate) => Number(candidate.productId) === reusable.productId,
+  );
+  if (!product) {
+    throw new Error(`Persisted TCGplayer product ${reusable.productId} left its exact candidate set.`);
+  }
+  const {
+    refreshDeferredAt: _previousRefreshDeferredAt,
+    refreshDeferredReason: _previousRefreshDeferredReason,
+    ...previousReference
+  } = reusable.reference;
+  const priceRows = tcgcsvPriceRows(entry.source.priceIndex, product.productId);
+  return {
+    product,
+    price: exactTcgcsvPrice(entry.source.priceIndex, product.productId),
+    priceRows,
+    groupId: entry.source.groupId,
+    abbreviation: entry.source.abbreviation,
+    reference: {
+      ...previousReference,
+      productId: reusable.productId,
+      setCode: entry.setCode,
+      groupId: entry.source.groupId,
+      groupAbbreviation: entry.source.abbreviation,
+      number: entry.number,
+      cardmarketProductId: entry.cardmarketProductId,
+      observedAt: tcgcsvCreatedAt,
+      source: deferredReason
+        ? 'TCGCSV product catalog + persisted complete-candidate image match (refresh deferred)'
+        : 'TCGCSV product catalog + persisted complete-candidate image match',
+      matchPolicy: TCGPLAYER_ARTWORK_MAPPING_POLICY_V1.version,
+      candidateCount: entry.candidateProductIds.length,
+      candidateProductIds: entry.candidateProductIds,
+      cardmarketCandidateCount: entry.cardmarketCandidateProductIds.length,
+      cardmarketCandidateProductIds: entry.cardmarketCandidateProductIds,
+      imageVerifiedAt: reusable.reference.imageVerifiedAt,
+      ...(deferredReason ? {
+        refreshDeferredAt: artworkVerificationObservedAtV10,
+        refreshDeferredReason: deferredReason,
+      } : {}),
+      evidence: deferredReason
+        ? 'The exact Cardmarket and TCGplayer artwork previously passed the frozen complete-candidate image policy. The provider candidate sets and exact set, group, number, and Cardmarket identity are unchanged; a bounded transient refresh failure was deferred within the 21-day grace window while the original imageVerifiedAt timestamp was preserved.'
+        : 'The exact Cardmarket and TCGplayer artwork previously passed the frozen complete-candidate image policy. The provider candidate sets and exact set, group, number, and Cardmarket identity remain unchanged within the 14-day freshness window.',
+    },
+  };
+}
+
+const tcgplayerArtworkDiscoveryQueueV1 = [];
+for (const card of uniqueCoreCards) {
+  const identity = printingIdentity(card);
+  if (baseTcgplayerMatches.has(identity) || card.__source !== 'set') continue;
+  const cardmarketProductId = exactCardmarketProductIdForIdentityV1(identity);
+  if (cardmarketProductId == null) continue;
+
+  const number = regularRulesCardId(card);
+  const matchingSources = tcgcsvMarketSources.filter(
+    (source) => isOptcgReleasePrintingForGroup(card, source),
+  );
+  if (matchingSources.length !== 1) {
+    tcgplayerArtworkReferenceFailuresV1.push({
+      identity,
+      number,
+      cardmarketProductId,
+      reason: `Expected one exact released TCGCSV group for the OPTCG source printing; found ${matchingSources.length}.`,
+    });
+    continue;
+  }
+
+  const [source] = matchingSources;
+  const setCode = setCodeForCard(card, number);
+  const candidates = source.products.filter((product) => (
+    tcgcsvCardNumber(product) === number
+    && product.presaleInfo?.isPresale !== true
+  ));
+  const candidateProductIds = candidates
+    .map((product) => Number(product.productId))
+    .sort((left, right) => left - right);
+  const cardmarketCandidateProductIds = currentCardmarketCandidateProductIdsV1(
+    identity,
+    cardmarketProductId,
+  );
+  if (
+    !setCode
+    || candidates.length === 0
+    || candidateProductIds.some((productId) => !Number.isInteger(productId) || productId <= 0)
+    || new Set(candidateProductIds).size !== candidateProductIds.length
+    || candidates.some((product) => Number(product.groupId) !== Number(source.groupId))
+    || cardmarketCandidateProductIds.length === 0
+  ) {
+    tcgplayerArtworkReferenceFailuresV1.push({
+      identity,
+      groupCode: source.abbreviation,
+      groupId: source.groupId,
+      number,
+      cardmarketProductId,
+      candidateProductIds,
+      cardmarketCandidateProductIds,
+      reason: 'The exact released set/group/number provider candidate sets were empty, duplicated, or lost their source identity.',
+    });
+    continue;
+  }
+
+  const entry = {
+    identity,
+    number,
+    setCode,
+    source,
+    groupCode: source.abbreviation,
+    cardmarketProductId,
+    cardmarketTrend: Number(cardmarketPricesByProduct.get(cardmarketProductId)?.trend),
+    requiredInvariant: number === 'OP13-118'
+      && verifiedOp13LuffyArtworkPairsV1.has(cardmarketProductId),
+    candidates,
+    candidateProductIds,
+    cardmarketCandidateProductIds,
+  };
+  const reusable = reusableTcgplayerArtworkReferenceV1({
+    previousAsset: previousAssetByIdV10.get(cardStableId(card)) ?? null,
+    cardmarketProductId,
+    cardmarketCandidateProductIds,
+    setCode,
+    groupId: source.groupId,
+    groupAbbreviation: source.abbreviation,
+    number,
+    requestedCandidates: candidates,
+    observedAt: artworkVerificationObservedAtV10,
+  });
+  if (
+    reusable?.fresh
+    && !tcgplayerArtworkRefreshScheduledV1(
+      cardmarketProductId,
+      artworkVerificationObservedAtV10,
+    )
+  ) {
+    tcgplayerArtworkMatchesV1.set(
+      identity,
+      persistedTcgplayerArtworkMatchV1(entry, reusable),
+    );
+    persistedTcgplayerArtworkReferenceIdentitiesV1.add(identity);
+    continue;
+  }
+  tcgplayerArtworkDiscoveryQueueV1.push({ ...entry, reusable });
+}
+tcgplayerArtworkDiscoveryQueueV1.sort(compareTcgplayerArtworkDiscoveryPriorityV1);
+
+const tcgplayerArtworkDiscoveryDeadlineV1 = Date.now()
+  + TCGPLAYER_ARTWORK_DISCOVERY_BUDGET_MS_V1;
+const tcgplayerArtworkDiscoveryResultsV1 = await mapWithConcurrencyV1(
+  tcgplayerArtworkDiscoveryQueueV1,
+  4,
+  async (entry) => {
+    const {
+      identity,
+      number,
+      setCode,
+      source,
+      cardmarketProductId,
+      candidates,
+      candidateProductIds,
+      cardmarketCandidateProductIds,
+    } = entry;
+    if (Date.now() >= tcgplayerArtworkDiscoveryDeadlineV1) {
+      return {
+        entry,
+        identity,
+        groupCode: source.abbreviation,
+        number,
+        cardmarketProductId,
+        candidateProductIds,
+        transient: true,
+        error: TCGPLAYER_ARTWORK_BUDGET_EXHAUSTED_V1,
+      };
+    }
+    try {
+      const cardmarketImage = await cardmarketProductFingerprintV9(
+        source.abbreviation,
+        cardmarketProductId,
+      );
+      if (Date.now() >= tcgplayerArtworkDiscoveryDeadlineV1) {
+        return {
+          entry,
+          identity,
+          groupCode: source.abbreviation,
+          number,
+          cardmarketProductId,
+          candidateProductIds,
+          transient: true,
+          error: TCGPLAYER_ARTWORK_BUDGET_EXHAUSTED_V1,
+        };
+      }
+      const candidateResults = await Promise.all(candidates.map(async (product) => {
+        const imageUrl = tcgplayerArtworkImageUrlV1(product);
+        if (!imageUrl) return { image: null, transient: false };
+        try {
+          return {
+            image: {
+              productId: Number(product.productId),
+              imageUrl,
+              fingerprint: await artworkFingerprintFromUrlV9(imageUrl),
+            },
+          };
+        } catch (error) {
+          return {
+            image: null,
+            transient: artworkImageErrorIsTransientV10(error),
+          };
+        }
+      }));
+      const candidateImages = candidateResults
+        .map((result) => result.image)
+        .filter(Boolean);
+      if (!hasCompleteTcgplayerArtworkCandidateSetV1(candidates, candidateImages)) {
+        const missingResults = candidateResults.filter((result) => !result.image);
+        return {
+          entry,
+          identity,
+          groupCode: source.abbreviation,
+          number,
+          cardmarketProductId,
+          candidateProductIds,
+          transient: missingResults.length > 0
+            && missingResults.every((result) => result.transient === true),
+          error: `Only ${candidateImages.length} of ${candidates.length} exact TCGplayer candidate images were available; artwork identity remains unmapped.`,
+        };
+      }
+
+      const match = chooseTcgplayerArtworkImageMatchV1({
+        cardmarketProductId,
+        cardmarketFingerprint: cardmarketImage.fingerprint,
+        requestedCandidates: candidates,
+        availableCandidateImages: candidateImages,
+      });
+      if (!match) {
+        return {
+          entry,
+          identity,
+          groupCode: source.abbreviation,
+          number,
+          cardmarketProductId,
+          candidateProductIds,
+          transient: false,
+          error: 'No TCGplayer candidate passed the frozen Cardmarket-image correlation and separation thresholds.',
+        };
+      }
+
+      const product = candidates.find(
+        (candidate) => Number(candidate.productId) === match.productId,
+      );
+      if (!product) throw new Error(`Matched TCGplayer product ${match.productId} left its candidate set.`);
+      const priceRows = tcgcsvPriceRows(source.priceIndex, product.productId);
+      const price = exactTcgcsvPrice(source.priceIndex, product.productId);
+      return {
+        entry,
+        identity,
+        match: {
+          product,
+          price,
+          priceRows,
+          groupId: source.groupId,
+          abbreviation: source.abbreviation,
+          reference: {
+            productId: match.productId,
+            setCode,
+            groupId: source.groupId,
+            groupAbbreviation: source.abbreviation,
+            number,
+            cardmarketProductId,
+            observedAt: tcgcsvCreatedAt,
+            source: 'TCGCSV product catalog + TCGplayer product image + Cardmarket product image',
+            matchPolicy: TCGPLAYER_ARTWORK_MAPPING_POLICY_V1.version,
+            candidateCount: match.candidateCount,
+            candidateProductIds: match.candidateProductIds,
+            cardmarketCandidateCount: cardmarketCandidateProductIds.length,
+            cardmarketCandidateProductIds,
+            imageVerifiedAt: artworkVerificationObservedAtV10,
+            correlation: Number(match.correlation.toFixed(6)),
+            runnerUpCorrelation: match.runnerUpCorrelation == null
+              ? null
+              : Number(match.runnerUpCorrelation.toFixed(6)),
+            margin: Number(match.margin.toFixed(6)),
+            cardmarketImageUrl: cardmarketImage.url,
+            tcgplayerImageUrl: match.tcgplayerImageUrl,
+            cardmarketImageDigest: match.cardmarketImageDigest,
+            tcgplayerImageDigest: match.tcgplayerImageDigest,
+            evidence: 'The exact Cardmarket product image independently matches this TCGplayer product image above the frozen correlation and separation thresholds after every non-presale product for the exact released group and printed number was compared.',
+          },
+        },
+      };
+    } catch (error) {
+      return {
+        entry,
+        identity,
+        groupCode: source.abbreviation,
+        number,
+        cardmarketProductId,
+        candidateProductIds,
+        transient: artworkImageErrorIsTransientV10(error),
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  },
+);
+
+for (const result of tcgplayerArtworkDiscoveryResultsV1) {
+  if (result.match) {
+    tcgplayerArtworkMatchesV1.set(result.identity, result.match);
+    discoveredTcgplayerArtworkReferenceIdentitiesV1.add(result.identity);
+  } else if (result.transient && result.entry?.reusable) {
+    tcgplayerArtworkMatchesV1.set(
+      result.identity,
+      persistedTcgplayerArtworkMatchV1(
+        result.entry,
+        result.entry.reusable,
+        result.error,
+      ),
+    );
+    persistedTcgplayerArtworkReferenceIdentitiesV1.add(result.identity);
+    deferredTcgplayerArtworkReferenceIdentitiesV1.add(result.identity);
+  } else {
+    tcgplayerArtworkReferenceFailuresV1.push({
+      identity: result.identity,
+      groupCode: result.groupCode,
+      number: result.number,
+      cardmarketProductId: result.cardmarketProductId,
+      candidateProductIds: result.candidateProductIds,
+      reason: result.error,
+    });
+  }
+}
+
+// One provider product may represent only one visible physical printing. The
+// sole exception is the existing hidden-alias mechanism for duplicate OPTCG
+// source rows that already share one exact physical artwork.
+const tcgplayerIdentitiesByProductV1 = new Map();
+for (const [identity, match] of baseTcgplayerMatches) {
+  tcgplayerIdentitiesByProductV1.set(Number(match.product.productId), [identity]);
+}
+for (const [identity, match] of tcgplayerArtworkMatchesV1) {
+  const productId = Number(match.product.productId);
+  const identities = tcgplayerIdentitiesByProductV1.get(productId) ?? [];
+  identities.push(identity);
+  tcgplayerIdentitiesByProductV1.set(productId, identities);
+}
+for (const [productId, identities] of tcgplayerIdentitiesByProductV1) {
+  if (identities.length <= 1) continue;
+  const canonicalIdentities = identities.filter(
+    (identity) => !duplicateArtworkAliasIdentityV10.has(identity),
+  );
+  const canonicalIdentity = canonicalIdentities.length === 1
+    ? canonicalIdentities[0]
+    : null;
+  const isOnePhysicalPrintingAliasGroup = canonicalIdentity != null
+    && identities.every((identity) => identity === canonicalIdentity
+      || duplicateArtworkAliasIdentityV10.get(identity) === canonicalIdentity);
+  if (isOnePhysicalPrintingAliasGroup) continue;
+  for (const identity of identities) {
+    const rejected = tcgplayerArtworkMatchesV1.get(identity);
+    if (!rejected) continue;
+    tcgplayerArtworkMatchesV1.delete(identity);
+    persistedTcgplayerArtworkReferenceIdentitiesV1.delete(identity);
+    discoveredTcgplayerArtworkReferenceIdentitiesV1.delete(identity);
+    deferredTcgplayerArtworkReferenceIdentitiesV1.delete(identity);
+    tcgplayerArtworkReferenceFailuresV1.push({
+      identity,
+      groupCode: rejected.abbreviation,
+      number: rejected.reference.number,
+      cardmarketProductId: rejected.reference.cardmarketProductId,
+      candidateProductIds: rejected.reference.candidateProductIds,
+      reason: `TCGplayer product ${productId} matched more than one distinct physical printing; every non-base conflicting artwork mapping was rejected.`,
+    });
+  }
+}
+
+for (const match of tcgplayerArtworkMatchesV1.values()) {
+  tcgplayerArtworkMappingsByGroupV1.set(
+    match.abbreviation,
+    (tcgplayerArtworkMappingsByGroupV1.get(match.abbreviation) ?? 0) + 1,
+  );
+}
+const exactTcgplayerMatchesV1 = new Map(baseTcgplayerMatches);
+for (const [identity, match] of tcgplayerArtworkMatchesV1) {
+  if (exactTcgplayerMatchesV1.has(identity)) {
+    throw new Error(`TCGplayer artwork mapping attempted to replace a preserved base mapping for ${identity}.`);
+  }
+  exactTcgplayerMatchesV1.set(identity, match);
+}
+
 const additionalBoosterCardmarketMatches = additionalCardmarketMatches.filter(
   (match) => match.groupKind === 'booster',
 );
@@ -2455,6 +2934,8 @@ const coreCardAssets = uniqueCoreCards.map((card) => {
     ? cardmarketArtworkReference
     : null;
   const baseTcgplayerMatch = baseTcgplayerMatches.get(exactPrintingIdentity) ?? null;
+  const tcgplayerArtworkMatch = tcgplayerArtworkMatchesV1.get(exactPrintingIdentity) ?? null;
+  const exactTcgplayerMatch = exactTcgplayerMatchesV1.get(exactPrintingIdentity) ?? null;
   const starterEnrichment = card.__source === 'starter'
     ? starterEnrichments.get(`${number}|${card.card_name}`) ?? null
     : null;
@@ -2462,7 +2943,9 @@ const coreCardAssets = uniqueCoreCards.map((card) => {
     ?? starterEnrichment?.imageUrl
     ?? EXACT_OPTCG_IMAGE_OVERRIDES.get(String(card.card_image_id ?? ''))
     ?? null;
-  const tcgplayerPrice = baseTcgplayerMatch?.price ?? starterEnrichment?.price ?? null;
+  const tcgplayerPrice = exactTcgplayerMatch?.price ?? starterEnrichment?.price ?? null;
+  const tcgplayerPriceRows = exactTcgplayerMatch?.priceRows
+    ?? (starterEnrichment ? [starterEnrichment.price] : []);
   const stableId = cardStableId(card);
   const canonicalArtworkIdentity = duplicateArtworkAliasIdentityV10.get(exactPrintingIdentity);
   const catalogAliasOf = canonicalArtworkIdentity
@@ -2531,11 +3014,16 @@ const coreCardAssets = uniqueCoreCards.map((card) => {
     // Retain the v9 field on Standard printings for one release so persisted
     // clients and acquisition records can migrate without losing evidence.
     ...(cardmarketRegularArtReference ? { cardmarketRegularArtReference } : {}),
-    tcgplayerProductId: baseTcgplayerMatch?.product.productId ?? starterEnrichment?.product.productId ?? null,
+    tcgplayerProductId: exactTcgplayerMatch?.product.productId ?? starterEnrichment?.product.productId ?? null,
     ...(baseTcgplayerMatch ? {
       tcgplayerGroupId: baseTcgplayerMatch.groupId,
       tcgplayerGroupAbbreviation: baseTcgplayerMatch.abbreviation,
       tcgplayerMappingEvidence: 'Exact released English booster group + printed number + unique unqualified base product',
+    } : tcgplayerArtworkMatch ? {
+      tcgplayerGroupId: tcgplayerArtworkMatch.groupId,
+      tcgplayerGroupAbbreviation: tcgplayerArtworkMatch.abbreviation,
+      tcgplayerMappingEvidence: tcgplayerArtworkMatch.reference.evidence,
+      tcgplayerArtworkReference: tcgplayerArtworkMatch.reference,
     } : starterEnrichment ? {
       tcgplayerGroupId: starterEnrichment.groupId,
       tcgplayerMappingEvidence: 'Exact audited TCGCSV starter product ID + printed number + title',
@@ -2550,14 +3038,23 @@ const coreCardAssets = uniqueCoreCards.map((card) => {
     ...(imageUrl ? { imageUrl } : {}),
     imageState: imageUrl ? 'available' : 'unavailable',
     ...(imageUrl ? {} : { imageUnavailableReason: 'The OPTCG source record does not provide an artwork URL.' }),
-    usPriceSource: baseTcgplayerMatch
+    usPriceSource: exactTcgplayerMatch
       ? 'TCGplayer via TCGCSV'
       : starterEnrichment
         ? 'TCGplayer via TCGCSV (verified starter product)'
         : 'OPTCG API',
+    ...(exactTcgplayerMatch || starterEnrichment ? {
+      tcgplayerPriceState: tcgplayerPriceRows.length > 1
+        ? 'multiple-subtypes'
+        : tcgplayerPrice?.marketPrice != null
+          ? 'available'
+          : tcgplayerPrice
+            ? 'market-unavailable'
+            : 'unavailable',
+    } : {}),
     quote: {
       cardmarket: round(cardmarketPrice?.trend),
-      tcgplayer: baseTcgplayerMatch || starterEnrichment ? round(tcgplayerPrice?.marketPrice) : round(card.market_price),
+      tcgplayer: exactTcgplayerMatch || starterEnrichment ? round(tcgplayerPrice?.marketPrice) : round(card.market_price),
     },
     change: {
       cardmarket: cardmarketPrice ? {
@@ -2569,8 +3066,8 @@ const coreCardAssets = uniqueCoreCards.map((card) => {
     },
     pricing: {
       cardmarket: pricingDetails(cardmarketPrice),
-      usMarket: baseTcgplayerMatch
-        ? tcgcsvPricingDetails(tcgplayerPrice, baseTcgplayerMatch.priceRows)
+      usMarket: exactTcgplayerMatch
+        ? tcgcsvPricingDetails(tcgplayerPrice, exactTcgplayerMatch.priceRows)
         : starterEnrichment ? tcgcsvPricingDetails(tcgplayerPrice) : {
         market: round(card.market_price),
         inventory: round(card.inventory_price),
@@ -2580,7 +3077,7 @@ const coreCardAssets = uniqueCoreCards.map((card) => {
     sourceUpdatedAt: {
       cardmarket: priceGuide.createdAt,
       optcg: optcgDate,
-      ...(baseTcgplayerMatch || starterEnrichment ? { tcgcsv: tcgcsvCreatedAt } : {}),
+      ...(exactTcgplayerMatch || starterEnrichment ? { tcgcsv: tcgcsvCreatedAt } : {}),
     },
   };
 });
@@ -2616,6 +3113,398 @@ if (coreCardAssets.some((asset) =>
 )) {
   throw new Error('An artwork-ambiguous Cardmarket card leaked an exact product or valuation.');
 }
+if (coreCardAssets.some((asset) => asset.tcgplayerArtworkReference && (
+  asset.tcgplayerArtworkReference.matchPolicy !== TCGPLAYER_ARTWORK_MAPPING_POLICY_V1.version
+  || asset.tcgplayerProductId !== asset.tcgplayerArtworkReference.productId
+  || asset.setCode !== asset.tcgplayerArtworkReference.setCode
+  || asset.tcgplayerGroupId !== asset.tcgplayerArtworkReference.groupId
+  || asset.cardmarketProductId !== asset.tcgplayerArtworkReference.cardmarketProductId
+  || asset.tcgplayerArtworkReference.candidateCount
+    !== asset.tcgplayerArtworkReference.candidateProductIds?.length
+  || asset.tcgplayerArtworkReference.cardmarketCandidateCount
+    !== asset.tcgplayerArtworkReference.cardmarketCandidateProductIds?.length
+  || !asset.tcgplayerArtworkReference.cardmarketCandidateProductIds
+    ?.includes(asset.cardmarketProductId)
+  || !Number.isFinite(Date.parse(asset.tcgplayerArtworkReference.imageVerifiedAt ?? ''))
+  || asset.usPriceSource !== 'TCGplayer via TCGCSV'
+  || asset.quote.tcgplayer !== (asset.pricing?.usMarket.market ?? null)
+))) {
+  throw new Error('A complete-candidate TCGplayer artwork mapping lost its exact provider or price identity.');
+}
+for (const [cardmarketProductId, tcgplayerProductId] of verifiedOp13LuffyArtworkPairsV1) {
+  const asset = coreCardAssets.find((candidate) => (
+    candidate.number === 'OP13-118'
+    && candidate.cardmarketProductId === cardmarketProductId
+  ));
+  if (
+    asset?.tcgplayerProductId !== tcgplayerProductId
+    || asset.tcgplayerArtworkReference?.cardmarketProductId !== cardmarketProductId
+  ) {
+    throw new Error(`Verified OP13-118 artwork pair ${cardmarketProductId}/${tcgplayerProductId} was not reproduced by the complete-candidate image policy.`);
+  }
+}
+
+// TCGplayer places promotional printings in one broad group while Cardmarket
+// separates them into release-specific expansions. Only reviewed, released
+// English promo expansions enter this candidate pool. For each printed number,
+// every TCGplayer image and every Cardmarket image in that pool must be
+// available, and a pair must be the unique best match in both directions.
+// Titles, product order, IDs, and prices never select a promotional artwork.
+const reviewedPromoExpansionIdsV1 = new Set(
+  cardmarketPromoExpansionRegistryV1.expansions.map((entry) => entry.idExpansion),
+);
+const reviewedCardmarketPromoProductsV1 = productCatalog.products.filter(
+  (product) => reviewedPromoExpansionIdsV1.has(Number(product.idExpansion)),
+);
+if (reviewedCardmarketPromoProductsV1.some((product) => (
+  Number(product.idCategory) !== 1621
+  || !Number.isInteger(Number(product.idProduct))
+  || Number(product.idProduct) <= 0
+  || !cardmarketPromoPrintedNumberV1(product.name)
+))) {
+  throw new Error('A reviewed Cardmarket promotional expansion contains a malformed or unnumbered single; review the expansion registry before publishing.');
+}
+
+const cardmarketPromoCandidatesByNumberV1 = groupBy(
+  reviewedCardmarketPromoProductsV1.map((product) => ({
+    productId: Number(product.idProduct),
+    product,
+    number: cardmarketPromoPrintedNumberV1(product.name),
+    expansion: cardmarketPromoExpansionByIdV1.get(Number(product.idExpansion)),
+  })),
+  (candidate) => candidate.number,
+);
+const tcgplayerPromoCandidatesByNumberV1 = groupBy(
+  numberedTcgcsvPromoProducts.filter((product) => (
+    tcgcsvLanguage(product.name) === 'English'
+    && product.presaleInfo?.isPresale !== true
+    && Number(product.groupId) === TCGCSV_PROMO_GROUP_ID
+  )).map((product) => ({
+    productId: Number(product.productId),
+    product,
+    number: tcgcsvCardNumber(product),
+  })),
+  (candidate) => candidate.number,
+);
+
+function sortedPromoCandidateIdsV1(candidates) {
+  return candidates.map((candidate) => Number(candidate.productId))
+    .sort((left, right) => left - right);
+}
+
+function samePromoCandidateIdsV1(left, right) {
+  return left.length === right.length
+    && left.every((productId, index) => productId === right[index]);
+}
+
+function reusablePromoReferenceV1(tcgplayerCandidate, cardmarketCandidates) {
+  const previousAsset = previousAssetByIdV10.get(promoStableId(tcgplayerCandidate.product)) ?? null;
+  const reference = previousAsset?.tcgplayerArtworkReference ?? null;
+  const currentTcgplayerIds = sortedPromoCandidateIdsV1(
+    tcgplayerPromoCandidatesByNumberV1.get(tcgplayerCandidate.number) ?? [],
+  );
+  const currentCardmarketIds = sortedPromoCandidateIdsV1(cardmarketCandidates);
+  const previousTcgplayerIds = (reference?.candidateProductIds ?? [])
+    .map(Number)
+    .sort((left, right) => left - right);
+  const previousCardmarketIds = (reference?.cardmarketCandidateProductIds ?? [])
+    .map(Number)
+    .sort((left, right) => left - right);
+  const selectedCardmarket = cardmarketCandidates.find(
+    (candidate) => candidate.productId === Number(reference?.cardmarketProductId),
+  );
+  const evidenceAgeMs = Date.parse(artworkVerificationObservedAtV10)
+    - Date.parse(reference?.imageVerifiedAt ?? '');
+  const reusable = reference?.matchPolicy === PROMO_CROSS_MARKET_MAPPING_POLICY_V1.version
+    && Number(reference.productId) === tcgplayerCandidate.productId
+    && Number(reference.groupId) === TCGCSV_PROMO_GROUP_ID
+    && reference.groupAbbreviation === 'OP-PR'
+    && reference.number === tcgplayerCandidate.number
+    && Number(reference.candidateCount) === currentTcgplayerIds.length
+    && Number(reference.cardmarketCandidateCount) === currentCardmarketIds.length
+    && samePromoCandidateIdsV1(previousTcgplayerIds, currentTcgplayerIds)
+    && samePromoCandidateIdsV1(previousCardmarketIds, currentCardmarketIds)
+    && selectedCardmarket
+    && Number(reference.cardmarketExpansionId) === Number(selectedCardmarket.product.idExpansion)
+    && Number(previousAsset?.cardmarketProductId) === Number(reference.cardmarketProductId)
+    && Number(previousAsset?.tcgplayerProductId) === tcgplayerCandidate.productId
+    && Number(reference.correlation) >= PROMO_CROSS_MARKET_MAPPING_POLICY_V1.minimumCorrelation
+    && Number(reference.margin) >= PROMO_CROSS_MARKET_MAPPING_POLICY_V1.minimumMargin
+    && /^[a-f0-9]{64}$/i.test(String(reference.cardmarketImageDigest ?? ''))
+    && /^[a-f0-9]{64}$/i.test(String(reference.tcgplayerImageDigest ?? ''))
+    && Number.isFinite(evidenceAgeMs)
+    && evidenceAgeMs >= 0
+    && evidenceAgeMs <= ARTWORK_EVIDENCE_TRANSIENT_GRACE_MS_V10;
+  return reusable ? {
+    previousAsset,
+    reference,
+    evidenceAgeMs,
+    cardmarketCandidate: selectedCardmarket,
+  } : null;
+}
+
+function persistedPromoMatchV1(tcgplayerCandidate, reusable, deferredReason = null) {
+  const cardmarketProductId = Number(reusable.reference.cardmarketProductId);
+  return {
+    cardmarketProduct: reusable.cardmarketCandidate.product,
+    reference: {
+      ...reusable.reference,
+      observedAt: tcgcsvCreatedAt,
+      source: deferredReason
+        ? 'TCGCSV product catalog + persisted TCGplayer/Cardmarket image match (refresh deferred)'
+        : 'TCGCSV product catalog + persisted TCGplayer/Cardmarket image match',
+      imageVerifiedAt: reusable.reference.imageVerifiedAt,
+      ...(deferredReason ? {
+        refreshDeferredAt: artworkVerificationObservedAtV10,
+        refreshDeferredReason: deferredReason,
+      } : {}),
+      cardmarketProductId,
+      cardmarketExpansionId: Number(reusable.cardmarketCandidate.product.idExpansion),
+      evidence: 'This exact promotional printing remains bound to the same Cardmarket product after both providers retained the complete same-number candidate sets previously verified by a bidirectional image match.',
+    },
+  };
+}
+
+const promoCrossMarketMatchesV1 = new Map();
+const promoCrossMarketReferenceFailuresV1 = [];
+const promoCrossMarketCompleteMatrixNumbersV1 = new Set();
+let persistedPromoCrossMarketReferencesV1 = 0;
+let discoveredPromoCrossMarketReferencesV1 = 0;
+let deferredPromoCrossMarketReferencesV1 = 0;
+const promoCrossMarketDiscoveryQueueV1 = [];
+
+for (const [number, cardmarketCandidates] of cardmarketPromoCandidatesByNumberV1) {
+  const tcgplayerCandidates = tcgplayerPromoCandidatesByNumberV1.get(number) ?? [];
+  if (tcgplayerCandidates.length === 0) {
+    promoCrossMarketReferenceFailuresV1.push({
+      number,
+      cardmarketCandidateProductIds: sortedPromoCandidateIdsV1(cardmarketCandidates),
+      reason: 'The reviewed Cardmarket promotional candidates have no released English TCGplayer candidate for this exact printed number.',
+    });
+    continue;
+  }
+
+  const reusableByTcgplayerProduct = new Map(
+    tcgplayerCandidates.map((candidate) => [
+      candidate.productId,
+      reusablePromoReferenceV1(candidate, cardmarketCandidates),
+    ]).filter(([, reusable]) => reusable),
+  );
+  const freshestReusable = [...reusableByTcgplayerProduct.values()]
+    .sort((left, right) => left.evidenceAgeMs - right.evidenceAgeMs)[0] ?? null;
+  const refreshSourceId = Math.min(...sortedPromoCandidateIdsV1(cardmarketCandidates));
+  const imageEvidenceIsFresh = freshestReusable
+    && freshestReusable.evidenceAgeMs <= ARTWORK_EVIDENCE_MAX_AGE_MS_V10
+    && !sourceRefreshScheduledV10(refreshSourceId, artworkVerificationObservedAtV10);
+  if (imageEvidenceIsFresh) {
+    for (const tcgplayerCandidate of tcgplayerCandidates) {
+      const reusable = reusableByTcgplayerProduct.get(tcgplayerCandidate.productId);
+      if (!reusable) continue;
+      promoCrossMarketMatchesV1.set(
+        tcgplayerCandidate.productId,
+        persistedPromoMatchV1(tcgplayerCandidate, reusable),
+      );
+      persistedPromoCrossMarketReferencesV1 += 1;
+    }
+    continue;
+  }
+
+  const maximumCardmarketTrend = Math.max(
+    ...cardmarketCandidates.map((candidate) => (
+      Number(cardmarketPricesByProduct.get(candidate.productId)?.trend) || 0
+    )),
+  );
+  promoCrossMarketDiscoveryQueueV1.push({
+    number,
+    tcgplayerCandidates,
+    cardmarketCandidates,
+    reusableByTcgplayerProduct,
+    maximumCardmarketTrend,
+    requiredInvariant: cardmarketPromoExpansionRegistryV1.verifiedPairInvariants
+      .some((invariant) => invariant.printedNumber === number),
+  });
+}
+promoCrossMarketDiscoveryQueueV1.sort((left, right) =>
+  Number(right.requiredInvariant) - Number(left.requiredInvariant)
+  || right.maximumCardmarketTrend - left.maximumCardmarketTrend
+  || left.number.localeCompare(right.number),
+);
+
+const promoCrossMarketDiscoveryDeadlineV1 = Date.now()
+  + PROMO_CROSS_MARKET_DISCOVERY_BUDGET_MS_V1;
+const promoCrossMarketDiscoveryResultsV1 = await mapWithConcurrencyV1(
+  promoCrossMarketDiscoveryQueueV1,
+  3,
+  async ({ number, tcgplayerCandidates, cardmarketCandidates, reusableByTcgplayerProduct }) => {
+    if (Date.now() >= promoCrossMarketDiscoveryDeadlineV1) {
+      return {
+        number,
+        reusableByTcgplayerProduct,
+        transient: true,
+        error: 'The bounded promo artwork refresh window was exhausted; optional mappings were deferred without aborting the catalog sync.',
+      };
+    }
+
+    const tcgplayerResults = await Promise.all(tcgplayerCandidates.map(async (candidate) => {
+      const imageUrl = tcgplayerArtworkImageUrlV1(candidate.product);
+      if (!imageUrl) return { image: null, transient: false };
+      try {
+        return {
+          image: {
+            productId: candidate.productId,
+            imageUrl,
+            fingerprint: await artworkFingerprintFromUrlV9(imageUrl),
+          },
+          transient: false,
+        };
+      } catch (error) {
+        return { image: null, transient: artworkImageErrorIsTransientV10(error) };
+      }
+    }));
+    const cardmarketResults = await Promise.all(cardmarketCandidates.map(async (candidate) => {
+      try {
+        const image = await cardmarketPromoProductFingerprintV1(
+          candidate.expansion.imageFolder,
+          candidate.productId,
+        );
+        return {
+          image: {
+            productId: candidate.productId,
+            imageUrl: image.url,
+            fingerprint: image.fingerprint,
+          },
+          transient: false,
+        };
+      } catch (error) {
+        return { image: null, transient: artworkImageErrorIsTransientV10(error) };
+      }
+    }));
+    const availableTcgplayerImages = tcgplayerResults.map((result) => result.image).filter(Boolean);
+    const availableCardmarketImages = cardmarketResults.map((result) => result.image).filter(Boolean);
+    const complete = hasCompletePromoArtworkCandidateMatrixV1({
+      requestedTcgplayerCandidates: tcgplayerCandidates,
+      availableTcgplayerImages,
+      requestedCardmarketCandidates: cardmarketCandidates,
+      availableCardmarketImages,
+    });
+    if (!complete) {
+      return {
+        number,
+        reusableByTcgplayerProduct,
+        transient: [...tcgplayerResults, ...cardmarketResults].some((result) => result.transient),
+        error: `Only ${availableTcgplayerImages.length}/${tcgplayerCandidates.length} TCGplayer and ${availableCardmarketImages.length}/${cardmarketCandidates.length} Cardmarket candidate images were available; this complete same-number matrix remains unmapped.`,
+      };
+    }
+
+    return {
+      number,
+      complete: true,
+      tcgplayerCandidates,
+      cardmarketCandidates,
+      matches: choosePromoCrossMarketImageMatchesV1({
+        requestedTcgplayerCandidates: tcgplayerCandidates,
+        availableTcgplayerImages,
+        requestedCardmarketCandidates: cardmarketCandidates,
+        availableCardmarketImages,
+      }),
+    };
+  },
+);
+
+for (const result of promoCrossMarketDiscoveryResultsV1) {
+  if (result.complete) {
+    promoCrossMarketCompleteMatrixNumbersV1.add(result.number);
+    for (const match of result.matches) {
+      const tcgplayerCandidate = result.tcgplayerCandidates.find(
+        (candidate) => candidate.productId === match.tcgplayerProductId,
+      );
+      const cardmarketCandidate = result.cardmarketCandidates.find(
+        (candidate) => candidate.productId === match.cardmarketProductId,
+      );
+      if (!tcgplayerCandidate || !cardmarketCandidate) {
+        throw new Error(`Promo image match for ${result.number} left its complete candidate matrix.`);
+      }
+      promoCrossMarketMatchesV1.set(match.tcgplayerProductId, {
+        cardmarketProduct: cardmarketCandidate.product,
+        reference: {
+          productId: match.tcgplayerProductId,
+          groupId: TCGCSV_PROMO_GROUP_ID,
+          groupAbbreviation: 'OP-PR',
+          number: result.number,
+          cardmarketProductId: match.cardmarketProductId,
+          cardmarketExpansionId: Number(cardmarketCandidate.product.idExpansion),
+          observedAt: tcgcsvCreatedAt,
+          source: 'TCGCSV product catalog + TCGplayer product images + reviewed Cardmarket promotional expansion images',
+          matchPolicy: PROMO_CROSS_MARKET_MAPPING_POLICY_V1.version,
+          candidateCount: match.tcgplayerCandidateCount,
+          candidateProductIds: match.tcgplayerCandidateProductIds,
+          cardmarketCandidateCount: match.cardmarketCandidateCount,
+          cardmarketCandidateProductIds: match.cardmarketCandidateProductIds,
+          imageVerifiedAt: artworkVerificationObservedAtV10,
+          correlation: Number(match.correlation.toFixed(6)),
+          runnerUpCorrelation: match.runnerUpCorrelation == null
+            ? null
+            : Number(match.runnerUpCorrelation.toFixed(6)),
+          margin: Number(match.margin.toFixed(6)),
+          cardmarketRunnerUpCorrelation: match.cardmarketRunnerUpCorrelation == null
+            ? null
+            : Number(match.cardmarketRunnerUpCorrelation.toFixed(6)),
+          cardmarketMargin: Number(match.cardmarketMargin.toFixed(6)),
+          tcgplayerRunnerUpCorrelation: match.tcgplayerRunnerUpCorrelation == null
+            ? null
+            : Number(match.tcgplayerRunnerUpCorrelation.toFixed(6)),
+          tcgplayerMargin: Number(match.tcgplayerMargin.toFixed(6)),
+          cardmarketImageUrl: match.cardmarketImageUrl,
+          tcgplayerImageUrl: match.tcgplayerImageUrl,
+          cardmarketImageDigest: match.cardmarketImageDigest,
+          tcgplayerImageDigest: match.tcgplayerImageDigest,
+          evidence: 'This exact TCGplayer promotional printing and Cardmarket product are mutual unique best image matches above frozen correlation and separation thresholds after every released English TCGplayer promo and every product from each reviewed English Cardmarket promo expansion for the printed number were compared.',
+        },
+      });
+      discoveredPromoCrossMarketReferencesV1 += 1;
+    }
+    continue;
+  }
+
+  promoCrossMarketReferenceFailuresV1.push({
+    number: result.number,
+    reason: result.error,
+  });
+  if (!result.transient) continue;
+  for (const [tcgplayerProductId, reusable] of result.reusableByTcgplayerProduct ?? []) {
+    const tcgplayerCandidate = (tcgplayerPromoCandidatesByNumberV1.get(result.number) ?? [])
+      .find((candidate) => candidate.productId === tcgplayerProductId);
+    if (!tcgplayerCandidate) continue;
+    promoCrossMarketMatchesV1.set(
+      tcgplayerProductId,
+      persistedPromoMatchV1(tcgplayerCandidate, reusable, result.error),
+    );
+    persistedPromoCrossMarketReferencesV1 += 1;
+    deferredPromoCrossMarketReferencesV1 += 1;
+  }
+}
+
+const promoTcgplayerIdsByCardmarketProductV1 = groupBy(
+  [...promoCrossMarketMatchesV1.entries()],
+  ([, match]) => String(match.cardmarketProduct.idProduct),
+);
+for (const [cardmarketProductId, mappings] of promoTcgplayerIdsByCardmarketProductV1) {
+  if (mappings.length !== 1) {
+    throw new Error(`Cardmarket promotional product ${cardmarketProductId} mapped to multiple TCGplayer printings.`);
+  }
+}
+for (const invariant of cardmarketPromoExpansionRegistryV1.verifiedPairInvariants) {
+  const match = promoCrossMarketMatchesV1.get(invariant.tcgplayerProductId) ?? null;
+  if (match && Number(match.cardmarketProduct.idProduct) !== invariant.cardmarketProductId) {
+    throw new Error(`Verified promotional pair ${invariant.tcgplayerProductId}/${invariant.cardmarketProductId} changed identity.`);
+  }
+  if (
+    promoCrossMarketCompleteMatrixNumbersV1.has(invariant.printedNumber)
+    && Number(match?.cardmarketProduct.idProduct) !== invariant.cardmarketProductId
+  ) {
+    throw new Error(`Complete promotional image verification did not reproduce invariant ${invariant.tcgplayerProductId}/${invariant.cardmarketProductId}.`);
+  }
+}
 
 function bestOptcgRecord(records) {
   return records.reduce((best, record) => (best ? preferRecord(best, record) : record), null);
@@ -2646,6 +3535,10 @@ const promoAssets = numberedTcgcsvPromoProducts.map((product) => {
   const rarity = tcgcsvExtendedValue(product, 'Rarity') ?? metadata?.rarity ?? 'Unknown';
   const language = tcgcsvLanguage(product.name);
   const optcgDate = String(metadata?.date_scraped ?? generatedAt);
+  const promoCardmarketMatch = promoCrossMarketMatchesV1.get(Number(product.productId)) ?? null;
+  const promoCardmarketPrice = promoCardmarketMatch
+    ? cardmarketPricesByProduct.get(Number(promoCardmarketMatch.cardmarketProduct.idProduct)) ?? null
+    : null;
 
   return {
     id: stableId,
@@ -2659,10 +3552,29 @@ const promoAssets = numberedTcgcsvPromoProducts.map((product) => {
     printingId: `tcgplayer:${product.productId}`,
     sourcePrintingId: `tcgplayer:${product.productId}`,
     tcgplayerProductId: Number(product.productId),
-    cardmarketProductId: null,
-    cardmarketExpansionId: null,
-    cardmarketPriceState: 'unmapped',
-    cardmarketPriceReason: 'No verified Cardmarket product mapping exists for this exact TCGplayer promotional printing.',
+    tcgplayerGroupId: TCGCSV_PROMO_GROUP_ID,
+    tcgplayerGroupAbbreviation: 'OP-PR',
+    tcgplayerMappingEvidence: 'Exact TCGCSV promotional product ID, printed number, artwork, and product-specific price',
+    ...(promoCardmarketMatch ? {
+      tcgplayerArtworkReference: promoCardmarketMatch.reference,
+    } : {}),
+    cardmarketProductId: promoCardmarketMatch
+      ? Number(promoCardmarketMatch.cardmarketProduct.idProduct)
+      : null,
+    cardmarketExpansionId: promoCardmarketMatch
+      ? Number(promoCardmarketMatch.cardmarketProduct.idExpansion)
+      : null,
+    cardmarketPriceState: promoCardmarketMatch
+      ? promoCardmarketPrice?.trend != null ? 'available' : 'trend-unavailable'
+      : 'unmapped',
+    cardmarketPriceReason: promoCardmarketMatch
+      ? promoCardmarketPrice?.trend != null
+        ? 'This exact promotional artwork is verified against its Cardmarket product by a complete bidirectional image match, and the current daily trend is available.'
+        : 'This exact promotional artwork is verified against its Cardmarket product, but the current daily price guide has no trend for it.'
+      : 'No complete bidirectional image match proves a Cardmarket product for this exact TCGplayer promotional printing in the reviewed released English promo expansions.',
+    ...(promoCardmarketMatch ? {
+      cardmarketMappingEvidence: promoCardmarketMatch.reference.evidence,
+    } : {}),
     rarity: RARITIES[rarity] ?? rarity,
     variant: tcgcsvPromoVariantLabel(product, canonicalName),
     language,
@@ -2688,15 +3600,19 @@ const promoAssets = numberedTcgcsvPromoProducts.map((product) => {
           ? 'market-unavailable'
           : 'unavailable',
     quote: {
-      cardmarket: null,
+      cardmarket: round(promoCardmarketPrice?.trend),
       tcgplayer: round(price?.marketPrice),
     },
     change: {
-      cardmarket: emptyChanges(),
+      cardmarket: promoCardmarketPrice ? {
+        '1D': percentAgainst(promoCardmarketPrice.trend, promoCardmarketPrice.avg1),
+        '1W': percentAgainst(promoCardmarketPrice.trend, promoCardmarketPrice.avg7),
+        '1M': percentAgainst(promoCardmarketPrice.trend, promoCardmarketPrice.avg30),
+      } : emptyChanges(),
       tcgplayer: emptyChanges(),
     },
     pricing: {
-      cardmarket: pricingDetails(null),
+      cardmarket: pricingDetails(promoCardmarketPrice),
       usMarket: tcgcsvPricingDetails(price, priceRows),
     },
     sourceUpdatedAt: {
@@ -3169,6 +4085,19 @@ if (promoAssets.length !== numberedTcgcsvPromoProducts.length) {
 if (promoAssets.some((asset) => asset.language !== 'English' && asset.language !== 'Japanese')) {
   throw new Error('Unsupported promo language emitted.');
 }
+if (promoAssets.some((asset) => asset.cardmarketProductId != null && (
+  asset.language !== 'English'
+  || asset.tcgplayerArtworkReference?.matchPolicy !== PROMO_CROSS_MARKET_MAPPING_POLICY_V1.version
+  || asset.tcgplayerArtworkReference.productId !== asset.tcgplayerProductId
+  || asset.tcgplayerArtworkReference.cardmarketProductId !== asset.cardmarketProductId
+  || asset.tcgplayerArtworkReference.cardmarketExpansionId !== asset.cardmarketExpansionId
+  || asset.tcgplayerArtworkReference.candidateCount
+    !== asset.tcgplayerArtworkReference.candidateProductIds?.length
+  || asset.tcgplayerArtworkReference.cardmarketCandidateCount
+    !== asset.tcgplayerArtworkReference.cardmarketCandidateProductIds?.length
+))) {
+  throw new Error('A complete bidirectional promotional mapping lost its exact provider, language, or candidate-set identity.');
+}
 if ([...cardAssets, ...sealedAssets].some((asset) => asset.language === 'German')) {
   throw new Error('German must never be emitted without a source-backed product.');
 }
@@ -3202,12 +4131,26 @@ const promoAssetsWithPriceRowsButNoMarket = promoAssets.filter((asset) => asset.
 const promoAssetsWithoutPriceRows = promoAssets.filter((asset) => asset.tcgplayerPriceState === 'unavailable');
 const promoAssetsWithOptcgRules = promoAssets.filter((asset) => asset.rulesMetadataMatch !== 'TCGCSV extended fields only');
 const japanesePromoAssets = promoAssets.filter((asset) => asset.language === 'Japanese');
-const exactCrossMarketAssets = coreCardAssets.filter((asset) =>
+const exactCrossMarketAssets = cardAssets.filter((asset) =>
   asset.cardmarketProductId != null
   && asset.tcgplayerProductId != null
   && asset.usPriceSource === 'TCGplayer via TCGCSV'
   && asset.quote.cardmarket != null
   && asset.quote.tcgplayer != null,
+);
+const exactCrossMarketProviderPairs = cardAssets.filter((asset) =>
+  asset.cardmarketProductId != null
+  && asset.tcgplayerProductId != null
+  && asset.usPriceSource === 'TCGplayer via TCGCSV',
+);
+const exactCrossMarketTwentyEuroAssets = exactCrossMarketAssets.filter(
+  (asset) => asset.quote.cardmarket >= 20,
+);
+const exactCrossMarketNonStandardAssets = exactCrossMarketAssets.filter(
+  (asset) => asset.variant !== 'Standard',
+);
+const exactCrossMarketPromoAssets = exactCrossMarketAssets.filter(
+  (asset) => asset.tcgplayerGroupId === TCGCSV_PROMO_GROUP_ID,
 );
 const releasedNonPremiumGroups = tcgcsvMarketSources.filter((source) => !source.abbreviation.startsWith('PRB-'));
 const groupsWithoutExactMappings = tcgcsvMarketSources
@@ -3220,7 +4163,7 @@ if (requiredGroupsWithoutExactMappings.length > 0) {
   throw new Error(`Released main/Extra Booster groups lost all exact mappings: ${requiredGroupsWithoutExactMappings.join(', ')}.`);
 }
 if (baseTcgplayerMatches.size < 800 || exactCrossMarketAssets.length < 750) {
-  throw new Error(`Exact cross-market coverage unexpectedly fell to ${baseTcgplayerMatches.size} mappings / ${exactCrossMarketAssets.length} priced cards.`);
+  throw new Error(`Exact cross-market coverage unexpectedly fell to ${baseTcgplayerMatches.size} preserved base mappings / ${exactCrossMarketAssets.length} priced cards.`);
 }
 
 function databaseSetCode(value) {
@@ -3745,6 +4688,21 @@ async function ingestSnapshotToSupabase(snapshot, officialCatalog, { required = 
               verification_product_image_digest: asset.cardmarketArtworkReference.productImageDigest,
               verification_evidence: asset.cardmarketArtworkReference.evidence,
             } : {}),
+            ...(providerSlug === 'tcgplayer' && asset.tcgplayerArtworkReference ? {
+              verification_policy: asset.tcgplayerArtworkReference.matchPolicy,
+              verification_candidate_count: asset.tcgplayerArtworkReference.candidateCount,
+              verification_candidate_product_ids: asset.tcgplayerArtworkReference.candidateProductIds,
+              verification_image_observed_at: asset.tcgplayerArtworkReference.imageVerifiedAt,
+              verification_correlation: asset.tcgplayerArtworkReference.correlation,
+              verification_runner_up_correlation: asset.tcgplayerArtworkReference.runnerUpCorrelation,
+              verification_margin: asset.tcgplayerArtworkReference.margin,
+              verification_cardmarket_product_id: asset.tcgplayerArtworkReference.cardmarketProductId,
+              verification_cardmarket_image_url: asset.tcgplayerArtworkReference.cardmarketImageUrl,
+              verification_tcgplayer_image_url: asset.tcgplayerArtworkReference.tcgplayerImageUrl,
+              verification_cardmarket_image_digest: asset.tcgplayerArtworkReference.cardmarketImageDigest,
+              verification_tcgplayer_image_digest: asset.tcgplayerArtworkReference.tcgplayerImageDigest,
+              verification_evidence: asset.tcgplayerArtworkReference.evidence,
+            } : {}),
           },
         ),
         verified_at: snapshot.generatedAt,
@@ -3937,7 +4895,7 @@ async function ingestSnapshotToSupabase(snapshot, officialCatalog, { required = 
 const output = {
   generatedAt,
   provenance: {
-    matchingPolicy: 'OPTCG remains printing truth for Bandai-confirmed released sets, starter decks, and DON!! cards; recognizable future OP/EB/PRB/ST records are excluded until their official English release. Numbered TCGCSV/TCGplayer products are printing truth for promotional cards and join to OPTCG by printed card number only for rules metadata. Cross-market comparisons still require one independently verified standard OPTCG printing, one unique unqualified Cardmarket product, and one unique unqualified TCGplayer product in the same released English booster group. Cardmarket-only exact coverage maps booster or starter-deck artwork when identity is uniquely proven by catalog metadata, or when the exact sourced artwork independently matches one Cardmarket product image above frozen correlation and separation thresholds. One Cardmarket product cannot represent visually distinct source images. Product order and price never infer V.1/V.2. Image-verified exact products populate the selected art quote, collection acquisition value, growth, and eligible comparisons. Promo identity, artwork, and USD price stay bound to the same TCGplayer productId. Source-backed Japanese/French products keep those languages, English-market products remain English, and German is never invented.',
+    matchingPolicy: 'OPTCG remains printing truth for Bandai-confirmed released sets, starter decks, and DON!! cards; recognizable future OP/EB/PRB/ST records are excluded until their official English release. Numbered TCGCSV/TCGplayer products are printing truth for promotional cards and join to OPTCG by printed card number only for rules metadata. Conservative standard cross-market joins remain preserved. Other exact Cardmarket-mapped set printings receive a TCGplayer identity only when the Cardmarket image uniquely matches one product image after every non-presale TCGCSV product for the exact released English group and printed number is compared above frozen correlation and separation thresholds. Cardmarket-only exact coverage maps booster or starter-deck artwork when identity is uniquely proven by catalog metadata, or when the exact sourced artwork independently matches one Cardmarket product image above frozen correlation and separation thresholds. Released English promotional mappings require mutual unique-best image matches across the complete same-number TCGplayer pool and every product from each reviewed Cardmarket promo expansion. One provider product cannot represent visually distinct source images. Product names, order, IDs, and prices never infer V.1/V.2. Image-verified exact products populate the selected art quote, collection acquisition value, growth, and eligible comparisons. Promo identity, artwork, and USD price stay bound to the same TCGplayer productId. Source-backed Japanese/French products keep those languages, English-market products remain English, and German is never invented.',
     englishExpansionIds,
     englishStarterExpansionIds,
     englishExpansionEvidence: tcgcsvMarketSources.map((source) => ({
@@ -3978,8 +4936,35 @@ const output = {
     },
     crossMarketCoverage: {
       exactMappingsByGroup: Object.fromEntries(exactMappingsByGroup),
+      exactArtworkMappingsByGroup: Object.fromEntries(tcgplayerArtworkMappingsByGroupV1),
       releasedGroupsWithoutExactStandardMappings: groupsWithoutExactMappings,
-      ambiguityPolicy: 'Missing or multiple candidates are excluded; market price is never used to choose a product identity.',
+      ambiguityPolicy: 'Missing, incomplete, or visually inseparable candidate sets are excluded; product name, order, ID, and market price are never used to choose an artwork identity.',
+      artworkReferencePolicy: {
+        ...TCGPLAYER_ARTWORK_MAPPING_POLICY_V1,
+        discoveryBudgetSeconds: TCGPLAYER_ARTWORK_DISCOVERY_BUDGET_MS_V1 / 1_000,
+        persistencePolicy: 'Complete-candidate evidence is reused only while the policy, both provider candidate-ID sets, Cardmarket product, and exact set/group/number remain unchanged. Evidence is fresh for at most 14 days with staggered refreshes; a transient fetch failure or global-budget deferral may preserve unchanged evidence for at most 21 days. New unresolved artwork stays unmapped, while required OP13 invariants are attempted first.',
+        mappedReferences: tcgplayerArtworkMatchesV1.size,
+        persistedReferences: persistedTcgplayerArtworkReferenceIdentitiesV1.size,
+        discoveredReferences: discoveredTcgplayerArtworkReferenceIdentitiesV1.size,
+        deferredReferences: deferredTcgplayerArtworkReferenceIdentitiesV1.size,
+        unresolvedReferences: tcgplayerArtworkReferenceFailuresV1.length,
+        unresolvedSamples: tcgplayerArtworkReferenceFailuresV1.slice(0, 50),
+      },
+      promoArtworkReferencePolicy: {
+        ...PROMO_CROSS_MARKET_MAPPING_POLICY_V1,
+        registryVersion: cardmarketPromoExpansionRegistryV1.schemaVersion,
+        reviewedExpansionIds: cardmarketPromoExpansionRegistryV1.expansions.map(
+          (entry) => entry.idExpansion,
+        ),
+        discoveryBudgetSeconds: PROMO_CROSS_MARKET_DISCOVERY_BUDGET_MS_V1 / 1_000,
+        persistencePolicy: 'Complete bidirectional evidence is reused only while both provider candidate-ID sets remain unchanged. Refreshes are staggered; a transient timeout may defer prior evidence for at most 21 days and never aborts publication by itself.',
+        mappedReferences: promoCrossMarketMatchesV1.size,
+        persistedReferences: persistedPromoCrossMarketReferencesV1,
+        discoveredReferences: discoveredPromoCrossMarketReferencesV1,
+        deferredReferences: deferredPromoCrossMarketReferencesV1,
+        unresolvedReferences: promoCrossMarketReferenceFailuresV1.length,
+        unresolvedSamples: promoCrossMarketReferenceFailuresV1.slice(0, 50),
+      },
       ambiguousCardmarketSamples: ambiguousCardmarketBaseMappings.slice(0, 25),
       unavailableCardmarketPriceSamples: cardmarketBasePricesUnavailable.slice(0, 25),
       ambiguousTcgplayerSamples: ambiguousBaseTcgplayerNumbers.slice(0, 25),
@@ -4106,7 +5091,21 @@ const output = {
       cardmarketAmbiguousStarterExpansionMappings: starterExpansionEvidence.ambiguous.length,
       approvedCardmarketMappingChanges: approvedCardmarketMappingChanges.length,
       tcgplayerMappedBaseArts: baseTcgplayerMatches.size,
+      tcgplayerImageVerifiedArtworkMappings: tcgplayerArtworkMatchesV1.size,
+      persistedTcgplayerArtworkMappings: persistedTcgplayerArtworkReferenceIdentitiesV1.size,
+      discoveredTcgplayerArtworkMappings: discoveredTcgplayerArtworkReferenceIdentitiesV1.size,
+      deferredTcgplayerArtworkMappings: deferredTcgplayerArtworkReferenceIdentitiesV1.size,
+      cardmarketTcgplayerImageVerifiedPromoMappings: promoCrossMarketMatchesV1.size,
+      persistedPromoCrossMarketMappings: persistedPromoCrossMarketReferencesV1,
+      discoveredPromoCrossMarketMappings: discoveredPromoCrossMarketReferencesV1,
+      deferredPromoCrossMarketMappings: deferredPromoCrossMarketReferencesV1,
+      promoCrossMarketMappingFailures: promoCrossMarketReferenceFailuresV1.length,
+      tcgplayerExactProviderPairs: exactCrossMarketProviderPairs.length,
       exactCrossMarketComparablePrices: exactCrossMarketAssets.length,
+      exactCrossMarketCardmarketTwentyEuroOrMore: exactCrossMarketTwentyEuroAssets.length,
+      exactCrossMarketNonStandardComparablePrices: exactCrossMarketNonStandardAssets.length,
+      exactCrossMarketPromoComparablePrices: exactCrossMarketPromoAssets.length,
+      tcgplayerArtworkMappingFailures: tcgplayerArtworkReferenceFailuresV1.length,
       tcgcsvCategoryGroups: tcgcsvGroups.length,
       releasedEnglishMarketGroups: tcgcsvMarketSources.length,
       releasedEnglishMainGroups: tcgcsvMarketSources.filter((source) => mainSetOrdinalForGroup(source.group) != null).length,
@@ -4151,6 +5150,12 @@ const output = {
       starterExpansionEvidencePolicy: 'A released ST code must resolve to one Cardmarket expansion through a standalone English Starter Deck row matched by explicit code, exact official Bandai title, or the audited ST20 product-ID override. Demo decks and combined Deck Set products are excluded.',
       exactStarterDeckSetCodeOverrides: Object.fromEntries(EXACT_CARDMARKET_DECK_SET_CODE_OVERRIDES),
       exactMappingContinuityApprovals: Object.fromEntries(APPROVED_CARDMARKET_MAPPING_CHANGES),
+      promoExpansionRegistry: {
+        schemaVersion: cardmarketPromoExpansionRegistryV1.schemaVersion,
+        reviewedAt: cardmarketPromoExpansionRegistryV1.reviewedAt,
+        expansions: cardmarketPromoExpansionRegistryV1.expansions,
+        verifiedPairInvariants: cardmarketPromoExpansionRegistryV1.verifiedPairInvariants,
+      },
       sealedCategories: [...SEALED_CATEGORIES.keys()],
       sealedExclusions: ['Lots', 'Empty packaging without cards or sealed contents', 'Rows whose title explicitly identifies an unsupported non-English edition'],
       exactSealedLanguageOverrides: Object.fromEntries(EXACT_SEALED_LANGUAGE_OVERRIDES_V10),
@@ -4194,11 +5199,14 @@ const output = {
         officialEnglishReleasedOn: source.releasedOn,
         memberSetCodes: source.memberSetCodes,
         cardmarketExpansionId: cardmarketExpansionEvidenceByGroup.get(source.groupId).idExpansion,
-        exactMappings: exactMappingsByGroup.get(source.abbreviation),
+        exactMappings: (exactMappingsByGroup.get(source.abbreviation) ?? 0)
+          + (tcgplayerArtworkMappingsByGroupV1.get(source.abbreviation) ?? 0),
+        baseMappings: exactMappingsByGroup.get(source.abbreviation) ?? 0,
+        artworkMappings: tcgplayerArtworkMappingsByGroupV1.get(source.abbreviation) ?? 0,
       }])),
       priceField: 'marketPrice',
       currency: 'USD',
-      role: 'Direct TCGplayer product identity and product-specific USD price for every exactly mapped released English OP/EB/PRB standard printing and promotional printing; exact enrichment for two missing starter images',
+      role: 'Direct TCGplayer product identity and product-specific USD price for preserved standard joins, complete-candidate image-verified released English OP/EB/PRB artworks, and promotional printings; reviewed English Cardmarket promo expansions join only through complete bidirectional artwork verification; exact enrichment for two missing starter images',
       imagePolicy: 'Use the source imageUrl. Upgrade only the audited productId allowlist to TCGplayer’s documented _in_1000x1000 derivative. Seven exact product/printing overrides use independently verified public records when the source URL is missing or returns HTTP 403; ambiguous artwork remains unavailable.',
       usagePolicy: 'Backend snapshot sync with a custom User-Agent; no browser-side polling.',
       exactImageOverrides: {
@@ -4247,9 +5255,11 @@ console.log(`TCGCSV promo printings: ${promoAssets.length} (${promoAssetsWithPri
 console.log(`Representative initial holdings: ${initialAssetIds.length}`);
 console.log(`Cardmarket-mapped card printings: ${output.provenance.catalogCounts.cardmarketMappedCardPrintings} (${output.provenance.catalogCounts.cardmarketMappedBaseArts} seeded base, ${additionalBoosterCardmarketMatches.length} additional booster, ${additionalStarterCardmarketMatches.length} starter-deck)`);
 console.log(`Cardmarket exact-art mappings: ${cardmarketArtworkReferencesV10.size} (${persistedArtworkReferencesV10} persisted, ${discoveredArtworkReferencesV10} newly image-verified, ${deferredArtworkReferencesV10} refreshes deferred after transient failures, ${artworkReferenceFailuresV10.length} unresolved)`);
+console.log(`TCGplayer exact-art mappings: ${tcgplayerArtworkMatchesV1.size} complete-candidate image matches (${persistedTcgplayerArtworkReferenceIdentitiesV1.size} persisted, ${discoveredTcgplayerArtworkReferenceIdentitiesV1.size} discovered, ${deferredTcgplayerArtworkReferenceIdentitiesV1.size} refreshes deferred, ${tcgplayerArtworkReferenceFailuresV1.length} unresolved)`);
+console.log(`Promo exact cross-market mappings: ${promoCrossMarketMatchesV1.size} complete bidirectional image matches (${persistedPromoCrossMarketReferencesV1} persisted, ${discoveredPromoCrossMarketReferencesV1} discovered, ${deferredPromoCrossMarketReferencesV1} refreshes deferred, ${promoCrossMarketReferenceFailuresV1.length} unresolved)`);
 console.log(`Sealed product images: ${sealedAssets.length} real local WebPs (${reusedSealedImagesV10} cache-verified, ${discoveredSealedImagesV10} newly mirrored)`);
 console.log(`Released English market groups: ${tcgcsvMarketSources.length} (${tcgcsvMarketSources.map((source) => source.abbreviation).join(', ')})`);
-console.log(`Exact cross-market mappings: ${baseTcgplayerMatches.size} (${exactCrossMarketAssets.length} with both market prices; ${ambiguousCardmarketBaseMappings.length} Cardmarket and ${ambiguousBaseTcgplayerNumbers.length} TCGplayer ambiguities excluded; ${cardmarketBasePricesUnavailable.length} exact Cardmarket products lacked trend prices)`);
+console.log(`Exact cross-market mappings: ${exactCrossMarketProviderPairs.length} provider pairs (${exactCrossMarketAssets.length} with both market prices; ${exactCrossMarketTwentyEuroAssets.length} at Cardmarket EUR 20+; ${exactCrossMarketNonStandardAssets.length} non-standard; ${exactCrossMarketPromoAssets.length} promotional)`);
 if (groupsWithoutExactMappings.length > 0) console.log(`Released groups with no exact standard mapping: ${groupsWithoutExactMappings.join(', ')}`);
 console.log(`Cardmarket snapshot: ${priceGuide.createdAt}`);
 console.log(`TCGCSV snapshot: ${tcgcsvCreatedAt}`);

@@ -118,19 +118,19 @@ export function MarketComparisonPage() {
         <div>
           <div className="market-comparison-kicker"><p className="eyebrow">Cross-market signal</p><MarketDataBadge compact/></div>
           <h2>Compare the same printing, not just the same card.</h2>
-          <p>TCGplayer market prices are divided by Cardmarket trend prices after converting EUR to USD with the dated ECB reference rate. Every released English main and special booster group through {latestReleasedMainSetCode} is scanned; ambiguous provider versions stay out.</p>
+          <p>TCGplayer market prices are divided by Cardmarket trend prices after converting EUR to USD with the dated ECB reference rate. Any released English base, alternate, manga, SP, or promotional printing can enter when both exact provider identities are verified; ambiguous versions stay out.</p>
         </div>
       </div>
       <dl className="market-comparison-stats">
-        <div><dt>Exact price pairs</dt><dd>{comparison.summary.eligiblePrintingCount.toLocaleString()}</dd><small>English standard printings</small></div>
-        <div><dt>Released groups scanned</dt><dd>{releasedGroupCount}</dd><small>{releasedMainGroupCount} main · {releasedSpecialGroupCount} EB / PRB</small></div>
+        <div><dt>Exact English printings</dt><dd>{comparison.summary.eligiblePrintingCount.toLocaleString()}</dd><small>Verified provider pairs; each art stays distinct</small></div>
+        <div><dt>Released set groups scanned</dt><dd>{releasedGroupCount}</dd><small>{releasedMainGroupCount} main · {releasedSpecialGroupCount} EB / PRB · promo source checked</small></div>
         <div><dt>ECB rate</dt><dd>{exchangeRate.usdPerEur.toFixed(4)}</dd><small>USD per EUR · {formatDate(exchangeRate.observationDate)}</small></div>
       </dl>
     </section>
 
     <section className="comparison-method panel" aria-label="Market comparison method">
-      <div><span><Icon name="shield"/></span><div><strong>Exact-match policy</strong><small>Cardmarket product ID + TCGplayer product ID + one unambiguous standard printing.</small></div></div>
-      <div><span><Icon name="refresh"/></span><div><strong>Current English release window</strong><small>OP01–{latestReleasedMainSetCode} plus EB / PRB; combined releases follow their official Bandai grouping.</small></div></div>
+      <div><span><Icon name="shield"/></span><div><strong>Exact-match policy</strong><small>Cardmarket product ID + TCGplayer product ID + one unambiguous English art printing.</small></div></div>
+      <div><span><Icon name="refresh"/></span><div><strong>Current English release window</strong><small>OP01–{latestReleasedMainSetCode} plus EB / PRB; alternate, manga, SP, and promo arts enter only with exact pairs.</small></div></div>
       <div><span><Icon name="info"/></span><div><strong>Relative signal, not profit</strong><small>Fees, tax, shipping, liquidity, and card condition are not included.</small></div></div>
     </section>
 
@@ -223,7 +223,7 @@ export function MarketComparisonPage() {
               const usdGap = row.tcgplayerUsd - row.cardmarketUsd;
               const relativeDifference = (row.ratio - 1) * 100;
               const tcgplayerHigher = row.ratio >= 1;
-              return <tr key={row.printingId}>
+              return <tr key={`${row.cardmarketProductId}:${row.tcgplayerProductId}`}>
                 <td><span className="comparison-rank">{String(index + 1).padStart(2, '0')}</span></td>
                 <td><span className="comparison-card"><CardArt asset={asset} size="xs"/><span><strong>{row.name}</strong><small>{row.number} · {row.variant}</small><em>{row.language} · {row.rarity}</em></span></span></td>
                 <td><strong>{row.setCode}</strong><small>{row.set}</small></td>

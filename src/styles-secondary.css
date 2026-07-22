@@ -5,6 +5,8 @@
 .settings-nav button.active { color: var(--ink); background: var(--coral-soft); box-shadow: inset 3px 0 var(--coral); }
 .settings-nav button.active svg { color: var(--coral); }
 .settings-content { display: grid; gap: 16px; }
+.settings-section-stack { display: grid; gap: 16px; outline: none; }
+.settings-intro { margin: 0 0 16px; color: var(--muted); font-size: 9px; line-height: 1.6; }
 .settings-card { padding: 21px; }
 .profile-editor { display: flex; align-items: center; gap: 13px; margin: 18px 0; }
 .profile-editor > div { display: grid; gap: 5px; }
@@ -27,6 +29,12 @@
 .privacy-card h2 { font-size: 13px; }
 .privacy-card p { color: #5b7686; font-size: 9px; line-height: 1.55; margin: 4px 0 10px; }
 .privacy-card > div > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.privacy-status-list { display: grid; gap: 8px; margin-top: 15px; }
+.privacy-status-list > div { display: grid; grid-template-columns: 34px minmax(0,1fr) auto; align-items: center; gap: 11px; padding: 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }
+.privacy-status-list > div > svg { color: var(--blue); }
+.privacy-status-list span { display: grid; gap: 2px; }
+.privacy-status-list strong { font-size: 10px; }
+.privacy-status-list small { color: var(--muted); font-size: 8px; line-height: 1.45; }
 .danger-zone { padding: 17px; display: flex; justify-content: space-between; align-items: center; gap: 20px; border-color: #e6ceca; }
 .danger-zone h2 { font-size: 12px; }
 .danger-zone p { color: var(--muted); font-size: 8px; margin-top: 3px; }

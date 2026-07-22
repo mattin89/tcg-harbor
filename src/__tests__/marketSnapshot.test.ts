@@ -466,8 +466,46 @@ describe('source-backed catalog snapshot', () => {
     expect(marketDataMeta.catalogCounts.tcgplayerMappedBaseArts).toBeGreaterThan(800);
     expect(comparable).toHaveLength(marketDataMeta.catalogCounts.exactCrossMarketComparablePrices);
     expect(comparable.length).toBeGreaterThan(750);
-    expect(comparable.every((asset) => asset.variant === 'Standard')).toBe(true);
-    expect(comparable.every((asset) => asset.tcgplayerMappingEvidence?.includes('unique unqualified base product'))).toBe(true);
+    expect(marketDataMeta.catalogCounts.tcgplayerExactProviderPairs).toBeGreaterThanOrEqual(comparable.length);
+    expect(marketDataMeta.catalogCounts.exactCrossMarketCardmarketTwentyEuroOrMore).toBeGreaterThan(0);
+    expect(marketDataMeta.catalogCounts.exactCrossMarketNonStandardComparablePrices).toBeGreaterThan(0);
+    expect(marketDataMeta.catalogCounts.exactCrossMarketPromoComparablePrices).toBeGreaterThan(0);
+    expect(comparable.filter((asset) => (asset.quote.cardmarket ?? 0) >= 20)).toHaveLength(
+      marketDataMeta.catalogCounts.exactCrossMarketCardmarketTwentyEuroOrMore,
+    );
+    expect(comparable.filter((asset) => asset.variant !== 'Standard')).toHaveLength(
+      marketDataMeta.catalogCounts.exactCrossMarketNonStandardComparablePrices,
+    );
+    expect(comparable.filter((asset) => asset.tcgplayerGroupId === marketDataMeta.tcgcsv.promoGroupId)).toHaveLength(
+      marketDataMeta.catalogCounts.exactCrossMarketPromoComparablePrices,
+    );
+
+    const preservedBasePairs = comparable.filter((asset) => !asset.tcgplayerArtworkReference);
+    expect(preservedBasePairs.length).toBeGreaterThan(800);
+    expect(preservedBasePairs.every((asset) => (
+      asset.tcgplayerMappingEvidence?.includes('unique unqualified base product')
+    ))).toBe(true);
+
+    const artworkPairs = comparable.filter((asset) => asset.tcgplayerArtworkReference);
+    expect(artworkPairs.length).toBeGreaterThan(0);
+    for (const asset of artworkPairs) {
+      const reference = asset.tcgplayerArtworkReference;
+      expect(reference?.productId).toBe(asset.tcgplayerProductId);
+      expect(reference?.cardmarketProductId).toBe(asset.cardmarketProductId);
+      expect(reference?.candidateCount).toBe(reference?.candidateProductIds.length);
+      expect(reference?.candidateProductIds).toContain(asset.tcgplayerProductId);
+      expect(reference?.correlation).toBeGreaterThanOrEqual(0.985);
+      expect(reference?.margin).toBeGreaterThanOrEqual(0.08);
+      expect(Number.isNaN(Date.parse(reference?.imageVerifiedAt ?? ''))).toBe(false);
+      if (reference?.matchPolicy === 'cardmarket-tcgplayer-promo-bidirectional-image-correlation-v1-complete-candidates') {
+        expect(asset.tcgplayerGroupId).toBe(marketDataMeta.tcgcsv.promoGroupId);
+        expect(reference.cardmarketCandidateCount).toBe(reference.cardmarketCandidateProductIds?.length);
+        expect(reference.cardmarketCandidateProductIds).toContain(asset.cardmarketProductId);
+      } else {
+        expect(reference?.matchPolicy).toBe('cardmarket-tcgplayer-image-correlation-v1-complete-candidates');
+        expect(reference?.setCode).toBe(asset.setCode);
+      }
+    }
 
     const usopp = comparable.find((asset) => asset.number === 'OP01-004');
     expect(usopp).toMatchObject({
@@ -571,10 +609,16 @@ describe('source-backed catalog snapshot', () => {
       && asset.usPriceSource === 'TCGplayer via TCGCSV',
     );
     for (const asset of comparable) {
+      if (asset.tcgplayerGroupId === marketDataMeta.tcgcsv.promoGroupId) {
+        expect(asset.tcgplayerArtworkReference?.matchPolicy)
+          .toBe('cardmarket-tcgplayer-promo-bidirectional-image-correlation-v1-complete-candidates');
+        continue;
+      }
       const group = groupById.get(asset.tcgplayerGroupId ?? -1);
       expect(group).toBeDefined();
-      expect(group?.memberSetCodes).toContain(asset.number?.split('-')[0]);
-      if (asset.number?.startsWith('EB04-')) {
+      const releaseSetCodes: string[] = asset.setCode.match(/(?:OP|EB|PRB)\d{2}/g) ?? [];
+      expect(releaseSetCodes.some((setCode) => group?.memberSetCodes.includes(setCode))).toBe(true);
+      if (releaseSetCodes.includes('EB04')) {
         expect([24537, 24637]).toContain(asset.tcgplayerGroupId);
         expect([6432, 6456]).toContain(asset.cardmarketExpansionId);
       }

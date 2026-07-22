@@ -11,6 +11,8 @@ import type {
   GeneratedStoreQrInvite,
   PendingApplication,
   ProductionAccessSnapshot,
+  ProductionNotificationPreferences,
+  ProductionProfileSettingsDraft,
   SignUpDraft,
   SignUpResult,
   StoreJoinCodeValidation,
@@ -38,6 +40,9 @@ export interface ProductionAccessController {
   signOutEverywhere(): Promise<void>;
   requestPasswordReset(email: string): Promise<void>;
   updatePassword(password: string): Promise<void>;
+  changePassword(currentPassword: string, password: string): Promise<void>;
+  updateProfileSettings(draft: ProductionProfileSettingsDraft): Promise<void>;
+  updateNotificationPreferences(preferences: ProductionNotificationPreferences): Promise<void>;
   submitStoreApplication(draft: StoreApplicationDraft): Promise<void>;
   withdrawStoreApplication(applicationId: string): Promise<void>;
   listPendingApplications(): Promise<PendingApplication[]>;
@@ -266,6 +271,18 @@ export function useProductionAccess(): ProductionAccessController {
         await service.updatePassword(password);
         setPasswordRecovery(false);
       });
+    },
+    async changePassword(currentPassword, password) {
+      if (!service) return;
+      await run(() => service.changePassword(currentPassword, password));
+    },
+    async updateProfileSettings(draft) {
+      if (!service || !snapshot) return;
+      await run(() => service.updateProfileSettings(snapshot.profile.id, draft), { refresh: true });
+    },
+    async updateNotificationPreferences(preferences) {
+      if (!service || !snapshot) return;
+      await run(() => service.updateNotificationPreferences(snapshot.profile.id, preferences), { refresh: true });
     },
     async submitStoreApplication(draft) {
       if (!service) return;

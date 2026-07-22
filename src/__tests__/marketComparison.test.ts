@@ -83,9 +83,9 @@ describe('compareCardMarkets', () => {
 
   it('uses exact-printing identity as a deterministic tie-breaker', () => {
     const assets = [
-      makeAsset('b', { printingId: 'printing-b' }),
-      makeAsset('c', { printingId: 'printing-c' }),
-      makeAsset('a', { printingId: 'printing-a' }),
+      makeAsset('b', { printingId: 'printing-b', cardmarketProductId: 101, tcgplayerProductId: 201 }),
+      makeAsset('c', { printingId: 'printing-c', cardmarketProductId: 102, tcgplayerProductId: 202 }),
+      makeAsset('a', { printingId: 'printing-a', cardmarketProductId: 103, tcgplayerProductId: 203 }),
     ];
 
     const first = compareCardMarkets(assets, 1);
@@ -130,8 +130,72 @@ describe('compareCardMarkets', () => {
         'invalid-cardmarket-price': 1,
         'invalid-tcgplayer-price': 1,
         'invalid-derived-ratio': 1,
+        'duplicate-printing-identity': 0,
       },
     });
+  });
+
+  it('deduplicates aliases and repeated provider pairs while retaining distinct special arts', () => {
+    const canonical = makeAsset('canonical', {
+      catalogId: 'canonical',
+      name: 'Monkey.D.Luffy',
+      number: 'OP05-119',
+      printingId: 'OP05-119:base',
+      cardmarketProductId: 101,
+      tcgplayerProductId: 201,
+      quote: { cardmarket: 25, tcgplayer: 30 },
+    });
+    const assets = [
+      makeAsset('historical-alias', {
+        catalogAliasOf: 'canonical',
+        name: 'Monkey.D.Luffy',
+        number: 'OP05-119',
+        printingId: 'OP05-119:legacy',
+        cardmarketProductId: 104,
+        tcgplayerProductId: 204,
+        quote: { cardmarket: 90, tcgplayer: 900 },
+      }),
+      makeAsset('same-provider-pair', {
+        printingId: 'OP05-119:provider-duplicate',
+        cardmarketProductId: 101,
+        tcgplayerProductId: 201,
+        quote: { cardmarket: 25, tcgplayer: 2_500 },
+      }),
+      makeAsset('manga', {
+        name: 'Monkey.D.Luffy',
+        number: 'OP05-119',
+        printingId: 'OP05-119:manga',
+        variant: 'Manga art',
+        cardmarketProductId: 102,
+        tcgplayerProductId: 202,
+        quote: { cardmarket: 1_500, tcgplayer: 1_800 },
+      }),
+      makeAsset('promo', {
+        name: 'Monkey.D.Luffy',
+        number: 'OP05-119',
+        printingId: 'OP05-119:promo',
+        variant: 'Promotional art',
+        cardmarketProductId: 103,
+        tcgplayerProductId: 203,
+        quote: { cardmarket: 40, tcgplayer: 60 },
+      }),
+      canonical,
+    ];
+
+    const first = compareCardMarkets(assets, 1, { minCardmarketEur: 20 });
+    const second = compareCardMarkets([...assets].reverse(), 1, { minCardmarketEur: 20 });
+
+    expect(first.highest.map((row) => row.assetId)).toEqual(['promo', 'canonical', 'manga']);
+    expect(first.lowest.map((row) => row.assetId)).toEqual(['canonical', 'manga', 'promo']);
+    expect(first.summary).toMatchObject({
+      eligiblePrintingCount: 3,
+      filteredEligiblePrintingCount: 3,
+      excludedAssetCount: 2,
+      excludedCardPrintingCount: 2,
+      exclusionCounts: { 'duplicate-printing-identity': 2 },
+    });
+    expect(second.highest).toEqual(first.highest);
+    expect(second.lowest).toEqual(first.lowest);
   });
 
   it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY])(

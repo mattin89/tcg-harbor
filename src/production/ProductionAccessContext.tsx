@@ -38,6 +38,10 @@ export function useProductionIdentity() {
     managedStores: access.snapshot?.managedStores ?? [],
     registeredStores: access.snapshot?.registeredStores ?? [],
     storeApplication: access.snapshot?.application ?? null,
+    notificationPreferences: access.snapshot?.notificationPreferences ?? null,
+    updateProfileSettings: access.updateProfileSettings,
+    updateNotificationPreferences: access.updateNotificationPreferences,
+    changePassword: access.changePassword,
     signOut: access.signOut,
     signOutEverywhere: access.signOutEverywhere,
   };

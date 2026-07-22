@@ -2,6 +2,7 @@ import App from './App';
 import { ProductionAccessGate, useProductionIdentity } from './production';
 import type { RegisteredStore } from './production';
 import type { Store } from './data/demo';
+import { useProductionNotificationsV5 } from './services/supabase/useProductionNotificationsV5';
 import { usePublicStoreDirectoryV4 } from './services/supabase/usePublicStoreDirectoryV4';
 
 const storeAccents = ['coral', 'gold', 'violet', 'azure', 'jade', 'amber'];
@@ -67,6 +68,10 @@ function ProductionGuestBridge({ onRequestAuthentication }: { onRequestAuthentic
 
 function ProductionIdentityBridge() {
   const identity = useProductionIdentity();
+  const productionNotifications = useProductionNotificationsV5(
+    identity.configured && identity.authenticated,
+    identity.profile?.id,
+  );
 
   if (!identity.configured || !identity.authenticated || !identity.profile) {
     return <main className="production-loading-page" aria-busy="true"><h1>Opening your account</h1></main>;
@@ -80,6 +85,23 @@ function ProductionIdentityBridge() {
     accountKind: identity.profile.accountKind,
     roles: identity.roles,
     registeredStores: identity.registeredStores.map(toMapStore),
+    profileSettings: {
+      username: identity.profile.username,
+      primaryMarket: identity.profile.primaryMarket,
+      preferredCurrency: identity.profile.preferredCurrency,
+      approximateCity: identity.profile.approximateCity,
+      approximatePostcode: identity.profile.approximatePostcode,
+    },
+    notificationPreferences: identity.notificationPreferences ?? undefined,
+    notifications: productionNotifications.notifications,
+    notificationsLoading: productionNotifications.loading,
+    notificationsMutating: productionNotifications.mutating,
+    notificationsError: productionNotifications.error,
+    onRefreshNotifications: productionNotifications.refresh,
+    onMarkAllNotificationsRead: productionNotifications.markAllRead,
+    onUpdateProfileSettings: identity.updateProfileSettings,
+    onUpdateNotificationPreferences: identity.updateNotificationPreferences,
+    onChangePassword: identity.changePassword,
     onSignOut: identity.signOut,
     onSignOutEverywhere: identity.signOutEverywhere,
   }} />;

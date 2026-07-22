@@ -22,8 +22,28 @@ export interface ProductionProfile {
   displayName: string | null;
   avatarUrl: string | null;
   accountKind: AccountKind;
+  primaryMarket: "cardmarket" | "tcgplayer";
+  preferredCurrency: "EUR" | "USD";
+  approximateCity: string;
+  approximatePostcode: string;
   roles: AppRole[];
   accountStatus: "active" | "suspended" | "deactivated";
+}
+
+export interface ProductionProfileSettingsDraft {
+  username: string;
+  primaryMarket: "cardmarket" | "tcgplayer";
+  preferredCurrency: "EUR" | "USD";
+  approximateCity: string;
+  approximatePostcode: string;
+}
+
+export interface ProductionNotificationPreferences {
+  directMessages: boolean;
+  communityReplies: boolean;
+  matchingTrades: boolean;
+  tradeUpdates: boolean;
+  emailEnabled: boolean;
 }
 
 export interface StoreApplication {
@@ -191,6 +211,7 @@ export interface CommunityMessage {
 export interface ProductionAccessSnapshot {
   session: Session;
   profile: ProductionProfile;
+  notificationPreferences: ProductionNotificationPreferences;
   application: StoreApplication | null;
   managedStores: ManagedStore[];
   registeredStores: RegisteredStore[];

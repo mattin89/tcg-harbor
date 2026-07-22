@@ -30,6 +30,7 @@ export const MARKET_COMPARISON_EXCLUSION_REASONS = [
   'invalid-cardmarket-price',
   'invalid-tcgplayer-price',
   'invalid-derived-ratio',
+  'duplicate-printing-identity',
 ] as const;
 
 export type MarketComparisonExclusionReason =
@@ -90,6 +91,7 @@ function createExclusionCounts(): Record<MarketComparisonExclusionReason, number
     'invalid-cardmarket-price': 0,
     'invalid-tcgplayer-price': 0,
     'invalid-derived-ratio': 0,
+    'duplicate-printing-identity': 0,
   };
 }
 
@@ -183,6 +185,100 @@ function compareHighestFirst(left: MarketComparisonRow, right: MarketComparisonR
   return compareIdentity(left, right);
 }
 
+interface MarketComparisonCandidate {
+  readonly row: MarketComparisonRow;
+  /** Stable catalog identity shared by a canonical asset and any hidden aliases. */
+  readonly stableAssetId: string;
+  readonly isCatalogAlias: boolean;
+  readonly isArchived: boolean;
+}
+
+function usableIdentity(value: string | undefined): string | null {
+  const normalized = value?.trim();
+  return normalized ? normalized : null;
+}
+
+function providerPairIdentity(row: MarketComparisonRow): string {
+  return `${row.cardmarketProductId}:${row.tcgplayerProductId}`;
+}
+
+function compareCandidateRepresentative(
+  left: MarketComparisonCandidate,
+  right: MarketComparisonCandidate,
+): number {
+  // Prefer the visible, current catalog row. The remaining lexical fallbacks
+  // make the result independent of source-array order when two visible rows
+  // accidentally carry the same exact provider pair.
+  if (left.isCatalogAlias !== right.isCatalogAlias) return left.isCatalogAlias ? 1 : -1;
+  if (left.isArchived !== right.isArchived) return left.isArchived ? 1 : -1;
+  return compareText(left.stableAssetId, right.stableAssetId)
+    || compareIdentity(left.row, right.row);
+}
+
+/**
+ * Collapses historical catalog aliases and repeated Cardmarket/TCGplayer pairs.
+ * The two identities are joined transitively so an alias cannot reintroduce a
+ * provider pair under a different asset ID. Printings which merely share a card
+ * number are intentionally untouched: alternate, manga, SP, and promotional
+ * arts have their own provider pairs and remain independently comparable.
+ */
+function deduplicateCandidates(
+  candidates: readonly MarketComparisonCandidate[],
+): {
+  readonly rows: MarketComparisonRow[];
+  readonly duplicateCount: number;
+} {
+  const parents = candidates.map((_, index) => index);
+
+  const find = (index: number): number => {
+    let root = index;
+    while (parents[root] !== root) root = parents[root];
+    while (parents[index] !== index) {
+      const next = parents[index];
+      parents[index] = root;
+      index = next;
+    }
+    return root;
+  };
+
+  const unite = (left: number, right: number) => {
+    const leftRoot = find(left);
+    const rightRoot = find(right);
+    if (leftRoot !== rightRoot) parents[rightRoot] = leftRoot;
+  };
+
+  const indexByStableAssetId = new Map<string, number>();
+  const indexByProviderPair = new Map<string, number>();
+  candidates.forEach((candidate, index) => {
+    const stableMatch = indexByStableAssetId.get(candidate.stableAssetId);
+    if (stableMatch === undefined) indexByStableAssetId.set(candidate.stableAssetId, index);
+    else unite(index, stableMatch);
+
+    const providerPair = providerPairIdentity(candidate.row);
+    const providerMatch = indexByProviderPair.get(providerPair);
+    if (providerMatch === undefined) indexByProviderPair.set(providerPair, index);
+    else unite(index, providerMatch);
+  });
+
+  const groups = new Map<number, MarketComparisonCandidate[]>();
+  candidates.forEach((candidate, index) => {
+    const root = find(index);
+    const group = groups.get(root);
+    if (group) group.push(candidate);
+    else groups.set(root, [candidate]);
+  });
+
+  const rows: MarketComparisonRow[] = [];
+  let duplicateCount = 0;
+  for (const group of groups.values()) {
+    const representative = group.slice().sort(compareCandidateRepresentative)[0];
+    rows.push(representative.row);
+    duplicateCount += group.length - 1;
+  }
+
+  return { rows, duplicateCount };
+}
+
 /**
  * Compares exact card printings only when both provider identities and prices are
  * independently evidenced. In particular, an OPTCG API USD quote is not treated
@@ -198,7 +294,7 @@ export function compareCardMarkets(
     throw new RangeError('EUR to USD rate must be a finite number greater than zero.');
   }
 
-  const rows: MarketComparisonRow[] = [];
+  const candidates: MarketComparisonCandidate[] = [];
   const exclusionCounts = createExclusionCounts();
   let cardAssetCount = 0;
 
@@ -253,7 +349,7 @@ export function compareCardMarkets(
       continue;
     }
 
-    rows.push({
+    const row: MarketComparisonRow = {
       assetId: asset.id,
       catalogId: asset.catalogId,
       printingId: asset.printingId,
@@ -273,10 +369,24 @@ export function compareCardMarkets(
       tcgplayerUsd,
       ratio,
       usPriceSource: VERIFIED_TCGPLAYER_PRICE_SOURCE,
+    };
+    candidates.push({
+      row,
+      stableAssetId: usableIdentity(asset.catalogAliasOf)
+        ?? usableIdentity(asset.catalogId)
+        ?? asset.id,
+      isCatalogAlias: usableIdentity(asset.catalogAliasOf) !== null,
+      isArchived: asset.catalogArchived === true,
     });
   }
 
+  const { rows, duplicateCount } = deduplicateCandidates(candidates);
+  exclusionCounts['duplicate-printing-identity'] = duplicateCount;
+
   const priceFilter = sanitizeMarketComparisonPriceFilter(filters);
+  // Apply the inclusive Cardmarket range to the complete exact-printing pool.
+  // Only then derive each top/bottom ranking, so changing either bound refills
+  // both lists instead of filtering a previously truncated set of 20.
   const filteredRows = priceFilter.error === null
     ? rows.filter((row) => (
       (priceFilter.minCardmarketEur === null || row.cardmarketEur >= priceFilter.minCardmarketEur)

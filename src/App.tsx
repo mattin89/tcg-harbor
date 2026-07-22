@@ -5,11 +5,14 @@ import { Icon } from './components/Icon';
 import { AccountMenuButton } from './components/AccountMenuButton';
 import { ScannerPage as WorkingScannerPage } from './components/ScannerPage';
 import { MarketComparisonPage } from './components/MarketComparisonPage';
+import { SettingsPageV5 } from './components/SettingsPageV5';
 import { StoreMap } from './components/StoreMap';
-import { Avatar, Button, CardArt, Chip, DemoBadge, EmptyState, MarketDataBadge, Modal, PriceChart, Segmented, Toggle, Trend } from './components/ui';
+import { Avatar, Button, CardArt, Chip, DemoBadge, EmptyState, MarketDataBadge, Modal, PriceChart, Segmented, Trend } from './components/ui';
+import type { ProductionNotificationPreferences, ProductionProfileSettingsDraft } from './production/types';
 import { clearStoredStoreJoinIntent, peekStoreJoinIntent } from './production/storeJoinRoute';
 import { summarizePortfolioGrowth } from './domain/acquisitionGrowthV2';
 import { resolvePrivateNoteForAddV2 } from './domain/collectionDraftV2';
+import { readDemoProfileSettingsV5 } from './domain/accountSettingsV5';
 import { resolvePortfolioValuationV2 } from './domain/portfolioValuationV2';
 import { resolveActiveNavPathV2 } from './domain/navigationV2';
 import { resolveAccountBootstrapSeedsV2 } from './domain/accountBootstrapV2';
@@ -23,6 +26,7 @@ import { useProductionCollectionV2, type ProductionCollectionRuntimeV2 } from '.
 import { useProductionDirectMessagesV2, type ProductionDirectMessagesRuntimeV2 } from './services/supabase/useProductionDirectMessagesV2';
 import type { ProductionDirectConversationV2 } from './services/supabase/directMessageRepositoryV2';
 import type { PortfolioDailySnapshotV2 } from './services/supabase/collectionRepositoryV2';
+import type { ProductionNotificationViewV5 } from './services/supabase/notificationRepositoryV5';
 import {
   assetById,
   catalogAssets,
@@ -57,6 +61,17 @@ export interface AppRuntimeIdentity {
   accountKind: 'player' | 'store';
   roles: string[];
   registeredStores?: Store[];
+  profileSettings?: ProductionProfileSettingsDraft;
+  notificationPreferences?: ProductionNotificationPreferences;
+  notifications?: readonly ProductionNotificationViewV5[];
+  notificationsLoading?: boolean;
+  notificationsMutating?: boolean;
+  notificationsError?: string | null;
+  onRefreshNotifications?: () => void | Promise<void>;
+  onMarkAllNotificationsRead?: () => Promise<boolean>;
+  onUpdateProfileSettings?: (draft: ProductionProfileSettingsDraft) => void | Promise<void>;
+  onUpdateNotificationPreferences?: (preferences: ProductionNotificationPreferences) => void | Promise<void>;
+  onChangePassword?: (currentPassword: string, password: string) => void | Promise<void>;
   onSignOut: () => void | Promise<void>;
   onSignOutEverywhere?: () => void | Promise<void>;
   storePortal?: ReactNode;
@@ -132,6 +147,11 @@ function directConversationsToViewV2(
       own: message.own,
     })),
   }));
+}
+
+function notificationActionUrlV5(notification: { readonly type: string; readonly actionUrl?: string | null }): string | null {
+  if (notification.actionUrl !== undefined) return notification.actionUrl;
+  return notification.type === 'message' ? '/messages/lena' : null;
 }
 
 const navItems = [
@@ -213,7 +233,14 @@ export default function App({ identity, guest }: AppProps = {}) {
   const productionCollection = useProductionCollectionV2(Boolean(identity), identity?.userId);
   const productionDirectMessages = useProductionDirectMessagesV2(Boolean(identity), identity?.userId);
   const assets = identity ? productionCollection.assets : isGuest ? [] : demoAssets;
-  const [market, setMarket] = useState<Market>('cardmarket');
+  const [market, setMarket] = useState<Market>(() => identity?.profileSettings?.primaryMarket
+    ?? (isGuest ? 'cardmarket' : readDemoProfileSettingsV5(localStorage, {
+      username: 'player',
+      primaryMarket: 'cardmarket',
+      preferredCurrency: 'EUR',
+      approximateCity: '',
+      approximatePostcode: '',
+    }).primaryMarket));
   const [period, setPeriod] = useState<Period>('1M');
   const [kind, setKind] = useState<AssetKind | 'all'>('all');
   const [joinedIds, setJoinedIds] = useState(() => new Set(isGuest ? [] : storeDirectory.filter((store) => store.joined).map((store) => store.id)));
@@ -233,6 +260,9 @@ export default function App({ identity, guest }: AppProps = {}) {
     if (!identity && !isGuest) localStorage.setItem('tcg-harbor-assets-source-backed-v5', JSON.stringify(demoAssets));
   }, [demoAssets, identity, isGuest]);
   useEffect(() => {
+    if (identity?.profileSettings?.primaryMarket) setMarket(identity.profileSettings.primaryMarket);
+  }, [identity?.profileSettings?.primaryMarket]);
+  useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(''), 3500);
     return () => window.clearTimeout(timer);
@@ -243,7 +273,8 @@ export default function App({ identity, guest }: AppProps = {}) {
   const profileName = identity?.displayName || identity?.username || 'Player';
   const profileInitials = profileName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'P';
   const unreadMessageCount = conversations.reduce((sum, conversation) => sum + conversation.unread, 0);
-  const unreadNotificationCount = accountSeeds.notifications.filter((notification) => notification.unread).length;
+  const displayedNotifications = identity ? identity.notifications ?? [] : accountSeeds.notifications;
+  const unreadNotificationCount = displayedNotifications.filter((notification) => notification.unread).length;
   const isPlatformAdministrator = identity?.roles.includes('platform_administrator') ?? false;
   const isApprovedStoreAdministrator = identity?.roles.includes('store_administrator') ?? false;
   // Production store/approval navigation is owned by ProductionAccessGate.
@@ -251,13 +282,13 @@ export default function App({ identity, guest }: AppProps = {}) {
   // caller that deliberately supplies a production store portal node.
   const canOpenStorePortal = !isGuest && (!identity || Boolean(identity.storePortal));
   const accountLabel = isPlatformAdministrator ? 'Platform administrator' : isApprovedStoreAdministrator ? 'Player · Store operator' : identity?.accountKind === 'store' ? 'Player · Store applicant' : 'Player · Europe';
-  const signOut = () => {
+  const signOut = async () => {
     if (isGuest) {
       guest?.onRequestAuthentication();
       return;
     }
     if (identity) {
-      void identity.onSignOut();
+      await identity.onSignOut();
       return;
     }
     localStorage.setItem('tcg-harbor-session', 'signed-out');
@@ -274,6 +305,18 @@ export default function App({ identity, guest }: AppProps = {}) {
     const pending = sessionStorage.getItem('tcg-harbor-pending-join');
     sessionStorage.removeItem('tcg-harbor-pending-join');
     navigate(pending || '/dashboard');
+  };
+  const markAllNotificationsRead = async () => {
+    if (!identity?.onMarkAllNotificationsRead) {
+      notify('All demo notifications marked as read');
+      return;
+    }
+    try {
+      const saved = await identity.onMarkAllNotificationsRead();
+      if (saved) notify('All notifications marked as read');
+    } catch (reason) {
+      notify(reason instanceof Error ? reason.message : 'Notifications could not be marked as read');
+    }
   };
 
   if (!authenticated) {
@@ -319,7 +362,7 @@ export default function App({ identity, guest }: AppProps = {}) {
               : path === '/messages' || path.startsWith('/messages/')
                 ? <MessagesPage conversationId={path.split('/')[2]} conversations={conversations} setConversations={setConversations} productionMessages={identity ? productionDirectMessages : undefined} navigate={navigate} notify={notify} />
                 : path === '/settings'
-                  ? <SettingsPage market={market} setMarket={setMarket} notify={notify} signOut={signOut} identity={identity} />
+                  ? <SettingsPageV5 market={market} setMarket={setMarket} navigate={navigate} notify={notify} signOut={signOut} identity={identity} />
                   : path === '/store-admin'
                     ? canOpenStorePortal
                       ? identity?.storePortal ?? <StoreAdminPage notify={notify} />
@@ -363,7 +406,18 @@ export default function App({ identity, guest }: AppProps = {}) {
       </main>
     </div>
     <nav className="bottom-nav" aria-label="Mobile navigation">{visibleNavItems.filter((item) => item.path !== '/collection/add').map((item) => <button key={item.path} className={activeNavPath === item.path ? 'active' : ''} aria-current={activeNavPath === item.path ? 'page' : undefined} onClick={() => navigate(item.path)}><Icon name={item.icon} size={20}/><span>{item.path === '/market-comparison' ? 'Markets' : item.label === 'Communities' ? 'Community' : item.label}</span>{item.path === '/messages' && unreadMessageCount > 0 && <em>{unreadMessageCount}</em>}</button>)}</nav>
-    {!isGuest && notificationsOpen && <div className="notification-panel"><header><div><p className="eyebrow">Activity</p><h2>Notifications</h2></div><Button variant="ghost" size="icon" onClick={() => setNotificationsOpen(false)} aria-label="Close notifications"><Icon name="close" /></Button></header><div className="notification-list">{accountSeeds.notifications.length === 0 ? <div className="notification-empty"><Icon name="bell" size={22}/><span><strong>No notifications yet</strong><small>Account activity will appear here.</small></span></div> : accountSeeds.notifications.map((note) => <button key={note.id} className={note.unread ? 'unread' : ''} onClick={() => { setNotificationsOpen(false); if (note.type === 'message') navigate('/messages/lena'); }}><span className={`notification-icon ${note.type}`}><Icon name={note.type === 'message' ? 'message' : note.type === 'trade' ? 'trade' : note.type === 'community' ? 'users' : 'check'} /></span><span><strong>{note.title}</strong><small>{note.detail}</small><time>{note.time}</time></span></button>)}</div>{accountSeeds.notifications.length > 0 && <footer><Button variant="secondary" onClick={() => notify('All notifications marked as read')}><Icon name="check"/>Mark all read</Button></footer>}</div>}
+    {!isGuest && notificationsOpen && <div className="notification-panel">
+      <header><div><p className="eyebrow">Activity</p><h2>Notifications</h2></div><Button variant="ghost" size="icon" onClick={() => setNotificationsOpen(false)} aria-label="Close notifications"><Icon name="close" /></Button></header>
+      <div className="notification-list" aria-live="polite">
+        {identity?.notificationsError && <div className="notification-empty"><Icon name="info" size={22}/><span><strong>Notifications need attention</strong><small>{identity.notificationsError}</small>{identity.onRefreshNotifications && <Button variant="ghost" size="sm" onClick={() => void identity.onRefreshNotifications?.()}>Try again</Button>}</span></div>}
+        {identity?.notificationsLoading && displayedNotifications.length === 0
+          ? <div className="notification-empty"><Icon name="refresh" size={22}/><span><strong>Loading notifications</strong><small>Retrieving account activity…</small></span></div>
+          : displayedNotifications.length === 0 && !identity?.notificationsError
+            ? <div className="notification-empty"><Icon name="bell" size={22}/><span><strong>No notifications yet</strong><small>Account activity will appear here.</small></span></div>
+            : displayedNotifications.map((note) => <button key={note.id} className={note.unread ? 'unread' : ''} onClick={() => { const actionUrl = notificationActionUrlV5(note); setNotificationsOpen(false); if (actionUrl) navigate(actionUrl); }}><span className={`notification-icon ${note.type}`}><Icon name={note.type === 'message' ? 'message' : note.type === 'trade' ? 'trade' : note.type === 'community' ? 'users' : 'check'} /></span><span><strong>{note.title}</strong><small>{note.detail}</small><time>{note.time}</time></span></button>)}
+      </div>
+      {displayedNotifications.some((notification) => notification.unread) && <footer><Button variant="secondary" disabled={identity?.notificationsMutating} onClick={() => void markAllNotificationsRead()}><Icon name="check"/>{identity?.notificationsMutating ? 'Marking read…' : 'Mark all read'}</Button></footer>}
+    </div>}
     {toast && <div className="toast" role="status"><span><Icon name="check" size={16} /></span>{toast}</div>}
   </div>;
 }
@@ -671,7 +725,6 @@ function AddItemsPage({ assets, setAssets, productionCollection, market, navigat
         notify(existing ? `${existing.name} quantity increased by ${quantity}` : `${selected.name} added to your private collection`);
         setDuplicateOpen(false);
         reset();
-        navigate('/collection');
       } catch (reason) {
         const message = reason instanceof Error ? reason.message : 'This item could not be saved to your account.';
         setValidation(message);
@@ -730,7 +783,6 @@ function AddItemsPage({ assets, setAssets, productionCollection, market, navigat
     }
     setDuplicateOpen(false);
     reset();
-    navigate('/collection');
   };
   const selectedCatalogDetails = selected ? <>
     <div className="selected-preview"><CardArt asset={selected} size="md"/><div><Chip tone="neutral">{selected.setCode}</Chip><h3>{selected.name}</h3><p>{selected.set}</p><small>{selected.number ?? selected.productType} · {selected.rarity}</small></div></div>
@@ -981,36 +1033,6 @@ function MessagesPage({ conversationId, conversations, setConversations, product
     return <div className="page messages-page"><section className="dm-privacy"><Icon name="lock"/><span><strong>Private account inbox</strong><small>Only account-owned conversations are shown. Store staff cannot read private messages.</small></span><Chip tone="positive"><Icon name="shield" size={13}/>Server protected</Chip></section><div className="messages-layout inbox-empty"><aside className="conversation-list panel"><header><div><p className="eyebrow">Inbox</p><h2>Conversations</h2></div><Button variant="ghost" size="icon" aria-label="Start conversation" onClick={() => notify('Join a store community to meet collectors you can message')}><Icon name="plus"/></Button></header><label className="search-field"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search conversations" disabled aria-label="Search conversations"/></label><div className="conversation-list-empty"><Icon name="message" size={20}/><span><strong>{productionMessages?.loading ? 'Loading inbox…' : productionMessages?.error ? 'Inbox needs attention' : 'Your inbox is empty'}</strong><small>{productionMessages?.error ?? 'No demo messages are added to real accounts.'}</small></span></div><footer><Icon name="shield"/><span><strong>Server-enforced access</strong><small>A shared active store membership is required.</small></span></footer></aside><section className="conversation panel conversation-empty"><EmptyState icon={productionMessages?.error ? 'info' : 'message'} title={emptyTitle} detail={emptyDetail} action={productionMessages?.error ? <Button onClick={() => void productionMessages.refresh()} icon="refresh">Try again</Button> : productionMessages?.loading ? undefined : <Button onClick={() => navigate('/stores')} icon="store">Find a store</Button>}/></section></div></div>;
   }
   return <div className="page messages-page"><section className="dm-privacy"><Icon name="lock"/><span><strong>Participant-only private access</strong><small>Only you and the other participant can access this conversation. Store staff cannot read messages.</small></span><Chip tone="positive"><Icon name="shield" size={13}/>Shared community verified</Chip></section><div className={`messages-layout ${conversationId ? 'conversation-open' : ''}`}><aside className="conversation-list panel"><header><div><p className="eyebrow">Inbox</p><h2>Conversations</h2></div><Button variant="ghost" size="icon" aria-label="Start conversation" onClick={() => notify('Open a community member profile to start a verified conversation')}><Icon name="plus"/></Button></header><label className="search-field"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search conversations" /></label><div>{visible.map((conversation, index) => { const last = conversation.messages.at(-1); return <button key={conversation.id} className={active.id === conversation.id && conversationId ? 'active' : ''} onClick={() => navigate(`/messages/${conversation.id}`)}><span className="avatar-presence"><Avatar initials={conversation.initials} tone={index}/><i className={conversation.online ? 'online' : ''}/></span><span><strong>{conversation.user}<small>{last?.time}</small></strong><em>{conversation.community}</em><p>{last?.own ? 'You: ' : ''}{last?.text}</p></span>{conversation.unread > 0 && <b>{conversation.unread}</b>}</button>; })}</div><footer><Icon name="shield"/><span><strong>Server-enforced access</strong><small>A shared active store membership is required.</small></span></footer></aside><section className="conversation panel"><header><button className="mobile-back" onClick={() => navigate('/messages')} aria-label="Back to conversations"><Icon name="chevron"/></button><span className="avatar-presence"><Avatar initials={active.initials}/><i className={active.online ? 'online' : ''}/></span><div><strong>{active.user}</strong><small>{productionMessages ? 'Activity status private' : active.online ? 'Online now' : 'Last active yesterday'} · via {active.community}</small></div><div className="conversation-actions"><Button variant="ghost" size="icon" aria-label="Report user" onClick={() => notify(`${active.user} reported for review`)}><Icon name="shield"/></Button><Button variant="ghost" size="icon" aria-label="Conversation options" onClick={() => setBlocked((value) => !value)}><Icon name="more"/></Button></div></header><div className="shared-context"><Icon name="users"/><span>You can message because you both belong to <strong>{active.community}</strong>.</span></div><div className="dm-messages"><div className="chat-date"><span>Today</span></div>{active.messages.map((message, index) => <div className={`chat-message ${message.own ? 'own' : ''}`} key={message.id}>{!message.own && <Avatar initials={message.initials} size="sm" tone={index}/>}<div><p>{message.text}</p><time>{message.time}{message.own && ' · Delivered'}</time></div></div>)}</div>{blocked ? <div className="blocked-composer"><Icon name="lock"/><span><strong>You blocked {active.user}</strong><small>They cannot message you and this composer is disabled.</small></span><Button variant="secondary" size="sm" onClick={() => setBlocked(false)}>Unblock</Button></div> : <form className="message-composer dm-composer" onSubmit={send}><label><span className="sr-only">Private message</span><textarea value={text} onChange={(event) => setText(event.target.value)} placeholder={`Message ${active.user}…`} rows={1} maxLength={1000}/><small>{text.length}/1000</small></label><Button size="icon" disabled={!text.trim() || productionMessages?.mutating} aria-label="Send private message"><Icon name="send"/></Button></form>}<p className="realtime-note"><span className="live-pulse"/>{productionMessages ? 'Private Supabase inbox · visible only to both participants' : 'Private realtime demo channel connected · visible only to both participants'}</p></section></div></div>;
-}
-
-function SettingsPage({ market, setMarket, notify, signOut, identity }: { market: Market; setMarket: (market: Market) => void; notify: (message: string) => void; signOut: () => void; identity?: AppRuntimeIdentity }) {
-  const [currency, setCurrency] = useState(currencyFor(market));
-  const [preferences, setPreferences] = useState({ dm: true, chat: true, matches: true, status: true, email: false });
-  const save = (event: FormEvent) => { event.preventDefault(); notify('Profile and preferences saved'); };
-  const displayName = identity?.displayName || identity?.username || 'Player';
-  const initials = displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'P';
-  const roleLabel = identity?.roles.includes('platform_administrator') ? 'Platform administrator' : identity?.roles.includes('store_administrator') ? 'Player and store operator' : identity?.accountKind === 'store' ? 'Player and store applicant' : 'Player';
-  return <div className="page settings-page"><div className="settings-layout">
-    <aside className="settings-nav panel"><button className="active"><Icon name="settings"/>Profile & market</button><button><Icon name="bell"/>Notifications</button><button><Icon name="lock"/>Privacy & safety</button><button><Icon name="shield"/>Account security</button></aside>
-    <div className="settings-content">
-      <form className="panel settings-card" onSubmit={save}>
-        <div className="panel-header"><div><p className="eyebrow">Player identity</p><h2>Profile</h2></div><Chip tone={identity ? 'positive' : 'neutral'}><Icon name="shield" size={13}/>{identity ? 'Authenticated account' : 'Local development session'}</Chip></div>
-        <div className="profile-editor"><Avatar initials={initials} size="lg"/><div><Button type="button" variant="secondary" size="sm" onClick={() => notify('Avatar upload will use the account-owned Supabase Storage path')} icon="upload">Change avatar</Button><small>JPG or PNG · max 2 MB</small></div></div>
-        <div className="form-grid"><label>Username<input defaultValue={identity?.username ?? ''} /></label><label>Email<input type="email" defaultValue={identity?.email ?? ''} disabled/><small>Managed by authentication provider</small></label><label>Approximate city or postcode<input defaultValue="Dresden"/><small>Never shown publicly</small></label><label>Role<input value={roleLabel} disabled/></label></div>
-        <hr/>
-        <div className="panel-header"><div><p className="eyebrow">Valuation defaults</p><h2>Market & currency</h2></div><MarketDataBadge compact/></div>
-        <div className="preference-options">
-          <label className={market === 'cardmarket' ? 'selected' : ''}><input type="radio" name="market" checked={market === 'cardmarket'} onChange={() => { setMarket('cardmarket'); setCurrency('EUR'); }}/><span><i>€</i><strong>Europe · Cardmarket</strong><small>Official daily trend in native EUR</small></span><Icon name="check"/></label>
-          <label className={market === 'tcgplayer' ? 'selected' : ''}><input type="radio" name="market" checked={market === 'tcgplayer'} onChange={() => { setMarket('tcgplayer'); setCurrency('USD'); }}/><span><i>$</i><strong>United States · source-backed market</strong><small>OPTCG API and TCGCSV USD snapshots</small></span><Icon name="check"/></label>
-        </div>
-        <label>Preferred display currency<select value={currency} onChange={(event) => setCurrency(event.target.value as 'EUR' | 'USD')}><option>EUR</option><option>USD</option></select><small>Values remain in each provider's native currency; no hidden conversion is applied.</small></label>
-        <div className="form-actions"><Button type="submit">Save changes</Button></div>
-      </form>
-      <section className="panel settings-card"><div className="panel-header"><div><p className="eyebrow">Stay in the loop</p><h2>In-app notifications</h2></div></div><div className="toggle-list"><Toggle label="Private messages" detail="When another verified collector messages you" checked={preferences.dm} onChange={(dm) => setPreferences({ ...preferences, dm })}/><Toggle label="Community replies" detail="Replies and mentions in store chat" checked={preferences.chat} onChange={(chat) => setPreferences({ ...preferences, chat })}/><Toggle label="Collection trade matches" detail="Someone is looking for a card you own" checked={preferences.matches} onChange={(matches) => setPreferences({ ...preferences, matches })}/><Toggle label="Trade status changes" detail="When a post moves to discussing, completed, or closed" checked={preferences.status} onChange={(status) => setPreferences({ ...preferences, status })}/><Toggle label="Email digest" detail="Email delivery is not connected yet" checked={preferences.email} onChange={(email) => setPreferences({ ...preferences, email })}/></div><Button variant="secondary" onClick={() => notify('Notification preferences saved')}>Save notification preferences</Button></section>
-      <section className="panel privacy-card"><span><Icon name="lock"/></span><div><h2>Your collection is private</h2><p>Portfolio value, cost basis, acquisition dates, and notes are restricted to your account. Communities see only trade cards you explicitly publish.</p><div><Chip tone="positive">RLS protected</Chip><Chip tone="positive">Private by default</Chip><Chip tone="neutral">No exact location</Chip></div></div></section>
-      <section className="panel danger-zone"><div><h2>Sessions</h2><p>{identity ? 'Sign out only this device, or revoke every active session if you do not recognize another login.' : 'Sign out of the local development session on this device.'}</p></div><div className="session-actions"><Button variant="danger" onClick={signOut} icon="logout">Sign out this device</Button>{identity?.onSignOutEverywhere && <Button variant="secondary" onClick={() => { if (window.confirm('Sign out every device currently using this account?')) void identity.onSignOutEverywhere?.(); }} icon="shield">Sign out all devices</Button>}</div></section>
-    </div>
-  </div></div>;
 }
 
 function StorePortalDenied({ navigate }: { navigate: (path: string) => void }) {

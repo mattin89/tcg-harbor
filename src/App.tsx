@@ -14,6 +14,8 @@ import { resolvePortfolioValuationV2 } from './domain/portfolioValuationV2';
 import { resolveActiveNavPathV2 } from './domain/navigationV2';
 import { resolveAccountBootstrapSeedsV2 } from './domain/accountBootstrapV2';
 import { resolveViewerPathV4, viewerMutationDecisionV4 } from './domain/guestAccessV4';
+import { normalizeCatalogQueryV5, selectCardGroupMatchV5 } from './domain/catalogSearchV5';
+import { resolveCardmarketReferenceV8 } from './domain/cardmarketReferenceV8';
 import { useProductionCollectionV2, type ProductionCollectionRuntimeV2 } from './services/supabase/useProductionCollectionV2';
 import { useProductionDirectMessagesV2, type ProductionDirectMessagesRuntimeV2 } from './services/supabase/useProductionDirectMessagesV2';
 import type { ProductionDirectConversationV2 } from './services/supabase/directMessageRepositoryV2';
@@ -606,7 +608,6 @@ function AddItemsPage({ assets, setAssets, productionCollection, market, navigat
         id,
         arts: orderedArts,
         representative,
-        searchText: orderedArts.map((asset) => `${asset.name} ${asset.number ?? ''} ${asset.set} ${asset.setCode} ${asset.variant}`).join(' ').toLocaleLowerCase('en-US'),
       };
     }).sort((left, right) => left.representative.name.localeCompare(right.representative.name) || left.id.localeCompare(right.id));
   }, []);
@@ -616,14 +617,11 @@ function AddItemsPage({ assets, setAssets, productionCollection, market, navigat
     .filter((asset) => asset.kind === tab)
     .map((asset) => asset.setCode))]
     .sort((left, right) => left.localeCompare(right, 'en-US', { numeric: true })), [tab]);
-  const normalizedQuery = query.trim().toLocaleLowerCase('en-US');
+  const normalizedQuery = normalizeCatalogQueryV5(query);
   const allResults = tab === 'card'
     ? cardGroups
-      .filter((group) => catalogSet === 'all' || group.arts.some((asset) => asset.setCode === catalogSet))
-      .filter((group) => !normalizedQuery || group.searchText.includes(normalizedQuery))
-      .map((group) => catalogSet === 'all'
-        ? group.representative
-        : group.arts.find((asset) => asset.setCode === catalogSet) ?? group.representative)
+      .map((group) => selectCardGroupMatchV5(group.arts, normalizedQuery, catalogSet))
+      .filter((asset): asset is DemoAsset => asset !== null)
     : catalogAssets
       .filter((asset) => asset.kind === 'sealed')
       .filter((asset) => catalogSet === 'all' || asset.setCode === catalogSet)
@@ -632,6 +630,9 @@ function AddItemsPage({ assets, setAssets, productionCollection, market, navigat
   const availableArts = selected?.kind === 'card'
     ? cardGroupIndex.get(selected.rulesCardId ?? selected.number ?? selected.id) ?? [selected]
     : [];
+  const selectedCardmarketReference = selected
+    ? resolveCardmarketReferenceV8(selected)
+    : null;
 
   useEffect(() => { setResultLimit(40); }, [catalogSet, query, tab]);
 
@@ -727,10 +728,19 @@ function AddItemsPage({ assets, setAssets, productionCollection, market, navigat
     <div className="selected-preview"><CardArt asset={selected} size="md"/><div><Chip tone="neutral">{selected.setCode}</Chip><h3>{selected.name}</h3><p>{selected.set}</p><small>{selected.number ?? selected.productType} · {selected.rarity}</small></div></div>
     {selected.kind === 'card' && <section className="art-picker" aria-labelledby="art-picker-title">
       <header><span><strong id="art-picker-title">Choose the exact art</strong><small>{availableArts.length} sourced {availableArts.length === 1 ? 'printing' : 'printings'} for {selected.rulesCardId ?? selected.number}</small></span><Chip tone="blue">{selected.language} printing</Chip></header>
-      <div>{availableArts.map((art) => <button type="button" key={art.id} className={selected.id === art.id ? 'selected' : ''} aria-pressed={selected.id === art.id} onClick={() => { setSelected(art); setValidation(''); }}><CardArt asset={art} size="xs"/><span><strong>{art.variant}</strong><small>{art.language} · {art.setCode} · {formatMoney(art.quote.tcgplayer, 'USD')}</small></span>{selected.id === art.id && <i><Icon name="check"/></i>}</button>)}</div>
+      <div>{availableArts.map((art) => {
+        const cardmarketReference = resolveCardmarketReferenceV8(art);
+        const displayedReference = market === 'cardmarket'
+          ? cardmarketReference.displayValue
+          : formatMoney(art.quote.tcgplayer, 'USD');
+        const displayedReferenceLabel = market === 'cardmarket'
+          ? cardmarketReference.label
+          : 'US market';
+        return <button type="button" key={art.id} className={selected.id === art.id ? 'selected' : ''} aria-pressed={selected.id === art.id} title={market === 'cardmarket' ? cardmarketReference.detail : undefined} onClick={() => { setSelected(art); setValidation(''); }}><CardArt asset={art} size="xs"/><span><strong>{art.variant}</strong><small>{art.language} · {art.setCode}</small><em>{displayedReference} · {displayedReferenceLabel}</em></span>{selected.id === art.id && <i><Icon name="check"/></i>}</button>;
+      })}</div>
     </section>}
-    <div className="reference-pair"><div><span>Cardmarket trend · EUR</span><strong>{formatMoney(selected.quote.cardmarket, 'EUR')}</strong><small><span className="live-pulse"/>Official daily guide · {marketSourceDate('cardmarket')}</small></div><div><span>{assetUsSourceLabel(selected)}</span><strong>{formatMoney(selected.quote.tcgplayer, 'USD')}</strong><small><span className="live-pulse"/>Daily source snapshot · {assetUsSourceDate(selected)}</small></div></div>
-    <p className="reference-note"><Icon name="info"/>Only exact product matches are shown. Source values are product-level market references and are not adjusted by condition; unavailable means no verified price was substituted.</p>
+    <div className="reference-pair"><div><span>Cardmarket trend · EUR</span><strong>{selectedCardmarketReference?.displayValue}</strong><small><span className="live-pulse"/>{selectedCardmarketReference?.label} · {marketSourceDate('cardmarket')}</small></div><div><span>{assetUsSourceLabel(selected)}</span><strong>{formatMoney(selected.quote.tcgplayer, 'USD')}</strong><small><span className="live-pulse"/>Daily source snapshot · {assetUsSourceDate(selected)}</small></div></div>
+    <p className="reference-note"><Icon name="info"/>{selectedCardmarketReference?.detail} Source values are product-level market references and are not adjusted by condition.</p>
   </> : null;
   return <div className="page add-page">
     {!browseOnly && <section className="add-progress"><div className="active"><span>1</span><strong>Find item</strong></div><i /><div className={selected ? 'active' : ''}><span>2</span><strong>Add details</strong></div><i /><div><span>3</span><strong>Review</strong></div></section>}
@@ -738,19 +748,20 @@ function AddItemsPage({ assets, setAssets, productionCollection, market, navigat
       <section className="add-catalog panel">
         <div className="panel-header"><div><p className="eyebrow">One Piece Card Game</p><h2>Search the complete catalog</h2></div><MarketDataBadge compact /></div>
         <Segmented value={tab} onChange={(value) => { setTab(value); setSelected(null); setQuery(''); setCatalogSet('all'); setCondition(value === 'sealed' ? 'Factory sealed' : 'Near Mint'); }} label="Catalog type" options={[{ value: 'card', label: 'Individual card', icon: 'cards' }, { value: 'sealed', label: 'Sealed product', icon: 'box' }]} />
-        <div className="catalog-search-row"><label className="search-field catalog-search"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tab === 'card' ? 'Search card name, number, set or art' : 'Search product, set or type'} aria-label="Search catalog" /></label><label className="select-field catalog-set-filter"><span>Set</span><select value={catalogSet} onChange={(event) => { setCatalogSet(event.target.value); setSelected(null); }}><option value="all">All current sets</option>{catalogSets.map((setCode) => <option key={setCode} value={setCode}>{setCode}</option>)}</select></label></div>
+        <div className="catalog-search-row"><label className="search-field catalog-search"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tab === 'card' ? 'Search card name, number, set code or art' : 'Search product, set or type'} aria-label="Search catalog" /></label><label className="select-field catalog-set-filter"><span>Set</span><select value={catalogSet} onChange={(event) => { setCatalogSet(event.target.value); setSelected(null); }}><option value="all">All current sets</option>{catalogSets.map((setCode) => <option key={setCode} value={setCode}>{setCode}</option>)}</select></label></div>
         <p className="catalog-hint">{tab === 'card' ? `${cardGroups.length.toLocaleString()} card numbers with every sourced art · try “Nami” or “OP01-016”` : `${allResults.length.toLocaleString()} verified English sealed products · try “Booster Box”`}</p>
         <div className="catalog-results" aria-live="polite">
           {results.map((asset) => {
             const groupId = asset.rulesCardId ?? asset.number ?? asset.id;
             const artCount = cardGroupIndex.get(groupId)?.length ?? 1;
+            const cardmarketReference = resolveCardmarketReferenceV8(asset);
             const isSelected = tab === 'card'
               ? selected?.kind === 'card' && (selected.rulesCardId ?? selected.number ?? selected.id) === groupId
               : selected?.id === asset.id;
             return <button type="button" key={asset.id} className={isSelected ? 'selected' : ''} onClick={() => { setSelected(asset); setCondition(asset.kind === 'sealed' ? 'Factory sealed' : 'Near Mint'); setValidation(''); }}>
               <CardArt asset={asset} size="sm"/>
               <span><strong>{asset.name}</strong><small>{asset.setCode} · {asset.number ?? asset.productType}</small><em>{tab === 'card' ? `${artCount} ${artCount === 1 ? 'art' : 'arts'} available` : asset.productType}</em></span>
-              <span className="catalog-price"><strong>{formatMoney(asset.quote[market], market)}</strong><small>{market === 'cardmarket' ? 'Cardmarket trend' : 'US market'}</small></span>
+              <span className="catalog-price" title={market === 'cardmarket' ? cardmarketReference.detail : undefined}><strong>{market === 'cardmarket' ? cardmarketReference.displayValue : formatMoney(asset.quote.tcgplayer, market)}</strong><small>{market === 'cardmarket' ? cardmarketReference.label : 'US market'}</small></span>
               <i>{isSelected ? <Icon name="check"/> : <Icon name="chevron"/>}</i>
             </button>;
           })}

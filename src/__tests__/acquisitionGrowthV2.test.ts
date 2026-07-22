@@ -75,4 +75,41 @@ describe('acquisition growth v2', () => {
     expect(summary.absoluteGrowth).toBeNull();
     expect(summary.percentageGrowth).toBeNull();
   });
+
+  it('keeps an image-verified regular-art display reference out of valuation', () => {
+    const displayOnlyReference = asset({
+      quote: { cardmarket: null, tcgplayer: 18 },
+      cardmarketProductId: undefined,
+      cardmarketPriceState: 'ambiguous-artwork',
+      cardmarketRegularArtReference: {
+        productId: 719388,
+        expansionId: 5364,
+        trend: 0.17,
+        observedAt: '2026-07-22T02:46:40+0200',
+        source: 'Cardmarket official price guide + product image',
+        matchPolicy: 'cardmarket-image-correlation-v1',
+        correlation: 0.996,
+        runnerUpCorrelation: 0.46,
+        margin: 0.536,
+        sourceImageUrl: 'https://optcgapi.com/media/static/Card_Images/OP03-018.jpg',
+        productImageUrl: 'https://product-images.s3.cardmarket.com/1621/OP03/719388/719388.png',
+        sourceImageDigest: 'source',
+        productImageDigest: 'product',
+        evidence: 'Display-only verified image match.',
+      },
+      acquisitionLots: [{
+        id: 'display-only',
+        addedAt: '2026-07-10T10:00:00.000Z',
+        quantity: 2,
+        quoteAtAdd: { cardmarket: null, tcgplayer: 14 },
+      }],
+    });
+
+    const summary = summarizePortfolioGrowth([displayOnlyReference], 'cardmarket');
+    expect(summary.pricedQuantity).toBe(0);
+    expect(summary.currentPricedQuantity).toBe(0);
+    expect(summary.currentComplete).toBe(false);
+    expect(summary.value).toBeNull();
+    expect(summary.absoluteGrowth).toBeNull();
+  });
 });

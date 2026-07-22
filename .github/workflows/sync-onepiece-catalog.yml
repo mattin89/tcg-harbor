@@ -85,7 +85,7 @@ jobs:
         shell: bash
         run: |
           echo "base_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          git add src/data/generated/onepiece-market-v8.json scripts/data/optcg-source-cache-v1.json
+          git add src/data/generated/onepiece-market-v9.json scripts/data/optcg-source-cache-v1.json
           if git diff --cached --quiet; then
             echo "Catalog snapshot is already current."
             echo "changed=false" >> "$GITHUB_OUTPUT"

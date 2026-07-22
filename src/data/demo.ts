@@ -1,4 +1,4 @@
-import marketSnapshotRaw from './generated/onepiece-market-v8.json?raw';
+import marketSnapshotRaw from './generated/onepiece-market-v9.json?raw';
 
 export type Market = 'cardmarket' | 'tcgplayer';
 export type Currency = 'EUR' | 'USD';
@@ -56,6 +56,17 @@ export interface MarketDataMeta {
     ambiguousStarterExpansionEvidence: Array<Record<string, unknown>>;
     mappingPolicy: string;
     ambiguityPolicy: string;
+    regularArtReferencePolicy: {
+      version: 'cardmarket-image-correlation-v1';
+      featureWidth: number;
+      featureHeight: number;
+      minimumCorrelation: number;
+      minimumMargin: number;
+      persistedReferences: number;
+      discoveredReferences: number;
+      unresolvedReferences: number;
+      unresolvedSamples: Array<Record<string, unknown>>;
+    };
     ambiguousArtworkSamples: Array<Record<string, unknown>>;
     unavailableSamples: Array<Record<string, unknown>>;
   };
@@ -152,7 +163,7 @@ export interface DemoAsset {
   sourcePrintingId?: string;
   cardmarketProductId?: number;
   cardmarketExpansionId?: number;
-  cardmarketPriceState?: 'available' | 'trend-unavailable' | 'ambiguous-artwork' | 'unmapped';
+  cardmarketPriceState?: 'available' | 'trend-unavailable' | 'ambiguous-artwork' | 'unmapped' | 'not-listed';
   cardmarketPriceReason?: string;
   cardmarketMappingEvidence?: string;
   cardmarketCandidateExpansionId?: number;
@@ -162,6 +173,22 @@ export interface DemoAsset {
     maximumTrend: number | null;
     pricedCandidates: number;
     totalCandidates: number;
+  };
+  cardmarketRegularArtReference?: {
+    productId: number;
+    expansionId: number;
+    trend: number | null;
+    observedAt: string;
+    source: string;
+    matchPolicy: 'cardmarket-image-correlation-v1';
+    correlation: number;
+    runnerUpCorrelation: number | null;
+    margin: number;
+    sourceImageUrl: string;
+    productImageUrl: string;
+    sourceImageDigest: string;
+    productImageDigest: string;
+    evidence: string;
   };
   tcgplayerProductId?: number;
   tcgplayerGroupId?: number;

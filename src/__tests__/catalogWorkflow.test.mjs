@@ -18,7 +18,7 @@ describe('daily catalog workflow', () => {
     expect(workflow).toContain('uses: actions/setup-node@v6');
     expect(workflow).toContain("SHOULD_PUBLISH: ${{ github.event_name == 'schedule' || inputs.publish == true }}");
     expect(workflow).toContain("ref: ${{ github.event_name == 'schedule' && github.event.repository.default_branch || github.ref }}");
-    expect(workflow).toContain('git add src/data/generated/onepiece-market-v8.json scripts/data/optcg-source-cache-v1.json');
+    expect(workflow).toContain('git add src/data/generated/onepiece-market-v9.json scripts/data/optcg-source-cache-v1.json');
     expect(workflow).toContain('git push origin "HEAD:${DEFAULT_BRANCH}"');
     expect(preflightIndex).toBeGreaterThan(-1);
     expect(prepareIndex).toBeGreaterThan(-1);
@@ -51,5 +51,16 @@ describe('daily catalog workflow', () => {
     expect(workflow).toContain('if: ${{ failure() }}');
     expect(workflow).toContain('No unverified snapshot was pushed.');
     expect(workflow).not.toContain('continue-on-error');
+  });
+
+  it('keeps artwork discovery inside the workflow time budget', async () => {
+    const sync = await readFile(
+      new URL('../../scripts/sync-onepiece-data-v9.mjs', import.meta.url),
+      'utf8',
+    );
+
+    expect(sync).toContain('const ARTWORK_IMAGE_TIMEOUT_MS_V9 = 6_000;');
+    expect(sync).toContain('const ARTWORK_DISCOVERY_BUDGET_MS_V9 = 6 * 60_000;');
+    expect(sync).toContain('Date.now() >= regularArtDiscoveryDeadlineV9');
   });
 });

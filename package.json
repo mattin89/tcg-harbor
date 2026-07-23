@@ -8,7 +8,8 @@
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc --noEmit && vite build && node scripts/create-static-spa-entrypoints-v1.mjs && node scripts/check-client-bundle-secrets.mjs",
+    "generate:discovery": "node scripts/generate-public-discovery-v1.mjs",
+    "build": "npm run generate:discovery && tsc --noEmit && vite build && node scripts/create-static-spa-entrypoints-v1.mjs && node scripts/check-client-bundle-secrets.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "bootstrap:admin": "node scripts/bootstrap-platform-admin-v2.mjs",
     "sync:data": "node scripts/sync-onepiece-data-v10.mjs",

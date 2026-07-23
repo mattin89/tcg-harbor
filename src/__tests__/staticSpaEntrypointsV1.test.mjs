@@ -5,10 +5,10 @@ import {
 } from '../../scripts/create-static-spa-entrypoints-v1.mjs';
 
 describe('static SPA entrypoints v1', () => {
-  it('ships a direct entrypoint for the guest card-catalog route', () => {
-    expect(STATIC_SPA_ENTRYPOINT_ROUTES_V1).toEqual(['/cards']);
+  it('ships direct entrypoints for both stable public guest routes', () => {
+    expect(STATIC_SPA_ENTRYPOINT_ROUTES_V1).toEqual(['/cards', '/stores']);
     expect(STATIC_SPA_ENTRYPOINT_ROUTES_V1.map(staticSpaEntrypointPathV1))
-      .toEqual(['cards/index.html']);
+      .toEqual(['cards/index.html', 'stores/index.html']);
   });
 
   it('rejects paths that could escape or ambiguously target the build directory', () => {

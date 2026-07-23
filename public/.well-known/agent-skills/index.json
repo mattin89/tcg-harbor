@@ -1,0 +1,12 @@
+{
+  "$schema": "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
+  "skills": [
+    {
+      "name": "browse-tcg-harbor",
+      "type": "skill-md",
+      "description": "Browse TCG Harbor's public One Piece Card Game catalog and approved physical-store directory. Use when an agent needs to find exact card printings or alternative arts, inspect public Cardmarket and TCGplayer market references, or locate an approved store without accessing a player's private collection, account, or community data.",
+      "url": "https://tcg-harbor.onrender.com/.well-known/agent-skills/browse-tcg-harbor/SKILL.md",
+      "digest": "sha256:13ceb5ec581a489b2acce7fe605ae8b3a7c0c40381d61c26033abbe0f526c7f0"
+    }
+  ]
+}

@@ -18,6 +18,7 @@ import { resolveActiveNavPathV2 } from './domain/navigationV2';
 import { resolveAccountBootstrapSeedsV2 } from './domain/accountBootstrapV2';
 import { resolveViewerPathV4, viewerMutationDecisionV4 } from './domain/guestAccessV4';
 import { normalizeCatalogQueryV5, selectCardGroupMatchV5 } from './domain/catalogSearchV5';
+import { registerPublicWebMcpV1 } from './domain/publicWebMcpV1';
 import {
   resolveCardmarketArtworkReferenceV10,
   resolveCatalogCardmarketReferenceV10,
@@ -230,6 +231,18 @@ export default function App({ identity, guest }: AppProps = {}) {
 
   const sanitizedJoinToken = path === '/join/store' ? peekStoreJoinIntent(window.sessionStorage)?.token ?? '' : '';
   const storeDirectory = guest?.registeredStores ?? identity?.registeredStores ?? stores;
+  const publicStoreDirectoryRef = useRef(storeDirectory);
+  publicStoreDirectoryRef.current = storeDirectory;
+  useEffect(() => {
+    const controller = new AbortController();
+    void registerPublicWebMcpV1({
+      assets: catalogAssets,
+      getStores: () => publicStoreDirectoryRef.current,
+      origin: window.location.origin,
+      signal: controller.signal,
+    }).catch(() => undefined);
+    return () => controller.abort();
+  }, []);
   const [accountSeeds] = useState(() => resolveAccountBootstrapSeedsV2(isGuest ? { userId: 'guest-v4', accountKind: 'player' } : identity, {
     communityMessages: initialCommunityMessages,
     tradePosts: initialTradePosts,

@@ -14,7 +14,15 @@ interface ArtworkReferenceV10 {
   readonly evidence: string;
 }
 
-export interface CatalogCardmarketAssetV10 extends CardmarketReferenceInputV8 {
+interface CardmarketLowOfferInputV10 {
+  readonly pricing?: {
+    readonly cardmarket?: {
+      readonly low?: number | null;
+    };
+  };
+}
+
+export interface CatalogCardmarketAssetV10 extends CardmarketReferenceInputV8, CardmarketLowOfferInputV10 {
   readonly id: string;
   readonly kind: 'card' | 'sealed';
   readonly variant: string;
@@ -30,6 +38,7 @@ export interface CatalogCardmarketReferenceViewV10 {
   readonly state:
     | 'regular-exact'
     | 'regular-image-reference'
+    | 'regular-low-offer'
     | 'regular-trend-unavailable'
     | 'regular-unavailable'
     | 'art-selection-required'
@@ -45,7 +54,8 @@ export interface CardmarketArtworkReferenceViewV10 extends Omit<CardmarketRefere
     | CardmarketReferenceViewV8['state']
     | 'artwork-unverified'
     | 'regular-image-reference'
-    | 'artwork-image-reference';
+    | 'artwork-image-reference'
+    | 'exact-low-offer';
 }
 
 const euroAmountV10 = new Intl.NumberFormat('de-DE', {
@@ -59,6 +69,11 @@ function usablePrice(value: number | null | undefined): value is number {
 
 function formatEur(value: number): string {
   return `${euroAmountV10.format(value)} €`;
+}
+
+function exactLowestOffer(input: CardmarketLowOfferInputV10): number | null {
+  const low = input.pricing?.cardmarket?.low;
+  return usablePrice(low) ? low : null;
 }
 
 function normalizedSetCode(value: string): string {
@@ -83,6 +98,10 @@ function verifiedRegularIdentity(asset: CatalogCardmarketAssetV10): string | nul
   }
   if (asset.cardmarketProductId != null && usablePrice(asset.quote.cardmarket)) {
     return `exact:${asset.cardmarketProductId}:${asset.quote.cardmarket}`;
+  }
+  const low = exactLowestOffer(asset);
+  if (asset.cardmarketProductId != null && low !== null) {
+    return `exact-low:${asset.cardmarketProductId}:${low}`;
   }
   return null;
 }
@@ -151,14 +170,22 @@ export function resolveCatalogCardmarketReferenceV10(
     const pricedExactArts = siblings.filter((asset) =>
       asset.kind === 'card'
       && asset.cardmarketProductId != null
-      && usablePrice(asset.quote.cardmarket)
-      && (asset.cardmarketPriceState === 'available' || asset.cardmarketPriceState == null));
+      && (
+        (
+          usablePrice(asset.quote.cardmarket)
+          && (asset.cardmarketPriceState === 'available' || asset.cardmarketPriceState == null)
+        )
+        || (
+          asset.cardmarketPriceState === 'trend-unavailable'
+          && exactLowestOffer(asset) !== null
+        )
+      ));
     if (pricedExactArts.length > 0) {
       return {
         state: 'art-selection-required',
         displayValue: 'Choose art',
         label: `${pricedExactArts.length} exact-art price${pricedExactArts.length === 1 ? '' : 's'}`,
-        detail: `This card has no single regular-art market reference. Choose the exact artwork to see its verified Cardmarket trend; ${pricedExactArts.length} of ${siblings.length} sourced printings currently have an exact price.`,
+        detail: `This card has no single regular-art market reference. Choose the exact artwork to see its verified Cardmarket trend or clearly labeled lowest offer; ${pricedExactArts.length} of ${siblings.length} sourced printings currently have an exact market reference.`,
         sourceAssetId: null,
       };
     }
@@ -200,6 +227,17 @@ export function resolveCatalogCardmarketReferenceV10(
     };
   }
 
+  const regularLowestOffer = exactLowestOffer(regular);
+  if ((regular.cardmarketProductId != null || reference) && regularLowestOffer !== null) {
+    return {
+      state: 'regular-low-offer',
+      displayValue: formatEur(regularLowestOffer),
+      label: 'Regular art · lowest offer',
+      detail: 'The exact regular-art product is verified, but Cardmarket publishes no current trend. This is Cardmarket’s current lowest non-foil offer across conditions, clearly separated from trend-based collection value, acquisition growth, and market comparison.',
+      sourceAssetId: regular.id,
+    };
+  }
+
   if (regular.cardmarketProductId != null || reference) {
     return {
       state: 'regular-trend-unavailable',
@@ -222,7 +260,7 @@ export function resolveCatalogCardmarketReferenceV10(
 
 /** Suppresses ambiguous candidate ranges in exact-art details and pickers. */
 export function resolveCardmarketArtworkReferenceV10(
-  input: CardmarketReferenceInputV8 & {
+  input: CardmarketReferenceInputV8 & CardmarketLowOfferInputV10 & {
     readonly kind?: 'card' | 'sealed';
     readonly variant?: string;
     readonly cardmarketArtworkReference?: ArtworkReferenceV10;
@@ -230,7 +268,20 @@ export function resolveCardmarketArtworkReferenceV10(
   },
 ): CardmarketArtworkReferenceViewV10 {
   const view = resolveCardmarketReferenceV8(input);
+  const lowestOffer = exactLowestOffer(input);
   if (input.kind === 'sealed') {
+    if (
+      view.state === 'exact-trend-unavailable'
+      && input.cardmarketProductId != null
+      && lowestOffer !== null
+    ) {
+      return {
+        state: 'exact-low-offer',
+        displayValue: formatEur(lowestOffer),
+        label: 'Exact product · lowest offer',
+        detail: 'Cardmarket publishes no current trend for this exact product. This is its current lowest non-foil offer across conditions and is not used as a trend or portfolio valuation.',
+      };
+    }
     return view.state === 'exact'
       ? {
         ...view,
@@ -242,6 +293,18 @@ export function resolveCardmarketArtworkReferenceV10(
   const regular = /^(?:standard|base art)$/i.test(input.variant?.trim() ?? '');
   const reference = input.cardmarketArtworkReference
     ?? (regular ? input.cardmarketRegularArtReference : undefined);
+  if (
+    view.state === 'exact-trend-unavailable'
+    && (input.cardmarketProductId != null || reference)
+    && lowestOffer !== null
+  ) {
+    return {
+      state: 'exact-low-offer',
+      displayValue: formatEur(lowestOffer),
+      label: regular ? 'Regular art · lowest offer' : 'Exact art · lowest offer',
+      detail: `The exact ${regular ? 'regular artwork' : 'selected artwork'} is verified, but Cardmarket publishes no current trend. This is Cardmarket’s current lowest non-foil offer across conditions, kept outside trend-based collection value, acquisition growth, and market comparison.`,
+    };
+  }
   if (view.state === 'exact' && reference && usablePrice(reference.trend)) {
     return {
       state: regular ? 'regular-image-reference' : 'artwork-image-reference',

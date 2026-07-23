@@ -480,8 +480,15 @@ describe('source-backed catalog snapshot', () => {
     );
     expect(ambiguous).toHaveLength(marketDataMeta.catalogCounts.cardmarketAmbiguousCardPrintings);
     expect(unmapped).toHaveLength(marketDataMeta.catalogCounts.cardmarketUnmappedCardPrintings);
+    expect(available.length + trendUnavailable.length + ambiguous.length + unmapped.length)
+      .toBe(cards.length);
     expect(available.every(
       (asset) => asset.cardmarketProductId != null && asset.quote.cardmarket != null,
+    )).toBe(true);
+    expect(trendUnavailable.every(
+      (asset) => asset.cardmarketProductId != null
+        && asset.quote.cardmarket == null
+        && asset.pricing?.cardmarket.trend == null,
     )).toBe(true);
     expect(ambiguous.every(
       (asset) => asset.cardmarketProductId == null
@@ -495,6 +502,12 @@ describe('source-backed catalog snapshot', () => {
         || range.maximumTrend == null
         || range.minimumTrend <= range.maximumTrend;
     })).toBe(true);
+    expect(unmapped.every(
+      (asset) => asset.cardmarketProductId == null
+        && asset.quote.cardmarket == null
+        && asset.pricing?.cardmarket.trend == null
+        && asset.cardmarketCandidatePriceRange == null,
+    )).toBe(true);
     expect(marketDataMeta.catalogCounts.cardmarketAdditionalExactBoosterMappings).toBeGreaterThanOrEqual(150);
     expect(marketDataMeta.catalogCounts.cardmarketAdditionalExactStarterMappings).toBeGreaterThan(0);
 

@@ -75,6 +75,10 @@ import {
   resolveSealedSetCodeV1,
 } from './lib/sealed-set-classification-v1.mjs';
 import {
+  assertReviewedCardmarketStarterExpansionOverridesV1,
+  REVIEWED_CARDMARKET_STARTER_SET_CODE_BY_PRODUCT_V1,
+} from './lib/cardmarket-starter-expansion-overrides-v1.mjs';
+import {
   assertOptcgCacheCoversReleasedSetsV1,
   buildOptcgSourceCacheV1,
   loadOptcgFeedsWithCacheV1,
@@ -246,12 +250,12 @@ if ([...REVIEWED_CARDMARKET_ARTWORK_MAPPINGS_V10].some(([sourcePrintingId, mappi
 ))) {
   throw new Error('A reviewed Cardmarket exact-art mapping is invalid.');
 }
-// Cardmarket omits ST20 from the two English Charlotte Katakuri product names,
-// while Bandai's official title is "Yellow Charlotte Katakuri [ST-20]". These
-// stable public product IDs were reviewed as the ST20 deck and deck pack; an
-// ID-scoped override avoids a broad color/title heuristic that would collide
-// with ST34 Purple Charlotte Katakuri.
+// These stable public product IDs were reviewed against Cardmarket's
+// non-singles expansion identity. Keep the exceptions ID-scoped: broad
+// color/title inference would collide with unrelated decks and cannot prove an
+// exact expansion.
 const EXACT_CARDMARKET_DECK_SET_CODE_OVERRIDES = new Map([
+  ...REVIEWED_CARDMARKET_STARTER_SET_CODE_BY_PRODUCT_V1,
   [767026, 'ST20'],
   [824426, 'ST20'],
 ]);
@@ -1929,6 +1933,7 @@ const englishExpansionIds = Object.fromEntries(tcgcsvMarketSources.map((source) 
   cardmarketExpansionEvidenceByGroup.get(source.groupId).idExpansion,
 ]));
 const officialDeckSetCodesByTitle = officialDeckSetCodeIndex(bandaiCatalog.products);
+assertReviewedCardmarketStarterExpansionOverridesV1(nonSinglesCatalog.products);
 const starterExpansionEvidence = cardmarketStarterExpansionEvidence(
   nonSinglesCatalog.products,
   officialDeckSetCodesByTitle,
@@ -5645,7 +5650,7 @@ const output = {
       priceField: 'trend',
       currency: 'EUR',
       expansionEvidencePolicy: 'Exact Cardmarket lot suffix for OP/EB releases; exact packaging-free English booster plus booster-box title for PRB releases. Multiple expansion IDs fail the sync.',
-      starterExpansionEvidencePolicy: 'A released ST code must resolve to one Cardmarket expansion through a standalone English Starter Deck row matched by explicit code, exact official Bandai title, or the audited ST20 product-ID override. Demo decks and combined Deck Set products are excluded.',
+      starterExpansionEvidencePolicy: 'A released ST code must resolve to one Cardmarket expansion through a standalone English Starter Deck row matched by explicit code, exact official Bandai title, or an audited product-ID plus frozen expansion-ID override (ST05, ST10, ST12, ST15, ST17, ST19, and ST20). Demo decks and combined Deck Set products are excluded.',
       requiredCompleteLatestStarterArtworkSetCode:
         requiredCompleteLatestStarterArtworkSetCodeV10,
       reviewedExactArtworkMappingIds: [...REVIEWED_CARDMARKET_ARTWORK_MAPPINGS_V10.values()]

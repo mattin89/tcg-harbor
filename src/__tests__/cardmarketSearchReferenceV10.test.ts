@@ -149,4 +149,40 @@ describe('per-art Cardmarket references v10', () => {
       label: 'Exact product',
     });
   });
+
+  it('shows a verified lowest offer when Cardmarket has no trend without valuing the card', () => {
+    const exactWithoutTrend = artwork({
+      cardmarketProductId: 852787,
+      cardmarketPriceState: 'trend-unavailable',
+      quote: { cardmarket: null },
+      pricing: {
+        cardmarket: { low: 36500 },
+      },
+    });
+
+    expect(resolveCardmarketArtworkReferenceV10(exactWithoutTrend)).toMatchObject({
+      state: 'exact-low-offer',
+      displayValue: '36.500,00 €',
+      label: 'Regular art · lowest offer',
+    });
+    expect(resolveCatalogCardmarketReferenceV10(exactWithoutTrend, [exactWithoutTrend]))
+      .toMatchObject({
+        state: 'regular-low-offer',
+        displayValue: '36.500,00 €',
+      });
+    expect(exactWithoutTrend.quote.cardmarket).toBeNull();
+  });
+
+  it('does not invent a fallback when an exact product has neither trend nor offer', () => {
+    const exactWithoutMarket = artwork({
+      cardmarketProductId: 884452,
+      cardmarketPriceState: 'trend-unavailable',
+      quote: { cardmarket: null },
+    });
+
+    expect(resolveCardmarketArtworkReferenceV10(exactWithoutMarket)).toMatchObject({
+      state: 'exact-trend-unavailable',
+      displayValue: 'Trend unavailable',
+    });
+  });
 });

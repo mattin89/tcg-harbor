@@ -151,6 +151,34 @@ describe('source-backed catalog snapshot', () => {
     expect(marketDataMeta.catalogCounts.unknownManifestOptcgCoreRecords).toBe(0);
   });
 
+  it('prices every ST30 printing from the exact released English Cardmarket expansion', () => {
+    const st30ExpansionId = marketDataMeta.englishStarterExpansionIds.ST30;
+    const st30Cards = catalogAssets.filter(
+      (asset) => asset.kind === 'card' && asset.setCode === 'ST30' && !asset.catalogAliasOf,
+    );
+
+    expect(st30ExpansionId).toBe(6608);
+    expect(marketDataMeta.cardmarket.requiredCompleteLatestStarterArtworkSetCode)
+      .toBe('ST30');
+    expect(st30Cards).toHaveLength(34);
+    expect(new Set(st30Cards.map((asset) => asset.rulesCardId)).size).toBe(17);
+    expect(st30Cards.map((asset) => asset.cardmarketProductId).sort((left, right) =>
+      Number(left) - Number(right))).toEqual(
+      Array.from({ length: 34 }, (_value, index) => 891016 + index),
+    );
+    expect(st30Cards.every(
+      (asset) => asset.language === 'English'
+        && asset.cardmarketExpansionId === st30ExpansionId
+        && asset.cardmarketPriceState === 'available'
+        && asset.quote.cardmarket !== null
+        && asset.quote.cardmarket > 0
+        && asset.quote.cardmarket === asset.pricing?.cardmarket.trend,
+    )).toBe(true);
+    expect(st30Cards.filter(
+      (asset) => asset.cardmarketArtworkReference?.reviewedMappingId,
+    )).toHaveLength(6);
+  });
+
   it('includes released sealed products with real source-backed imagery and honest language metadata', () => {
     const sealed = catalogAssets.filter((asset) => asset.kind === 'sealed');
     expect(marketDataMeta.catalogCounts.releasedSealedProducts).toBeGreaterThan(350);
@@ -224,6 +252,85 @@ describe('source-backed catalog snapshot', () => {
     expect(sealed.some(
       (asset) => asset.setCode === 'ST05' && asset.name === 'Starter Deck: ST05-ST06: Deck Set',
     )).toBe(true);
+  });
+
+  it('classifies every OP02 through OP11 and ST30 sealed product by its released expansion', () => {
+    const sealed = catalogAssets.filter((asset) => asset.kind === 'sealed');
+    const expectedSetCodes = [
+      ...Array.from({ length: 10 }, (_value, index) =>
+        `OP${String(index + 2).padStart(2, '0')}`),
+      'ST30',
+    ];
+
+    for (const setCode of expectedSetCodes) {
+      const expansionId = setCode === 'ST30'
+        ? marketDataMeta.englishStarterExpansionIds[setCode]
+        : marketDataMeta.englishExpansionIds[setCode];
+      const products = sealed.filter(
+        (asset) => asset.cardmarketExpansionId === expansionId,
+      );
+
+      expect(Number.isInteger(expansionId), setCode).toBe(true);
+      expect(products.length, setCode).toBeGreaterThan(0);
+      expect(products.every((asset) => asset.setCode === setCode), setCode).toBe(true);
+      expect(
+        marketDataMeta.releasedSealedSetCodeByExpansionId[String(expansionId)],
+        setCode,
+      ).toBe(setCode);
+    }
+  });
+
+  it('keeps all eleven English P-041 arts bound to exact current Cardmarket prices', () => {
+    const p041 = catalogAssets.filter(
+      (asset) => asset.kind === 'card'
+        && asset.rulesCardId === 'P-041'
+        && !asset.catalogAliasOf,
+    );
+    const promoArts = p041.filter((asset) => asset.id.startsWith('card-tcgplayer-'));
+    const starterArt = p041.filter((asset) => asset.id.startsWith('card-optcg-'));
+    const expectedCardmarketProductIds = [
+      748120,
+      753910,
+      766646,
+      766646,
+      766647,
+      766647,
+      766648,
+      766648,
+      787461,
+      871470,
+      892387,
+    ];
+
+    expect(p041).toHaveLength(11);
+    expect(promoArts).toHaveLength(10);
+    expect(starterArt).toHaveLength(1);
+    expect(p041.map((asset) => asset.cardmarketProductId).sort((left, right) =>
+      Number(left) - Number(right))).toEqual(expectedCardmarketProductIds);
+    expect(p041.every(
+      (asset) => asset.language === 'English'
+        && asset.cardmarketExpansionId !== 5511
+        && asset.cardmarketPriceState === 'available'
+        && asset.quote.cardmarket !== null
+        && asset.quote.cardmarket > 0
+        && asset.quote.cardmarket === asset.pricing?.cardmarket.trend,
+    )).toBe(true);
+    for (const asset of promoArts) {
+      expect(asset.tcgplayerArtworkReference).toMatchObject({
+        productId: asset.tcgplayerProductId,
+        cardmarketProductId: asset.cardmarketProductId,
+        cardmarketExpansionId: asset.cardmarketExpansionId,
+        matchPolicy:
+          'cardmarket-tcgplayer-promo-bidirectional-image-correlation-v1-complete-candidates',
+        reviewedMappingId:
+          `P-041:${asset.tcgplayerProductId}:${asset.cardmarketProductId}`,
+      });
+    }
+    expect(starterArt[0]).toMatchObject({
+      setCode: 'ST18',
+      cardmarketProductId: 892387,
+      cardmarketExpansionId: 5750,
+    });
   });
 
   it('labels the 22 explicit Japanese promos and never invents a German printing', () => {
@@ -354,6 +461,14 @@ describe('source-backed catalog snapshot', () => {
     }
     for (const [productId, productAssets] of exactByProduct) {
       if (productAssets.length === 1) continue;
+      if (productAssets.every(
+        (asset) => asset.tcgplayerArtworkReference?.reviewedMappingId
+          && asset.tcgplayerArtworkReference.allowSharedCardmarketProduct === true,
+      )) {
+        expect(new Set(productAssets.map((asset) => asset.tcgplayerProductId)).size)
+          .toBe(productAssets.length);
+        continue;
+      }
       const canonical = productAssets.filter((asset) => !asset.catalogAliasOf);
       expect(canonical, String(productId)).toHaveLength(1);
       expect(productAssets.every((asset) => asset === canonical[0]
@@ -494,8 +609,17 @@ describe('source-backed catalog snapshot', () => {
       expect(reference?.cardmarketProductId).toBe(asset.cardmarketProductId);
       expect(reference?.candidateCount).toBe(reference?.candidateProductIds.length);
       expect(reference?.candidateProductIds).toContain(asset.tcgplayerProductId);
-      expect(reference?.correlation).toBeGreaterThanOrEqual(0.985);
-      expect(reference?.margin).toBeGreaterThanOrEqual(0.08);
+      if (reference?.reviewedMappingId) {
+        expect(reference.reviewedMappingId)
+          .toBe(`${asset.rulesCardId}:${asset.tcgplayerProductId}:${asset.cardmarketProductId}`);
+        expect(reference.reviewedMinimumCorrelation).toBeGreaterThanOrEqual(0.9);
+        expect(reference.correlation)
+          .toBeGreaterThanOrEqual(reference.reviewedMinimumCorrelation ?? 1);
+        expect(typeof reference.allowSharedCardmarketProduct).toBe('boolean');
+      } else {
+        expect(reference?.correlation).toBeGreaterThanOrEqual(0.985);
+        expect(reference?.margin).toBeGreaterThanOrEqual(0.08);
+      }
       expect(Number.isNaN(Date.parse(reference?.imageVerifiedAt ?? ''))).toBe(false);
       if (reference?.matchPolicy === 'cardmarket-tcgplayer-promo-bidirectional-image-correlation-v1-complete-candidates') {
         expect(asset.tcgplayerGroupId).toBe(marketDataMeta.tcgcsv.promoGroupId);

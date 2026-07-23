@@ -47,17 +47,26 @@ export function validateCardmarketPromoExpansionRegistryV1(value) {
   if (!Array.isArray(value.verifiedPairInvariants) || value.verifiedPairInvariants.length === 0) {
     throw new Error('Cardmarket promo expansion registry requires at least one image-verified pair invariant.');
   }
+  if (!Array.isArray(value.requiredCompletePricedPrintedNumbers)) {
+    throw new Error('Cardmarket promo expansion registry requires a priced printed-number list.');
+  }
+  if (!Array.isArray(value.reviewedArtworkMappings)) {
+    throw new Error('Cardmarket promo expansion registry requires a reviewed artwork-mapping list.');
+  }
 
   const expansionIds = new Set();
   const folders = new Set();
+  const excludedProductIds = new Set();
   const expansions = value.expansions.map((entry) => {
     const idExpansion = positiveInteger(entry?.idExpansion);
     const imageFolder = String(entry?.imageFolder ?? '').trim().toUpperCase();
+    const excludedUnnumberedProductIds = entry?.excludedUnnumberedProductIds ?? [];
     if (
       idExpansion == null
       || expansionIds.has(idExpansion)
       || !/^[A-Z0-9]+(?:-[A-Z0-9]+)*$/.test(imageFolder)
       || folders.has(imageFolder)
+      || !Array.isArray(excludedUnnumberedProductIds)
       || entry?.language !== 'English'
       || !/^\d{4}-\d{2}-\d{2}$/.test(String(entry?.releasedOn ?? ''))
       || !validHttpsCardmarketUrl(entry?.evidenceUrl)
@@ -68,10 +77,98 @@ export function validateCardmarketPromoExpansionRegistryV1(value) {
     }
     expansionIds.add(idExpansion);
     folders.add(imageFolder);
-    return Object.freeze({ ...entry, idExpansion, imageFolder });
+    const normalizedExcludedProductIds = excludedUnnumberedProductIds.map((value) => {
+      const productId = positiveInteger(value);
+      if (productId == null || excludedProductIds.has(productId)) {
+        throw new Error(`Invalid or duplicate excluded Cardmarket promo product ${String(value)}.`);
+      }
+      excludedProductIds.add(productId);
+      return productId;
+    });
+    if (new Set(normalizedExcludedProductIds).size !== normalizedExcludedProductIds.length) {
+      throw new Error(`Duplicate excluded Cardmarket promo products in expansion ${idExpansion}.`);
+    }
+    return Object.freeze({
+      ...entry,
+      idExpansion,
+      imageFolder,
+      excludedUnnumberedProductIds: Object.freeze(normalizedExcludedProductIds),
+    });
   });
   if (expansions.length === 0) {
     throw new Error('Cardmarket promo expansion registry cannot be empty.');
+  }
+
+  const requiredCompletePricedPrintedNumbers = value.requiredCompletePricedPrintedNumbers
+    .map((entry) => String(entry ?? '').trim().toUpperCase());
+  if (
+    requiredCompletePricedPrintedNumbers.some(
+      (printedNumber) => !cardmarketPromoPrintedNumberV1(`(${printedNumber})`),
+    )
+    || new Set(requiredCompletePricedPrintedNumbers).size
+      !== requiredCompletePricedPrintedNumbers.length
+  ) {
+    throw new Error('Invalid or duplicate required priced promotional printed number.');
+  }
+
+  const reviewedMappingIds = new Set();
+  const reviewedTcgplayerProductIds = new Set();
+  const reviewedArtworkMappings = value.reviewedArtworkMappings.map((entry) => {
+    const reviewId = String(entry?.reviewId ?? '').trim();
+    const printedNumber = String(entry?.printedNumber ?? '').trim().toUpperCase();
+    const tcgplayerProductId = positiveInteger(entry?.tcgplayerProductId);
+    const cardmarketProductId = positiveInteger(entry?.cardmarketProductId);
+    const minimumCorrelation = Number(entry?.minimumCorrelation);
+    const tcgplayerImageDigest = String(entry?.tcgplayerImageDigest ?? '').toLowerCase();
+    const cardmarketImageDigest = String(entry?.cardmarketImageDigest ?? '').toLowerCase();
+    if (
+      !reviewId
+      || reviewedMappingIds.has(reviewId)
+      || tcgplayerProductId == null
+      || reviewedTcgplayerProductIds.has(tcgplayerProductId)
+      || cardmarketProductId == null
+      || !cardmarketPromoPrintedNumberV1(`(${printedNumber})`)
+      || reviewId !== `${printedNumber}:${tcgplayerProductId}:${cardmarketProductId}`
+      || !/^[a-f0-9]{64}$/.test(tcgplayerImageDigest)
+      || !/^[a-f0-9]{64}$/.test(cardmarketImageDigest)
+      || !Number.isFinite(minimumCorrelation)
+      || minimumCorrelation < 0.9
+      || minimumCorrelation > 1
+      || typeof entry?.allowSharedCardmarketProduct !== 'boolean'
+      || !String(entry?.evidence ?? '').trim()
+    ) {
+      throw new Error(`Invalid or duplicate reviewed promotional artwork mapping ${reviewId || 'unknown'}.`);
+    }
+    reviewedMappingIds.add(reviewId);
+    reviewedTcgplayerProductIds.add(tcgplayerProductId);
+    return Object.freeze({
+      ...entry,
+      reviewId,
+      printedNumber,
+      tcgplayerProductId,
+      cardmarketProductId,
+      tcgplayerImageDigest,
+      cardmarketImageDigest,
+      minimumCorrelation,
+    });
+  });
+  const reviewedMappingsByCardmarketProduct = new Map();
+  for (const mapping of reviewedArtworkMappings) {
+    const mappings = reviewedMappingsByCardmarketProduct.get(mapping.cardmarketProductId) ?? [];
+    mappings.push(mapping);
+    reviewedMappingsByCardmarketProduct.set(mapping.cardmarketProductId, mappings);
+  }
+  for (const [cardmarketProductId, mappings] of reviewedMappingsByCardmarketProduct) {
+    if (mappings.length === 1) continue;
+    if (
+      !mappings.every((mapping) => mapping.allowSharedCardmarketProduct)
+      || new Set(mappings.map((mapping) => mapping.printedNumber)).size !== 1
+      || new Set(mappings.map((mapping) => mapping.cardmarketImageDigest)).size !== 1
+    ) {
+      throw new Error(
+        `Reviewed Cardmarket promotional product ${cardmarketProductId} has an unsafe shared mapping.`,
+      );
+    }
   }
 
   const invariantPairs = new Set();
@@ -102,6 +199,10 @@ export function validateCardmarketPromoExpansionRegistryV1(value) {
     schemaVersion: 1,
     reviewedAt: value.reviewedAt,
     expansions: Object.freeze(expansions),
+    requiredCompletePricedPrintedNumbers: Object.freeze(
+      requiredCompletePricedPrintedNumbers,
+    ),
+    reviewedArtworkMappings: Object.freeze(reviewedArtworkMappings),
     verifiedPairInvariants: Object.freeze(verifiedPairInvariants),
   });
 }

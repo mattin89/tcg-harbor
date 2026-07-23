@@ -92,6 +92,38 @@ describe('per-art Cardmarket references v10', () => {
     });
   });
 
+  it('reports exact prices for promo-only groups without inventing a regular art', () => {
+    const firstPromo = artwork({
+      id: 'promo-one',
+      variant: 'Participant promo',
+      setCode: 'P',
+      number: 'P-041',
+      rulesCardId: 'P-041',
+      sourcePrintingId: 'tcgplayer:1',
+      cardmarketProductId: 750655,
+      cardmarketPriceState: 'available',
+      quote: { cardmarket: 19.69 },
+    });
+    const secondPromo = artwork({
+      id: 'promo-two',
+      variant: 'Winner promo',
+      setCode: 'P',
+      number: 'P-041',
+      rulesCardId: 'P-041',
+      sourcePrintingId: 'tcgplayer:2',
+      cardmarketProductId: 766648,
+      cardmarketPriceState: 'available',
+      quote: { cardmarket: 895.95 },
+    });
+
+    expect(resolveCatalogCardmarketReferenceV10(firstPromo, [firstPromo, secondPromo])).toMatchObject({
+      state: 'art-selection-required',
+      displayValue: 'Choose art',
+      label: '2 exact-art prices',
+      sourceAssetId: null,
+    });
+  });
+
   it('never uses the low or high end when an artwork image match is absent', () => {
     const view = resolveCardmarketArtworkReferenceV10(artwork({
       variant: 'Alternate art · P1',

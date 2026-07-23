@@ -51,8 +51,17 @@ describe('Cardmarket regular-art snapshot compatibility', () => {
       expect(candidate).toBeDefined();
       expect(reference.expansionId).toBe(asset.cardmarketCandidateExpansionId);
       expect(reference.trend).toBe(candidate?.trend ?? null);
-      expect(reference.correlation).toBeGreaterThanOrEqual(policy.minimumCorrelation);
-      expect(reference.margin).toBeGreaterThanOrEqual(policy.minimumMargin);
+      if (reference.reviewedMappingId) {
+        expect(reference.reviewedMappingId)
+          .toBe(`${asset.sourcePrintingId}:${asset.cardmarketProductId}`);
+        expect(reference.reviewedMinimumCorrelation).toBeGreaterThanOrEqual(0.9);
+        expect(reference.correlation)
+          .toBeGreaterThanOrEqual(reference.reviewedMinimumCorrelation ?? 1);
+        expect(reference.margin).toBeGreaterThan(0);
+      } else {
+        expect(reference.correlation).toBeGreaterThanOrEqual(policy.minimumCorrelation);
+        expect(reference.margin).toBeGreaterThanOrEqual(policy.minimumMargin);
+      }
       expect(reference.candidateCount).toBe(asset.cardmarketCandidates?.length);
       expect(reference.sourceImageUrl).toMatch(/^https:\/\/optcgapi\.com\//);
       expect(reference.productImageUrl).toMatch(
@@ -117,10 +126,14 @@ describe('Cardmarket regular-art snapshot compatibility', () => {
       (asset) => asset.cardmarketRegularArtReference != null,
     );
 
+    expect(origin?.quote.cardmarket).not.toBeNull();
     expect(resolveCatalogCardmarketReferenceV9(reprinted[0], reprinted)).toMatchObject({
       state: 'regular-exact',
       sourceAssetId: origin?.id,
-      displayValue: '0,11 €',
+      displayValue: `${new Intl.NumberFormat('de-DE', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(origin!.quote.cardmarket!)} €`,
     });
     expect(duplicateReferences).toHaveLength(2);
     const canonical = duplicateReferences.find((asset) => !asset.catalogAliasOf);
@@ -130,9 +143,13 @@ describe('Cardmarket regular-art snapshot compatibility', () => {
     expect(aliases[0].catalogAliasOf).toBe(canonical?.id);
     expect(aliases[0].cardmarketProductId).toBe(canonical?.cardmarketProductId);
     expect(aliases[0].quote.cardmarket).toBe(canonical?.quote.cardmarket);
+    expect(canonical?.quote.cardmarket).not.toBeNull();
     expect(resolveCatalogCardmarketReferenceV9(duplicateSources[0], duplicateSources)).toMatchObject({
       state: 'regular-exact',
-      displayValue: '0,26 €',
+      displayValue: `${new Intl.NumberFormat('de-DE', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(canonical!.quote.cardmarket!)} €`,
     });
   });
 });

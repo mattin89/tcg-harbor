@@ -19,6 +19,7 @@ export interface MarketDataMeta {
   matchingPolicy: string;
   englishExpansionIds: Record<string, number>;
   englishStarterExpansionIds: Record<string, number>;
+  releasedSealedSetCodeByExpansionId: Record<string, string>;
   englishReleaseManifest: {
     source: string;
     auditedAt: string;
@@ -59,6 +60,8 @@ export interface MarketDataMeta {
       transientGraceDays: number;
       registryVersion: number;
       reviewedExpansionIds: number[];
+      requiredCompletePricedPrintedNumbers?: string[];
+      reviewedDigestMappings?: number;
       discoveryBudgetSeconds: number;
       persistencePolicy: string;
       mappedReferences: number;
@@ -128,6 +131,7 @@ export interface MarketDataMeta {
       unresolvedSamples: Array<Record<string, unknown>>;
       rejectedProductConflicts: number;
       rejectedProductConflictSamples: Array<Record<string, unknown>>;
+      reviewedDigestMappings?: number;
     };
     ambiguousArtworkSamples: Array<Record<string, unknown>>;
     unavailableSamples: Array<Record<string, unknown>>;
@@ -142,6 +146,9 @@ export interface MarketDataMeta {
     currency: string;
     cardmarketSealedPriceLanguageScope?: string;
     exactSealedReleaseGates?: Record<string, { releasedOn: string }>;
+    sealedSetClassificationPolicy?: string;
+    requiredCompleteLatestStarterArtworkSetCode?: string;
+    reviewedExactArtworkMappingIds?: string[];
     futureSealedProductsExcluded?: Array<{
       cardmarketProductId: number;
       name: string;
@@ -240,6 +247,8 @@ export interface CardmarketArtworkReference {
   productImageUrl: string;
   sourceImageDigest: string;
   productImageDigest: string;
+  reviewedMappingId?: string;
+  reviewedMinimumCorrelation?: number;
   evidence: string;
 }
 
@@ -271,6 +280,9 @@ export interface TcgplayerArtworkReference {
   cardmarketMargin?: number;
   tcgplayerRunnerUpCorrelation?: number | null;
   tcgplayerMargin?: number;
+  reviewedMappingId?: string;
+  reviewedMinimumCorrelation?: number;
+  allowSharedCardmarketProduct?: boolean;
   cardmarketImageUrl: string;
   tcgplayerImageUrl: string;
   cardmarketImageDigest: string;

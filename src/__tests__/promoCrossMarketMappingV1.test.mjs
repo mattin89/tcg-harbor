@@ -46,27 +46,127 @@ describe('promotional cross-market artwork mapping v1', () => {
     });
   });
 
-  it('validates the reviewed English PB-XX registry and Nami invariant', async () => {
+  it('validates every reviewed English promo expansion and its exact unnumbered exclusions', async () => {
     const registry = validateCardmarketPromoExpansionRegistryV1(
       JSON.parse(await readFile(registryPath, 'utf8')),
     );
 
-    expect(registry.expansions).toEqual([
-      expect.objectContaining({
+    expect(registry.expansions.map(({
+      idExpansion,
+      imageFolder,
+      language,
+      excludedUnnumberedProductIds,
+    }) => ({
+      idExpansion,
+      imageFolder,
+      language,
+      excludedUnnumberedProductCount: excludedUnnumberedProductIds.length,
+    }))).toEqual([
+      {
+        idExpansion: 5230,
+        imageFolder: 'P',
+        language: 'English',
+        excludedUnnumberedProductCount: 5,
+      },
+      {
+        idExpansion: 5262,
+        imageFolder: 'STP',
+        language: 'English',
+        excludedUnnumberedProductCount: 20,
+      },
+      {
         idExpansion: 5267,
         imageFolder: 'PB-XX',
         language: 'English',
-      }),
+        excludedUnnumberedProductCount: 0,
+      },
     ]);
+    expect(registry.expansions[0].excludedUnnumberedProductIds).toEqual([
+      746238,
+      746239,
+      780210,
+      857368,
+      867223,
+    ]);
+    expect(registry.expansions[1].excludedUnnumberedProductIds).toEqual([
+      696662,
+      696663,
+      696664,
+      696665,
+      696666,
+      696667,
+      696668,
+      696669,
+      696670,
+      696671,
+      696672,
+      748118,
+      748119,
+      752070,
+      762652,
+      773382,
+      773429,
+      821345,
+      826292,
+      826293,
+    ]);
+    expect(registry.expansions[2].excludedUnnumberedProductIds).toEqual([]);
+    expect(registry.requiredCompletePricedPrintedNumbers).toEqual(['P-041']);
+    expect(registry.reviewedArtworkMappings).toHaveLength(10);
+    expect(registry.reviewedArtworkMappings.every(
+      (mapping) => mapping.printedNumber === 'P-041'
+        && /^[a-f0-9]{64}$/.test(mapping.tcgplayerImageDigest)
+        && /^[a-f0-9]{64}$/.test(mapping.cardmarketImageDigest),
+    )).toBe(true);
+    expect(registry.reviewedArtworkMappings.filter(
+      (mapping) => mapping.cardmarketProductId === 766646,
+    )).toHaveLength(2);
     expect(registry.verifiedPairInvariants).toContainEqual(expect.objectContaining({
       printedNumber: 'OP01-016',
       tcgplayerProductId: 485265,
       cardmarketProductId: 698921,
     }));
+    expect(cardmarketPromoProductImageUrlsV1('P', 750655)).toEqual([
+      'https://product-images.s3.cardmarket.com/1621/P/750655/750655.jpg',
+      'https://product-images.s3.cardmarket.com/1621/P/750655/750655.png',
+    ]);
+    expect(cardmarketPromoProductImageUrlsV1('STP', 787461)).toEqual([
+      'https://product-images.s3.cardmarket.com/1621/STP/787461/787461.jpg',
+      'https://product-images.s3.cardmarket.com/1621/STP/787461/787461.png',
+    ]);
     expect(cardmarketPromoProductImageUrlsV1('PB-XX', 698921)).toEqual([
       'https://product-images.s3.cardmarket.com/1621/PB-XX/698921/698921.jpg',
       'https://product-images.s3.cardmarket.com/1621/PB-XX/698921/698921.png',
     ]);
+  });
+
+  it('rejects invalid and registry-wide duplicate excluded promo product IDs', async () => {
+    const registrySource = await readFile(registryPath, 'utf8');
+    const duplicate = JSON.parse(registrySource);
+    duplicate.expansions
+      .find(({ idExpansion }) => idExpansion === 5262)
+      .excludedUnnumberedProductIds.push(746238);
+    expect(() => validateCardmarketPromoExpansionRegistryV1(duplicate))
+      .toThrow(/^Invalid or duplicate excluded Cardmarket promo product 746238\.$/);
+
+    const invalid = JSON.parse(registrySource);
+    invalid.expansions
+      .find(({ idExpansion }) => idExpansion === 5230)
+      .excludedUnnumberedProductIds[0] = 0;
+    expect(() => validateCardmarketPromoExpansionRegistryV1(invalid))
+      .toThrow(/^Invalid or duplicate excluded Cardmarket promo product 0\.$/);
+
+    const duplicateRequiredNumber = JSON.parse(registrySource);
+    duplicateRequiredNumber.requiredCompletePricedPrintedNumbers.push('p-041');
+    expect(() => validateCardmarketPromoExpansionRegistryV1(duplicateRequiredNumber))
+      .toThrow(/^Invalid or duplicate required priced promotional printed number\.$/);
+
+    const unsafeSharedMapping = JSON.parse(registrySource);
+    unsafeSharedMapping.reviewedArtworkMappings
+      .find((mapping) => mapping.reviewId === 'P-041:544782:766646')
+      .allowSharedCardmarketProduct = false;
+    expect(() => validateCardmarketPromoExpansionRegistryV1(unsafeSharedMapping))
+      .toThrow(/^Reviewed Cardmarket promotional product 766646 has an unsafe shared mapping\.$/);
   });
 
   it('attempts reviewed invariants first and counts promos by provider source, not display label', async () => {

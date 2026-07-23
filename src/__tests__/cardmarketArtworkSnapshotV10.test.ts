@@ -35,8 +35,17 @@ describe('Cardmarket per-art snapshot v10', () => {
         (candidate) => candidate.productId === reference.productId
           && candidate.trend === reference.trend,
       )).toBe(true);
-      expect(reference.correlation).toBeGreaterThanOrEqual(policy.minimumCorrelation);
-      expect(reference.margin).toBeGreaterThanOrEqual(policy.minimumMargin);
+      if (reference.reviewedMappingId) {
+        expect(reference.reviewedMappingId)
+          .toBe(`${asset.sourcePrintingId}:${asset.cardmarketProductId}`);
+        expect(reference.reviewedMinimumCorrelation).toBeGreaterThanOrEqual(0.9);
+        expect(reference.correlation)
+          .toBeGreaterThanOrEqual(reference.reviewedMinimumCorrelation ?? 1);
+        expect(reference.margin).toBeGreaterThan(0);
+      } else {
+        expect(reference.correlation).toBeGreaterThanOrEqual(policy.minimumCorrelation);
+        expect(reference.margin).toBeGreaterThanOrEqual(policy.minimumMargin);
+      }
       expect(reference.candidateCount).toBe(asset.cardmarketCandidates?.length);
       if ((reference.candidateCount ?? 0) > 1) {
         expect(reference.runnerUpCorrelation).not.toBeNull();
@@ -95,6 +104,30 @@ describe('Cardmarket per-art snapshot v10', () => {
       .toMatchObject({ productId: 767953 });
     expect(oden.find((asset) => asset.variant === 'Alternate art · P1')?.cardmarketArtworkReference)
       .toMatchObject({ productId: 767954 });
+  });
+
+  it('keeps the reviewed latest-starter mappings digest-locked', () => {
+    const reviewed = cards.filter(
+      (asset) => asset.cardmarketArtworkReference?.reviewedMappingId,
+    );
+
+    expect(marketDataMeta.cardmarketCoverage.artworkReferencePolicy.reviewedDigestMappings)
+      .toBe(6);
+    expect(reviewed.map(
+      (asset) => asset.cardmarketArtworkReference?.reviewedMappingId,
+    ).sort()).toEqual([
+      'ST30-015:891044',
+      'ST30-015_p1:891045',
+      'ST30-016:891046',
+      'ST30-016_p1:891047',
+      'ST30-017:891048',
+      'ST30-017_p1:891049',
+    ]);
+    expect(reviewed.every(
+      (asset) => asset.setCode === 'ST30'
+        && asset.cardmarketPriceState === 'available'
+        && asset.quote.cardmarket === asset.cardmarketArtworkReference?.trend,
+    )).toBe(true);
   });
 
   it('groups starter-deck reprints under their printed promotional card number', () => {

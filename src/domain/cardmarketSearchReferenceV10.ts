@@ -32,6 +32,7 @@ export interface CatalogCardmarketReferenceViewV10 {
     | 'regular-image-reference'
     | 'regular-trend-unavailable'
     | 'regular-unavailable'
+    | 'art-selection-required'
     | 'sealed';
   readonly displayValue: string;
   readonly label: string;
@@ -147,6 +148,20 @@ export function resolveCatalogCardmarketReferenceV10(
 
   const regular = chooseOriginalRegularArt(matched, siblings);
   if (!regular) {
+    const pricedExactArts = siblings.filter((asset) =>
+      asset.kind === 'card'
+      && asset.cardmarketProductId != null
+      && usablePrice(asset.quote.cardmarket)
+      && (asset.cardmarketPriceState === 'available' || asset.cardmarketPriceState == null));
+    if (pricedExactArts.length > 0) {
+      return {
+        state: 'art-selection-required',
+        displayValue: 'Choose art',
+        label: `${pricedExactArts.length} exact-art price${pricedExactArts.length === 1 ? '' : 's'}`,
+        detail: `This card has no single regular-art market reference. Choose the exact artwork to see its verified Cardmarket trend; ${pricedExactArts.length} of ${siblings.length} sourced printings currently have an exact price.`,
+        sourceAssetId: null,
+      };
+    }
     return {
       state: 'regular-unavailable',
       displayValue: 'Price unavailable',

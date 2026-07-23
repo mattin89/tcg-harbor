@@ -24,6 +24,7 @@ import {
 } from './lib/cardmarket-mapping-v8.mjs';
 import {
   CARDMARKET_REGULAR_ART_POLICY_V1,
+  artworkCorrelationV1,
   cardmarketProductImageUrlsV1,
   chooseRegularArtImageMatchV1,
   fingerprintArtworkImageV1,
@@ -68,6 +69,11 @@ import {
   retryReleaseManifestValidationV2,
 } from './lib/bandai-release-continuity-v2.mjs';
 import { parseBandaiProductsPageV10 } from './lib/bandai-products-archive-v10.mjs';
+import {
+  buildReleasedSealedSetCodeByExpansionV1,
+  normalizedDeckProductTitleV1,
+  resolveSealedSetCodeV1,
+} from './lib/sealed-set-classification-v1.mjs';
 import {
   assertOptcgCacheCoversReleasedSetsV1,
   buildOptcgSourceCacheV1,
@@ -155,6 +161,91 @@ const EXACT_OPTCG_IMAGE_OVERRIDES = new Map([
   ['don_132', 'https://storage.googleapis.com/images.pricecharting.com/correbdfe4st6ypotkzb/1600.jpg'],
   ['don_185', 'https://tcgplayer-cdn.tcgplayer.com/product/698314_in_1000x1000.jpg'],
 ]);
+const REVIEWED_CARDMARKET_ARTWORK_MAPPINGS_V10 = new Map([
+  ['ST30-015_p1', {
+    reviewId: 'ST30-015_p1:891045',
+    setCode: 'ST30',
+    number: 'ST30-015',
+    productId: 891045,
+    candidateProductIds: [891044, 891045],
+    sourceImageDigest: '452de00828561987c376e6437b485e2e6cdeeefdbe10b6986518524ec16d29d6',
+    productImageDigest: '1f8cee42bbd3978245634a81831dcfcfb02124afd507c2b21dd67646d5d4d9db',
+    minimumCorrelation: 0.99,
+    evidence: 'The complete two-art ST30-015 matrix is mutual unique-best. The alternate art has 0.998232 correlation and was reviewed on 2026-07-23.',
+  }],
+  ['ST30-015', {
+    reviewId: 'ST30-015:891044',
+    setCode: 'ST30',
+    number: 'ST30-015',
+    productId: 891044,
+    candidateProductIds: [891044, 891045],
+    sourceImageDigest: '98f2dd6317dc2acff78e5ee04b01b5841b9cd39dc6f4d76ea6cc32ac221077b4',
+    productImageDigest: '3996fa8add4cf21042eb1b857d49fc1ca12a61d2aa66d6df6c9af37debd0f286',
+    minimumCorrelation: 0.99,
+    evidence: 'The complete two-art ST30-015 matrix is mutual unique-best. The standard art has 0.998214 correlation and was reviewed on 2026-07-23.',
+  }],
+  ['ST30-016_p1', {
+    reviewId: 'ST30-016_p1:891047',
+    setCode: 'ST30',
+    number: 'ST30-016',
+    productId: 891047,
+    candidateProductIds: [891046, 891047],
+    sourceImageDigest: 'afa72e60ec26143ebbe6c91261a5796c6c9653882740d03fd49270a0a5f524c2',
+    productImageDigest: '9752372af71fcf195d17404866a955bc62cb38c1ea88538af7516c973247566e',
+    minimumCorrelation: 0.99,
+    evidence: 'The complete two-art ST30-016 matrix is mutual unique-best. The alternate art has 0.998061 correlation and was reviewed on 2026-07-23.',
+  }],
+  ['ST30-016', {
+    reviewId: 'ST30-016:891046',
+    setCode: 'ST30',
+    number: 'ST30-016',
+    productId: 891046,
+    candidateProductIds: [891046, 891047],
+    sourceImageDigest: '9d8a8e77c2dd537817c083c30781935c6cd2d3fcb5939e0396e055e947e5e366',
+    productImageDigest: '4bea59e762dfe6a8b74b4aa12d174fd97164056033f60aea00385d5a11a6a0e2',
+    minimumCorrelation: 0.99,
+    evidence: 'The complete two-art ST30-016 matrix is mutual unique-best. The standard art has 0.998101 correlation and was reviewed on 2026-07-23.',
+  }],
+  ['ST30-017_p1', {
+    reviewId: 'ST30-017_p1:891049',
+    setCode: 'ST30',
+    number: 'ST30-017',
+    productId: 891049,
+    candidateProductIds: [891048, 891049],
+    sourceImageDigest: 'be09a10c3c8bb3f93b2fb7518fd73a9762bfa3716127ef7893971e1991669218',
+    productImageDigest: '587e1ae9a7072edc0c21da1a9f8d676629687094f7cfdc33e879522599573656',
+    minimumCorrelation: 0.99,
+    evidence: 'The complete two-art ST30-017 matrix is mutual unique-best. The alternate art has 0.991428 correlation and was reviewed on 2026-07-23.',
+  }],
+  ['ST30-017', {
+    reviewId: 'ST30-017:891048',
+    setCode: 'ST30',
+    number: 'ST30-017',
+    productId: 891048,
+    candidateProductIds: [891048, 891049],
+    sourceImageDigest: 'abb6919822280a967d19c28ca9257842089f699ff66e57e4df82654d0f0bb765',
+    productImageDigest: 'c6d0e3bedc9d78404e094038c7ab02ee970b0dcfbfe7a9d60f46bd06082db1bf',
+    minimumCorrelation: 0.99,
+    evidence: 'The complete two-art ST30-017 matrix is mutual unique-best. The standard art has 0.998309 correlation and was reviewed on 2026-07-23.',
+  }],
+]);
+if ([...REVIEWED_CARDMARKET_ARTWORK_MAPPINGS_V10].some(([sourcePrintingId, mapping]) => (
+  mapping.reviewId !== `${sourcePrintingId}:${mapping.productId}`
+  || !/^ST\d{2}$/.test(mapping.setCode)
+  || !/^(?:P|OP\d{2}|ST\d{2}|EB\d{2}|PRB\d{2})-\d{3}$/.test(mapping.number)
+  || !Number.isInteger(mapping.productId)
+  || mapping.productId <= 0
+  || mapping.candidateProductIds.length < 2
+  || new Set(mapping.candidateProductIds).size !== mapping.candidateProductIds.length
+  || !mapping.candidateProductIds.includes(mapping.productId)
+  || !/^[a-f0-9]{64}$/.test(mapping.sourceImageDigest)
+  || !/^[a-f0-9]{64}$/.test(mapping.productImageDigest)
+  || mapping.minimumCorrelation < 0.9
+  || mapping.minimumCorrelation > 1
+  || !mapping.evidence
+))) {
+  throw new Error('A reviewed Cardmarket exact-art mapping is invalid.');
+}
 // Cardmarket omits ST20 from the two English Charlotte Katakuri product names,
 // while Bandai's official title is "Yellow Charlotte Katakuri [ST-20]". These
 // stable public product IDs were reviewed as the ST20 deck and deck pack; an
@@ -948,7 +1039,7 @@ function groupBy(items, keyFor) {
 }
 
 function printedNumber(productName) {
-  return productName.match(/\(([A-Z]{2,5}\d{2}-\d{3})\)\s*$/)?.[1] ?? null;
+  return productName.match(/\(((?:P|OP\d{2}|ST\d{2}|EB\d{2}|PRB\d{2})-\d{3})\)\s*$/)?.[1] ?? null;
 }
 
 function setCodeFromNumber(number) {
@@ -1510,11 +1601,7 @@ function promoStableId(product) {
 }
 
 function normalizedDeckProductTitle(value) {
-  return String(value ?? '')
-    .replace(/\[(?:ST)-?\d{2}\]/gi, '')
-    .replace(/^\s*starter deck(?:\s+ex)?\s*[:\-]?\s*/i, '')
-    .replace(/[^a-z0-9]+/gi, '')
-    .toLowerCase();
+  return normalizedDeckProductTitleV1(value);
 }
 
 function officialDeckSetCodeIndex(products) {
@@ -1531,16 +1618,19 @@ function officialDeckSetCodeIndex(products) {
   return index;
 }
 
-function sealedSetCode(product, category, officialDeckSetCodesByTitle = new Map()) {
-  const exactOverride = EXACT_CARDMARKET_DECK_SET_CODE_OVERRIDES.get(Number(product.idProduct));
-  if (exactOverride) return exactOverride;
-  const match = product.name.match(/\b(OP|ST|EB|PRB)[-\s]?(\d{1,2})\b/i);
-  if (match) return `${match[1].toUpperCase()}${match[2].padStart(2, '0')}`;
-  if (category.productType === 'Preconstructed deck') {
-    const titleMatch = officialDeckSetCodesByTitle.get(normalizedDeckProductTitle(product.name));
-    if (titleMatch) return titleMatch;
-  }
-  return category.setCode;
+function sealedSetCode(
+  product,
+  category,
+  officialDeckSetCodesByTitle = new Map(),
+  releasedSetCodeByExpansionId = new Map(),
+) {
+  return resolveSealedSetCodeV1({
+    product,
+    category,
+    exactSetCodeOverrides: EXACT_CARDMARKET_DECK_SET_CODE_OVERRIDES,
+    officialDeckSetCodesByTitle,
+    releasedSetCodeByExpansionId,
+  });
 }
 
 function cardmarketStarterEvidenceSetCode(product, officialDeckSetCodesByTitle) {
@@ -1690,6 +1780,11 @@ const cardmarketPromoExpansionRegistryV1 = validateCardmarketPromoExpansionRegis
 );
 const cardmarketPromoExpansionByIdV1 = new Map(
   cardmarketPromoExpansionRegistryV1.expansions.map((entry) => [entry.idExpansion, entry]),
+);
+const reviewedPromoArtworkMappingByReviewIdV1 = new Map(
+  cardmarketPromoExpansionRegistryV1.reviewedArtworkMappings.map(
+    (entry) => [entry.reviewId, entry],
+  ),
 );
 
 const [marketSources, tcgcsvBundle, optcgFeedResult, exchangeRate] = await Promise.all([
@@ -1842,6 +1937,15 @@ const starterExpansionEvidence = cardmarketStarterExpansionEvidence(
 const englishStarterExpansionIds = Object.fromEntries(
   [...starterExpansionEvidence.exact].map(([setCode, evidence]) => [setCode, evidence.idExpansion]),
 );
+const requiredCompleteLatestStarterArtworkSetCodeV10 = Object.keys(
+  englishStarterExpansionIds,
+)
+  .filter((setCode) => /^ST\d{2}$/.test(setCode))
+  .sort((left, right) => Number(right.slice(2)) - Number(left.slice(2)))[0] ?? null;
+const releasedSealedSetCodeByExpansionIdV1 = buildReleasedSealedSetCodeByExpansionV1([
+  ...Object.entries(englishExpansionIds),
+  ...Object.entries(englishStarterExpansionIds),
+]);
 
 for (const source of tcgcsvMarketSources) {
   if (!source.products.some((product) => tcgcsvCardNumber(product) && product.presaleInfo?.isPresale !== true)) {
@@ -2127,6 +2231,17 @@ for (const entry of ambiguousArtworkEntriesV10) {
   const previousReference = previousAsset?.cardmarketArtworkReference
     ?? previousAsset?.cardmarketRegularArtReference
     ?? null;
+  const reviewedMapping = REVIEWED_CARDMARKET_ARTWORK_MAPPINGS_V10.get(
+    String(card.card_image_id ?? ''),
+  ) ?? null;
+  const reviewedReferenceIsCurrent = previousReference?.reviewedMappingId == null
+    || (
+      reviewedMapping
+      && previousReference.reviewedMappingId === reviewedMapping.reviewId
+      && Number(previousReference.productId) === reviewedMapping.productId
+      && previousReference.sourceImageDigest === reviewedMapping.sourceImageDigest
+      && previousReference.productImageDigest === reviewedMapping.productImageDigest
+    );
   const previousProductId = Number(previousReference?.productId);
   const currentCandidate = ambiguity.candidates.find(
     (candidate) => candidate.productId === previousProductId,
@@ -2146,6 +2261,7 @@ for (const entry of ambiguousArtworkEntriesV10) {
     );
   const completeCandidateCoverageProven = (
     previousReference?.matchPolicy === CARDMARKET_ARTWORK_MATCH_POLICY_V10
+    && reviewedReferenceIsCurrent
     && Number(previousReference.candidateCount) === currentCandidateIds.length
     && (
       currentCandidateIds.length === 1
@@ -2211,6 +2327,79 @@ for (const entry of ambiguousArtworkEntriesV10) {
   }
   artworkDiscoveryQueueV10.push(entry);
 }
+artworkDiscoveryQueueV10.sort((left, right) => {
+  const leftSetCode = setCodeForCard(left.card, regularRulesCardId(left.card));
+  const rightSetCode = setCodeForCard(right.card, regularRulesCardId(right.card));
+  return Number(rightSetCode === requiredCompleteLatestStarterArtworkSetCodeV10)
+    - Number(leftSetCode === requiredCompleteLatestStarterArtworkSetCodeV10);
+});
+
+function reviewedCardmarketArtworkMatchV10({
+  card,
+  ambiguity,
+  sourceFingerprint,
+  candidateImages,
+}) {
+  const sourcePrintingId = String(card.card_image_id ?? '');
+  const reviewed = REVIEWED_CARDMARKET_ARTWORK_MAPPINGS_V10.get(sourcePrintingId) ?? null;
+  if (!reviewed) return null;
+  const number = regularRulesCardId(card);
+  const setCode = setCodeForCard(card, number);
+  const candidateProductIds = candidateImages
+    .map((candidate) => Number(candidate.productId))
+    .sort((left, right) => left - right);
+  if (
+    reviewed.setCode !== setCode
+    || reviewed.number !== number
+    || ambiguity.groupCode !== reviewed.setCode
+    || candidateProductIds.length !== reviewed.candidateProductIds.length
+    || candidateProductIds.some(
+      (productId, index) => productId !== reviewed.candidateProductIds[index],
+    )
+  ) {
+    throw new Error(
+      `Reviewed Cardmarket artwork mapping ${reviewed.reviewId} left its exact release candidate set.`,
+    );
+  }
+  const selected = candidateImages.find(
+    (candidate) => Number(candidate.productId) === reviewed.productId,
+  );
+  if (
+    sourceFingerprint.digest !== reviewed.sourceImageDigest
+    || selected?.fingerprint.digest !== reviewed.productImageDigest
+  ) {
+    throw new Error(
+      `Reviewed Cardmarket artwork mapping ${reviewed.reviewId} changed an image digest.`,
+    );
+  }
+  const ranking = candidateImages
+    .map((candidate) => ({
+      candidate,
+      correlation: artworkCorrelationV1(sourceFingerprint, candidate.fingerprint),
+    }))
+    .sort((left, right) => right.correlation - left.correlation
+      || Number(left.candidate.productId) - Number(right.candidate.productId));
+  if (
+    Number(ranking[0]?.candidate.productId) !== reviewed.productId
+    || ranking[0].correlation < reviewed.minimumCorrelation
+  ) {
+    throw new Error(
+      `Reviewed Cardmarket artwork mapping ${reviewed.reviewId} lost its complete-candidate correlation.`,
+    );
+  }
+  const runnerUpCorrelation = ranking[1]?.correlation ?? null;
+  return {
+    productId: reviewed.productId,
+    correlation: ranking[0].correlation,
+    runnerUpCorrelation,
+    margin: ranking[0].correlation - (runnerUpCorrelation ?? -1),
+    sourceDigest: sourceFingerprint.digest,
+    productDigest: selected.fingerprint.digest,
+    reviewedMappingId: reviewed.reviewId,
+    reviewedMinimumCorrelation: reviewed.minimumCorrelation,
+    reviewedEvidence: reviewed.evidence,
+  };
+}
 
 const artworkDiscoveryDeadlineV10 = Date.now() + ARTWORK_DISCOVERY_BUDGET_MS_V9;
 const artworkDiscoveryResultsV10 = await mapWithConcurrencyV1(
@@ -2261,7 +2450,12 @@ const artworkDiscoveryResultsV10 = await mapWithConcurrencyV1(
             && missingResults.every((result) => result.transient === true),
         };
       }
-      const match = chooseRegularArtImageMatchV1({
+      const match = reviewedCardmarketArtworkMatchV10({
+        card,
+        ambiguity,
+        sourceFingerprint,
+        candidateImages,
+      }) ?? chooseRegularArtImageMatchV1({
         sourceFingerprint,
         candidates: candidateImages,
       });
@@ -2294,7 +2488,13 @@ const artworkDiscoveryResultsV10 = await mapWithConcurrencyV1(
           productImageUrl: matchedImage.imageUrl,
           sourceImageDigest: match.sourceDigest,
           productImageDigest: match.productDigest,
-          evidence: 'The exact sourced artwork independently matches this Cardmarket product image above the frozen correlation and separation thresholds. The product mapping and trend are eligible for collection valuation and acquisition growth.',
+          ...(match.reviewedMappingId ? {
+            reviewedMappingId: match.reviewedMappingId,
+            reviewedMinimumCorrelation: match.reviewedMinimumCorrelation,
+          } : {}),
+          evidence: match.reviewedMappingId
+            ? `The exact sourced artwork uses reviewed normalized-image digests after the complete release candidate set was compared. ${match.reviewedEvidence}`
+            : 'The exact sourced artwork independently matches this Cardmarket product image above the frozen correlation and separation thresholds. The product mapping and trend are eligible for collection valuation and acquisition growth.',
         },
       };
     } catch (error) {
@@ -2843,6 +3043,36 @@ for (const result of tcgplayerArtworkDiscoveryResultsV1) {
     });
   }
 }
+const requiredLatestStarterArtworkCardsV10 = requiredCompleteLatestStarterArtworkSetCodeV10
+  ? uniqueCoreCards.filter((card) => (
+    setCodeForCard(card, regularRulesCardId(card))
+      === requiredCompleteLatestStarterArtworkSetCodeV10
+  ))
+  : [];
+const incompleteRequiredLatestStarterArtworkCardsV10 =
+  requiredLatestStarterArtworkCardsV10.filter((card) => {
+    const identity = printingIdentity(card);
+    const productId = Number(
+      cardmarketMatches.get(identity)?.product?.idProduct
+      ?? cardmarketArtworkReferencesV10.get(identity)?.productId,
+    );
+    return !Number.isInteger(productId)
+      || productId <= 0
+      || cardmarketPricesByProduct.get(productId)?.trend == null;
+  });
+if (
+  requiredCompleteLatestStarterArtworkSetCodeV10 == null
+  || requiredLatestStarterArtworkCardsV10.length === 0
+  || incompleteRequiredLatestStarterArtworkCardsV10.length > 0
+) {
+  throw new Error(
+    `Latest released starter artwork coverage is incomplete for ${
+      requiredCompleteLatestStarterArtworkSetCodeV10 ?? 'unknown'
+    }: ${incompleteRequiredLatestStarterArtworkCardsV10
+      .map((card) => String(card.card_image_id ?? regularRulesCardId(card)))
+      .join(', ') || 'no released starter records'}.`,
+  );
+}
 
 // One provider product may represent only one visible physical printing. The
 // sole exception is the existing hidden-alias mechanism for duplicate OPTCG
@@ -3153,8 +3383,35 @@ for (const [cardmarketProductId, tcgplayerProductId] of verifiedOp13LuffyArtwork
 const reviewedPromoExpansionIdsV1 = new Set(
   cardmarketPromoExpansionRegistryV1.expansions.map((entry) => entry.idExpansion),
 );
-const reviewedCardmarketPromoProductsV1 = productCatalog.products.filter(
+const allReviewedCardmarketPromoProductsV1 = productCatalog.products.filter(
   (product) => reviewedPromoExpansionIdsV1.has(Number(product.idExpansion)),
+);
+for (const expansion of cardmarketPromoExpansionRegistryV1.expansions) {
+  const actualUnnumberedProductIds = allReviewedCardmarketPromoProductsV1
+    .filter((product) => Number(product.idExpansion) === expansion.idExpansion)
+    .filter((product) => !cardmarketPromoPrintedNumberV1(product.name))
+    .map((product) => Number(product.idProduct))
+    .sort((left, right) => left - right);
+  const reviewedUnnumberedProductIds = [...expansion.excludedUnnumberedProductIds]
+    .sort((left, right) => left - right);
+  if (
+    actualUnnumberedProductIds.length !== reviewedUnnumberedProductIds.length
+    || actualUnnumberedProductIds.some(
+      (productId, index) => productId !== reviewedUnnumberedProductIds[index],
+    )
+  ) {
+    throw new Error(
+      `Reviewed Cardmarket promo expansion ${expansion.idExpansion} changed its unnumbered products: expected ${reviewedUnnumberedProductIds.join(', ') || 'none'}, received ${actualUnnumberedProductIds.join(', ') || 'none'}.`,
+    );
+  }
+}
+const reviewedUnnumberedPromoProductIdsV1 = new Set(
+  cardmarketPromoExpansionRegistryV1.expansions.flatMap(
+    (entry) => entry.excludedUnnumberedProductIds,
+  ),
+);
+const reviewedCardmarketPromoProductsV1 = allReviewedCardmarketPromoProductsV1.filter(
+  (product) => !reviewedUnnumberedPromoProductIdsV1.has(Number(product.idProduct)),
 );
 if (reviewedCardmarketPromoProductsV1.some((product) => (
   Number(product.idCategory) !== 1621
@@ -3197,6 +3454,115 @@ function samePromoCandidateIdsV1(left, right) {
     && left.every((productId, index) => productId === right[index]);
 }
 
+function reviewedPromoCrossMarketMatchesV1(
+  number,
+  availableTcgplayerImages,
+  availableCardmarketImages,
+) {
+  const reviewedMappings = cardmarketPromoExpansionRegistryV1.reviewedArtworkMappings
+    .filter((mapping) => mapping.printedNumber === number);
+  return reviewedMappings.map((mapping) => {
+    const tcgplayer = availableTcgplayerImages.find(
+      (candidate) => Number(candidate.productId) === mapping.tcgplayerProductId,
+    );
+    const cardmarket = availableCardmarketImages.find(
+      (candidate) => Number(candidate.productId) === mapping.cardmarketProductId,
+    );
+    if (!tcgplayer || !cardmarket) {
+      throw new Error(
+        `Reviewed promotional artwork mapping ${mapping.reviewId} left its complete candidate matrix.`,
+      );
+    }
+    if (
+      tcgplayer.fingerprint.digest !== mapping.tcgplayerImageDigest
+      || cardmarket.fingerprint.digest !== mapping.cardmarketImageDigest
+    ) {
+      throw new Error(
+        `Reviewed promotional artwork mapping ${mapping.reviewId} changed an image digest.`,
+      );
+    }
+
+    const cardmarketRanking = availableCardmarketImages
+      .map((candidate) => ({
+        candidate,
+        correlation: artworkCorrelationV1(tcgplayer.fingerprint, candidate.fingerprint),
+      }))
+      .sort((left, right) => right.correlation - left.correlation
+        || Number(left.candidate.productId) - Number(right.candidate.productId));
+    const selectedCardmarketIndex = cardmarketRanking.findIndex(
+      ({ candidate }) => Number(candidate.productId) === mapping.cardmarketProductId,
+    );
+    const selectedCardmarket = cardmarketRanking[selectedCardmarketIndex];
+    if (
+      selectedCardmarketIndex !== 0
+      || selectedCardmarket.correlation < mapping.minimumCorrelation
+    ) {
+      throw new Error(
+        `Reviewed promotional artwork mapping ${mapping.reviewId} no longer has its reviewed complete-matrix correlation.`,
+      );
+    }
+    const cardmarketRunnerUpCorrelation = cardmarketRanking[1]?.correlation ?? null;
+    const cardmarketMargin = selectedCardmarket.correlation
+      - (cardmarketRunnerUpCorrelation ?? -1);
+    const tcgplayerRanking = availableTcgplayerImages
+      .map((candidate) => ({
+        candidate,
+        correlation: artworkCorrelationV1(candidate.fingerprint, cardmarket.fingerprint),
+      }))
+      .sort((left, right) => right.correlation - left.correlation
+        || Number(left.candidate.productId) - Number(right.candidate.productId));
+    const selectedTcgplayerIndex = tcgplayerRanking.findIndex(
+      ({ candidate }) => Number(candidate.productId) === mapping.tcgplayerProductId,
+    );
+    const selectedTcgplayer = tcgplayerRanking[selectedTcgplayerIndex];
+    if (
+      selectedTcgplayerIndex < 0
+      || selectedTcgplayer.correlation < mapping.minimumCorrelation
+    ) {
+      throw new Error(
+        `Reviewed promotional artwork mapping ${mapping.reviewId} lost its reviewed reverse correlation.`,
+      );
+    }
+    const tcgplayerRunnerUpCorrelation = tcgplayerRanking.find(
+      ({ candidate }) => Number(candidate.productId) !== mapping.tcgplayerProductId,
+    )?.correlation ?? null;
+    const tcgplayerMargin = selectedTcgplayer.correlation
+      - (tcgplayerRunnerUpCorrelation ?? -1);
+    const runnerUpCorrelation = Math.max(
+      cardmarketRunnerUpCorrelation ?? -1,
+      tcgplayerRunnerUpCorrelation ?? -1,
+    );
+
+    return {
+      tcgplayerProductId: mapping.tcgplayerProductId,
+      cardmarketProductId: mapping.cardmarketProductId,
+      correlation: selectedCardmarket.correlation,
+      runnerUpCorrelation: runnerUpCorrelation < 0 ? null : runnerUpCorrelation,
+      margin: Math.min(cardmarketMargin, tcgplayerMargin),
+      cardmarketRunnerUpCorrelation,
+      cardmarketMargin,
+      tcgplayerRunnerUpCorrelation,
+      tcgplayerMargin,
+      tcgplayerCandidateCount: availableTcgplayerImages.length,
+      tcgplayerCandidateProductIds: availableTcgplayerImages
+        .map((candidate) => Number(candidate.productId))
+        .sort((left, right) => left - right),
+      cardmarketCandidateCount: availableCardmarketImages.length,
+      cardmarketCandidateProductIds: availableCardmarketImages
+        .map((candidate) => Number(candidate.productId))
+        .sort((left, right) => left - right),
+      tcgplayerImageUrl: tcgplayer.imageUrl,
+      cardmarketImageUrl: cardmarket.imageUrl,
+      tcgplayerImageDigest: tcgplayer.fingerprint.digest,
+      cardmarketImageDigest: cardmarket.fingerprint.digest,
+      reviewedMappingId: mapping.reviewId,
+      reviewedMinimumCorrelation: mapping.minimumCorrelation,
+      allowSharedCardmarketProduct: mapping.allowSharedCardmarketProduct,
+      reviewedEvidence: mapping.evidence,
+    };
+  });
+}
+
 function reusablePromoReferenceV1(tcgplayerCandidate, cardmarketCandidates) {
   const previousAsset = previousAssetByIdV10.get(promoStableId(tcgplayerCandidate.product)) ?? null;
   const reference = previousAsset?.tcgplayerArtworkReference ?? null;
@@ -3215,6 +3581,19 @@ function reusablePromoReferenceV1(tcgplayerCandidate, cardmarketCandidates) {
   );
   const evidenceAgeMs = Date.parse(artworkVerificationObservedAtV10)
     - Date.parse(reference?.imageVerifiedAt ?? '');
+  const reviewedMapping = reviewedPromoArtworkMappingByReviewIdV1.get(
+    reference?.reviewedMappingId,
+  ) ?? null;
+  const reviewedEvidenceIsCurrent = reviewedMapping
+    ? reviewedMapping.printedNumber === tcgplayerCandidate.number
+      && reviewedMapping.tcgplayerProductId === tcgplayerCandidate.productId
+      && reviewedMapping.cardmarketProductId === Number(reference.cardmarketProductId)
+      && reviewedMapping.tcgplayerImageDigest === reference.tcgplayerImageDigest
+      && reviewedMapping.cardmarketImageDigest === reference.cardmarketImageDigest
+    : false;
+  const automaticConfidenceIsCurrent = reference?.reviewedMappingId == null
+    && Number(reference?.correlation) >= PROMO_CROSS_MARKET_MAPPING_POLICY_V1.minimumCorrelation
+    && Number(reference?.margin) >= PROMO_CROSS_MARKET_MAPPING_POLICY_V1.minimumMargin;
   const reusable = reference?.matchPolicy === PROMO_CROSS_MARKET_MAPPING_POLICY_V1.version
     && Number(reference.productId) === tcgplayerCandidate.productId
     && Number(reference.groupId) === TCGCSV_PROMO_GROUP_ID
@@ -3228,8 +3607,7 @@ function reusablePromoReferenceV1(tcgplayerCandidate, cardmarketCandidates) {
     && Number(reference.cardmarketExpansionId) === Number(selectedCardmarket.product.idExpansion)
     && Number(previousAsset?.cardmarketProductId) === Number(reference.cardmarketProductId)
     && Number(previousAsset?.tcgplayerProductId) === tcgplayerCandidate.productId
-    && Number(reference.correlation) >= PROMO_CROSS_MARKET_MAPPING_POLICY_V1.minimumCorrelation
-    && Number(reference.margin) >= PROMO_CROSS_MARKET_MAPPING_POLICY_V1.minimumMargin
+    && (reviewedEvidenceIsCurrent || automaticConfidenceIsCurrent)
     && /^[a-f0-9]{64}$/i.test(String(reference.cardmarketImageDigest ?? ''))
     && /^[a-f0-9]{64}$/i.test(String(reference.tcgplayerImageDigest ?? ''))
     && Number.isFinite(evidenceAgeMs)
@@ -3268,10 +3646,23 @@ function persistedPromoMatchV1(tcgplayerCandidate, reusable, deferredReason = nu
 const promoCrossMarketMatchesV1 = new Map();
 const promoCrossMarketReferenceFailuresV1 = [];
 const promoCrossMarketCompleteMatrixNumbersV1 = new Set();
+const requiredCompletePricedPromoNumbersV1 = new Set(
+  cardmarketPromoExpansionRegistryV1.requiredCompletePricedPrintedNumbers,
+);
 let persistedPromoCrossMarketReferencesV1 = 0;
 let discoveredPromoCrossMarketReferencesV1 = 0;
 let deferredPromoCrossMarketReferencesV1 = 0;
 const promoCrossMarketDiscoveryQueueV1 = [];
+
+for (const [number, tcgplayerCandidates] of tcgplayerPromoCandidatesByNumberV1) {
+  if (cardmarketPromoCandidatesByNumberV1.has(number)) continue;
+  promoCrossMarketReferenceFailuresV1.push({
+    number,
+    tcgplayerCandidateProductIds: sortedPromoCandidateIdsV1(tcgplayerCandidates),
+    cardmarketCandidateProductIds: [],
+    reason: 'The released English TCGplayer promotional candidates have no candidate in the reviewed English Cardmarket promo expansions for this exact printed number.',
+  });
+}
 
 for (const [number, cardmarketCandidates] of cardmarketPromoCandidatesByNumberV1) {
   const tcgplayerCandidates = tcgplayerPromoCandidatesByNumberV1.get(number) ?? [];
@@ -3321,7 +3712,8 @@ for (const [number, cardmarketCandidates] of cardmarketPromoCandidatesByNumberV1
     reusableByTcgplayerProduct,
     maximumCardmarketTrend,
     requiredInvariant: cardmarketPromoExpansionRegistryV1.verifiedPairInvariants
-      .some((invariant) => invariant.printedNumber === number),
+      .some((invariant) => invariant.printedNumber === number)
+      || requiredCompletePricedPromoNumbersV1.has(number),
   });
 }
 promoCrossMarketDiscoveryQueueV1.sort((left, right) =>
@@ -3396,17 +3788,45 @@ const promoCrossMarketDiscoveryResultsV1 = await mapWithConcurrencyV1(
       };
     }
 
+    const automaticMatches = choosePromoCrossMarketImageMatchesV1({
+      requestedTcgplayerCandidates: tcgplayerCandidates,
+      availableTcgplayerImages,
+      requestedCardmarketCandidates: cardmarketCandidates,
+      availableCardmarketImages,
+    });
+    const reviewedMatches = reviewedPromoCrossMarketMatchesV1(
+      number,
+      availableTcgplayerImages,
+      availableCardmarketImages,
+    );
+    const matchesByTcgplayerProduct = new Map(
+      automaticMatches.map((match) => [match.tcgplayerProductId, match]),
+    );
+    for (const reviewedMatch of reviewedMatches) {
+      const automaticMatch = matchesByTcgplayerProduct.get(
+        reviewedMatch.tcgplayerProductId,
+      );
+      if (
+        automaticMatch
+        && automaticMatch.cardmarketProductId !== reviewedMatch.cardmarketProductId
+      ) {
+        throw new Error(
+          `Reviewed promotional artwork mapping ${reviewedMatch.reviewedMappingId} conflicts with the automatic complete-matrix match.`,
+        );
+      }
+      matchesByTcgplayerProduct.set(
+        reviewedMatch.tcgplayerProductId,
+        reviewedMatch,
+      );
+    }
+
     return {
       number,
       complete: true,
       tcgplayerCandidates,
       cardmarketCandidates,
-      matches: choosePromoCrossMarketImageMatchesV1({
-        requestedTcgplayerCandidates: tcgplayerCandidates,
-        availableTcgplayerImages,
-        requestedCardmarketCandidates: cardmarketCandidates,
-        availableCardmarketImages,
-      }),
+      matches: [...matchesByTcgplayerProduct.values()]
+        .sort((left, right) => left.tcgplayerProductId - right.tcgplayerProductId),
     };
   },
 );
@@ -3458,7 +3878,14 @@ for (const result of promoCrossMarketDiscoveryResultsV1) {
           tcgplayerImageUrl: match.tcgplayerImageUrl,
           cardmarketImageDigest: match.cardmarketImageDigest,
           tcgplayerImageDigest: match.tcgplayerImageDigest,
-          evidence: 'This exact TCGplayer promotional printing and Cardmarket product are mutual unique best image matches above frozen correlation and separation thresholds after every released English TCGplayer promo and every product from each reviewed English Cardmarket promo expansion for the printed number were compared.',
+          ...(match.reviewedMappingId ? {
+            reviewedMappingId: match.reviewedMappingId,
+            reviewedMinimumCorrelation: match.reviewedMinimumCorrelation,
+            allowSharedCardmarketProduct: match.allowSharedCardmarketProduct,
+          } : {}),
+          evidence: match.reviewedMappingId
+            ? `This exact promotional artwork uses reviewed normalized-image digests after the complete same-number matrix was compared. ${match.reviewedEvidence}`
+            : 'This exact TCGplayer promotional printing and Cardmarket product are mutual unique best image matches above frozen correlation and separation thresholds after every released English TCGplayer promo and every product from each reviewed English Cardmarket promo expansion for the printed number were compared.',
         },
       });
       discoveredPromoCrossMarketReferencesV1 += 1;
@@ -3489,7 +3916,22 @@ const promoTcgplayerIdsByCardmarketProductV1 = groupBy(
   ([, match]) => String(match.cardmarketProduct.idProduct),
 );
 for (const [cardmarketProductId, mappings] of promoTcgplayerIdsByCardmarketProductV1) {
-  if (mappings.length !== 1) {
+  if (mappings.length === 1) continue;
+  const mappedTcgplayerProductIds = mappings
+    .map(([tcgplayerProductId]) => Number(tcgplayerProductId))
+    .sort((left, right) => left - right);
+  const reviewedSharedTcgplayerProductIds = cardmarketPromoExpansionRegistryV1
+    .reviewedArtworkMappings
+    .filter((mapping) => (
+      mapping.cardmarketProductId === Number(cardmarketProductId)
+      && mapping.allowSharedCardmarketProduct
+    ))
+    .map((mapping) => mapping.tcgplayerProductId)
+    .sort((left, right) => left - right);
+  if (!samePromoCandidateIdsV1(
+    mappedTcgplayerProductIds,
+    reviewedSharedTcgplayerProductIds,
+  )) {
     throw new Error(`Cardmarket promotional product ${cardmarketProductId} mapped to multiple TCGplayer printings.`);
   }
 }
@@ -3503,6 +3945,36 @@ for (const invariant of cardmarketPromoExpansionRegistryV1.verifiedPairInvariant
     && Number(match?.cardmarketProduct.idProduct) !== invariant.cardmarketProductId
   ) {
     throw new Error(`Complete promotional image verification did not reproduce invariant ${invariant.tcgplayerProductId}/${invariant.cardmarketProductId}.`);
+  }
+}
+for (const number of requiredCompletePricedPromoNumbersV1) {
+  const tcgplayerCandidates = tcgplayerPromoCandidatesByNumberV1.get(number) ?? [];
+  const cardmarketCandidates = cardmarketPromoCandidatesByNumberV1.get(number) ?? [];
+  const matches = tcgplayerCandidates.map(
+    (candidate) => promoCrossMarketMatchesV1.get(candidate.productId) ?? null,
+  );
+  const mappedCardmarketProductIds = matches
+    .map((match) => Number(match?.cardmarketProduct.idProduct))
+    .filter((productId) => Number.isInteger(productId));
+  const completeCoverage = tcgplayerCandidates.length > 0
+    && cardmarketCandidates.length > 0
+    && matches.every(Boolean)
+    && mappedCardmarketProductIds.every(
+      (productId) => cardmarketCandidates.some(
+        (candidate) => candidate.productId === productId,
+      ),
+    );
+  if (!completeCoverage) {
+    throw new Error(
+      `Required promotional number ${number} did not retain a complete exact-art mapping across both providers.`,
+    );
+  }
+  if (mappedCardmarketProductIds.some(
+    (productId) => cardmarketPricesByProduct.get(productId)?.trend == null,
+  )) {
+    throw new Error(
+      `Required promotional number ${number} has an exact Cardmarket product without a current trend price.`,
+    );
   }
 }
 
@@ -3653,7 +4125,12 @@ const staticSealedProductReleaseState = (product) => {
   }
   const category = SEALED_CATEGORIES.get(product.categoryName);
   if (category?.productType === 'Promo product') return 'unmanaged';
-  const setCode = sealedSetCode(product, category, officialDeckSetCodesByTitle);
+  const setCode = sealedSetCode(
+    product,
+    category,
+    officialDeckSetCodesByTitle,
+    releasedSealedSetCodeByExpansionIdV1,
+  );
   const codeReleaseState = officialSetCodeReleaseState(
     setCode,
     releasedOfficialCardSetCodes,
@@ -3904,7 +4381,12 @@ const sealedAssets = releasedSealedSourceProducts
       kind: 'sealed',
       name: product.name,
       set: product.categoryName.replace(/^One Piece\s+/, ''),
-      setCode: sealedSetCode(product, category, officialDeckSetCodesByTitle),
+      setCode: sealedSetCode(
+        product,
+        category,
+        officialDeckSetCodesByTitle,
+        releasedSealedSetCodeByExpansionIdV1,
+      ),
       rarity: 'Sealed',
       variant: regionOverride?.variant ?? `${language} release`,
       productType: category.productType,
@@ -4686,6 +5168,10 @@ async function ingestSnapshotToSupabase(snapshot, officialCatalog, { required = 
               verification_product_image_url: asset.cardmarketArtworkReference.productImageUrl,
               verification_source_image_digest: asset.cardmarketArtworkReference.sourceImageDigest,
               verification_product_image_digest: asset.cardmarketArtworkReference.productImageDigest,
+              verification_reviewed_mapping_id:
+                asset.cardmarketArtworkReference.reviewedMappingId,
+              verification_reviewed_minimum_correlation:
+                asset.cardmarketArtworkReference.reviewedMinimumCorrelation,
               verification_evidence: asset.cardmarketArtworkReference.evidence,
             } : {}),
             ...(providerSlug === 'tcgplayer' && asset.tcgplayerArtworkReference ? {
@@ -4701,6 +5187,10 @@ async function ingestSnapshotToSupabase(snapshot, officialCatalog, { required = 
               verification_tcgplayer_image_url: asset.tcgplayerArtworkReference.tcgplayerImageUrl,
               verification_cardmarket_image_digest: asset.tcgplayerArtworkReference.cardmarketImageDigest,
               verification_tcgplayer_image_digest: asset.tcgplayerArtworkReference.tcgplayerImageDigest,
+              verification_reviewed_mapping_id:
+                asset.tcgplayerArtworkReference.reviewedMappingId,
+              verification_reviewed_minimum_correlation:
+                asset.tcgplayerArtworkReference.reviewedMinimumCorrelation,
               verification_evidence: asset.tcgplayerArtworkReference.evidence,
             } : {}),
           },
@@ -4895,9 +5385,12 @@ async function ingestSnapshotToSupabase(snapshot, officialCatalog, { required = 
 const output = {
   generatedAt,
   provenance: {
-    matchingPolicy: 'OPTCG remains printing truth for Bandai-confirmed released sets, starter decks, and DON!! cards; recognizable future OP/EB/PRB/ST records are excluded until their official English release. Numbered TCGCSV/TCGplayer products are printing truth for promotional cards and join to OPTCG by printed card number only for rules metadata. Conservative standard cross-market joins remain preserved. Other exact Cardmarket-mapped set printings receive a TCGplayer identity only when the Cardmarket image uniquely matches one product image after every non-presale TCGCSV product for the exact released English group and printed number is compared above frozen correlation and separation thresholds. Cardmarket-only exact coverage maps booster or starter-deck artwork when identity is uniquely proven by catalog metadata, or when the exact sourced artwork independently matches one Cardmarket product image above frozen correlation and separation thresholds. Released English promotional mappings require mutual unique-best image matches across the complete same-number TCGplayer pool and every product from each reviewed Cardmarket promo expansion. One provider product cannot represent visually distinct source images. Product names, order, IDs, and prices never infer V.1/V.2. Image-verified exact products populate the selected art quote, collection acquisition value, growth, and eligible comparisons. Promo identity, artwork, and USD price stay bound to the same TCGplayer productId. Source-backed Japanese/French products keep those languages, English-market products remain English, and German is never invented.',
+    matchingPolicy: 'OPTCG remains printing truth for Bandai-confirmed released sets, starter decks, and DON!! cards; recognizable future OP/EB/PRB/ST records are excluded until their official English release. Numbered TCGCSV/TCGplayer products are printing truth for promotional cards and join to OPTCG by printed card number only for rules metadata. Conservative standard cross-market joins remain preserved. Other exact Cardmarket-mapped set printings receive a TCGplayer identity only when the Cardmarket image uniquely matches one product image after every non-presale TCGCSV product for the exact released English group and printed number is compared above frozen correlation and separation thresholds. Cardmarket-only exact coverage maps booster or starter-deck artwork when identity is uniquely proven by catalog metadata, when the sourced artwork independently clears the complete-candidate thresholds, or through an exact reviewed normalized-image digest when visually similar arts reduce the generic margin. Released English promotional mappings require mutual unique-best image matches across the complete same-number matrix, except exact reviewed normalized-image digests may preserve a mapping when provider scans differ or Cardmarket consolidates visually identical TCGplayer releases. A Cardmarket product can serve multiple TCGplayer records only through that explicit same-art review. Product names, order, IDs, and prices never infer V.1/V.2. Image-verified exact products populate the selected art quote, collection acquisition value, growth, and eligible comparisons. Promo identity, artwork, and USD price stay bound to the same TCGplayer productId. Source-backed Japanese/French products keep those languages, English-market products remain English, and German is never invented.',
     englishExpansionIds,
     englishStarterExpansionIds,
+    releasedSealedSetCodeByExpansionId: Object.fromEntries(
+      releasedSealedSetCodeByExpansionIdV1,
+    ),
     englishExpansionEvidence: tcgcsvMarketSources.map((source) => ({
       tcgcsvAbbreviation: source.abbreviation,
       officialBandaiCode: source.release.officialCode,
@@ -4956,8 +5449,12 @@ const output = {
         reviewedExpansionIds: cardmarketPromoExpansionRegistryV1.expansions.map(
           (entry) => entry.idExpansion,
         ),
+        requiredCompletePricedPrintedNumbers:
+          cardmarketPromoExpansionRegistryV1.requiredCompletePricedPrintedNumbers,
+        reviewedDigestMappings:
+          cardmarketPromoExpansionRegistryV1.reviewedArtworkMappings.length,
         discoveryBudgetSeconds: PROMO_CROSS_MARKET_DISCOVERY_BUDGET_MS_V1 / 1_000,
-        persistencePolicy: 'Complete bidirectional evidence is reused only while both provider candidate-ID sets remain unchanged. Refreshes are staggered; a transient timeout may defer prior evidence for at most 21 days and never aborts publication by itself.',
+        persistencePolicy: 'Complete-matrix evidence is reused only while both provider candidate-ID sets remain unchanged. Reviewed exceptions additionally require the same registry ID and normalized provider-image digests. Refreshes are staggered; a transient timeout may defer prior evidence for at most 21 days, except a required priced printed number still blocks publication if complete mapped coverage is absent.',
         mappedReferences: promoCrossMarketMatchesV1.size,
         persistedReferences: persistedPromoCrossMarketReferencesV1,
         discoveredReferences: discoveredPromoCrossMarketReferencesV1,
@@ -5025,6 +5522,7 @@ const output = {
         unresolvedSamples: artworkReferenceFailuresV10.slice(0, 50),
         rejectedProductConflicts: artworkReferenceConflictsV10.length,
         rejectedProductConflictSamples: artworkReferenceConflictsV10.slice(0, 25),
+        reviewedDigestMappings: REVIEWED_CARDMARKET_ARTWORK_MAPPINGS_V10.size,
       },
       continuityPolicy: 'A previously exact card asset must retain the same Cardmarket product ID. Changes or removals fail the sync unless one stable asset has an exact old/new-ID approval with a reason and unexpired review window.',
       approvedMappingChanges: approvedCardmarketMappingChanges,
@@ -5148,12 +5646,21 @@ const output = {
       currency: 'EUR',
       expansionEvidencePolicy: 'Exact Cardmarket lot suffix for OP/EB releases; exact packaging-free English booster plus booster-box title for PRB releases. Multiple expansion IDs fail the sync.',
       starterExpansionEvidencePolicy: 'A released ST code must resolve to one Cardmarket expansion through a standalone English Starter Deck row matched by explicit code, exact official Bandai title, or the audited ST20 product-ID override. Demo decks and combined Deck Set products are excluded.',
+      requiredCompleteLatestStarterArtworkSetCode:
+        requiredCompleteLatestStarterArtworkSetCodeV10,
+      reviewedExactArtworkMappingIds: [...REVIEWED_CARDMARKET_ARTWORK_MAPPINGS_V10.values()]
+        .map((mapping) => mapping.reviewId),
+      sealedSetClassificationPolicy: 'Every sealed product in a uniquely proven released English Cardmarket booster or starter-deck expansion inherits that exact catalog set code. Explicit title, exact product override, official-title, and expansion evidence must agree or the sync fails.',
       exactStarterDeckSetCodeOverrides: Object.fromEntries(EXACT_CARDMARKET_DECK_SET_CODE_OVERRIDES),
       exactMappingContinuityApprovals: Object.fromEntries(APPROVED_CARDMARKET_MAPPING_CHANGES),
       promoExpansionRegistry: {
         schemaVersion: cardmarketPromoExpansionRegistryV1.schemaVersion,
         reviewedAt: cardmarketPromoExpansionRegistryV1.reviewedAt,
         expansions: cardmarketPromoExpansionRegistryV1.expansions,
+        requiredCompletePricedPrintedNumbers:
+          cardmarketPromoExpansionRegistryV1.requiredCompletePricedPrintedNumbers,
+        reviewedArtworkMappings:
+          cardmarketPromoExpansionRegistryV1.reviewedArtworkMappings,
         verifiedPairInvariants: cardmarketPromoExpansionRegistryV1.verifiedPairInvariants,
       },
       sealedCategories: [...SEALED_CATEGORIES.keys()],
@@ -5167,12 +5674,22 @@ const output = {
       futureSealedProductsExcluded: futureSealedProductsExcluded.map((product) => ({
         cardmarketProductId: product.idProduct,
         name: product.name,
-        setCode: sealedSetCode(product, SEALED_CATEGORIES.get(product.categoryName), officialDeckSetCodesByTitle),
+        setCode: sealedSetCode(
+          product,
+          SEALED_CATEGORIES.get(product.categoryName),
+          officialDeckSetCodesByTitle,
+          releasedSealedSetCodeByExpansionIdV1,
+        ),
       })),
       unknownManifestSealedProductsExcluded: unknownManifestSealedProductsExcluded.map((product) => ({
         cardmarketProductId: product.idProduct,
         name: product.name,
-        setCode: sealedSetCode(product, SEALED_CATEGORIES.get(product.categoryName), officialDeckSetCodesByTitle),
+        setCode: sealedSetCode(
+          product,
+          SEALED_CATEGORIES.get(product.categoryName),
+          officialDeckSetCodesByTitle,
+          releasedSealedSetCodeByExpansionIdV1,
+        ),
       })),
       approvedCatalogRemovalReviews: Object.fromEntries(reviewedBaselineCatalogRemovals.map((asset) => [
         asset.id,

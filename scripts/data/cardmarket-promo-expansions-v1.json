@@ -1,7 +1,54 @@
 {
   "schemaVersion": 1,
-  "reviewedAt": "2026-07-22",
+  "reviewedAt": "2026-07-23",
   "expansions": [
+    {
+      "idExpansion": 5230,
+      "name": "Promos",
+      "imageFolder": "P",
+      "language": "English",
+      "releasedOn": "2022-01-04",
+      "evidenceUrl": "https://www.cardmarket.com/en/OnePiece/Expansions/Promos",
+      "evidence": "Cardmarket identifies this as the English P expansion and its official image CDN serves product 750655 from the P folder. The exact allowlist records the five unnumbered products that cannot enter a printed-number artwork matrix.",
+      "excludedUnnumberedProductIds": [
+        746238,
+        746239,
+        780210,
+        857368,
+        867223
+      ]
+    },
+    {
+      "idExpansion": 5262,
+      "name": "Special Tournament Promos",
+      "imageFolder": "STP",
+      "language": "English",
+      "releasedOn": "2022-12-02",
+      "evidenceUrl": "https://www.cardmarket.com/en/OnePiece/Products/Singles/Special-Tournaments-Promos/MonkeyDLuffy-P-041",
+      "evidence": "Cardmarket identifies this as the English STP expansion and its official image CDN serves product 787461 from the STP folder. The exact allowlist records the twenty unnumbered DON!! products that cannot enter a printed-number artwork matrix.",
+      "excludedUnnumberedProductIds": [
+        696662,
+        696663,
+        696664,
+        696665,
+        696666,
+        696667,
+        696668,
+        696669,
+        696670,
+        696671,
+        696672,
+        748118,
+        748119,
+        752070,
+        762652,
+        773382,
+        773429,
+        821345,
+        826292,
+        826293
+      ]
+    },
     {
       "idExpansion": 5267,
       "name": "Unnumbered Promos",
@@ -9,7 +56,123 @@
       "language": "English",
       "releasedOn": "2023-02-22",
       "evidenceUrl": "https://www.cardmarket.com/en/OnePiece/Products/Singles/Unnumbered-Promos/Nami-OP01-016-V1",
-      "evidence": "Cardmarket's English product page identifies the release and its official image CDN serves expansion 5267 products from the PB-XX folder."
+      "evidence": "Cardmarket's English product page identifies the release and its official image CDN serves expansion 5267 products from the PB-XX folder.",
+      "excludedUnnumberedProductIds": []
+    }
+  ],
+  "requiredCompletePricedPrintedNumbers": [
+    "P-041"
+  ],
+  "reviewedArtworkMappings": [
+    {
+      "reviewId": "P-041:520773:748120",
+      "printedNumber": "P-041",
+      "tcgplayerProductId": 520773,
+      "cardmarketProductId": 748120,
+      "tcgplayerImageDigest": "77edc3d191299bd11db223dc60726f38c269a3103de79b9d66855c1d35689d70",
+      "cardmarketImageDigest": "12472c2e3e6d9de4f8ecd46d66e4dbec4dcc9f3965617388601aba4d23957d95",
+      "minimumCorrelation": 0.98,
+      "allowSharedCardmarketProduct": false,
+      "evidence": "The complete 10-by-10 P-041 image matrix uniquely identifies the 1st Anniversary Tournament artwork; its 0.990252 correlation and 0.609500 reverse margin were reviewed on 2026-07-23."
+    },
+    {
+      "reviewId": "P-041:531486:871470",
+      "printedNumber": "P-041",
+      "tcgplayerProductId": 531486,
+      "cardmarketProductId": 871470,
+      "tcgplayerImageDigest": "dcdc5118ca3b9d99c2f55af27183e80bf5664e974904ad3268f013f4afd1a26a",
+      "cardmarketImageDigest": "7495e01b62b5ff3f3bae87b555262bb06406b62629d4b72addc34540bc9a2832",
+      "minimumCorrelation": 0.93,
+      "allowSharedCardmarketProduct": false,
+      "evidence": "The complete 10-by-10 P-041 image matrix uniquely identifies this artwork despite different provider scans; its 0.936698 correlation and 0.640941 reverse margin were reviewed on 2026-07-23."
+    },
+    {
+      "reviewId": "P-041:532752:753910",
+      "printedNumber": "P-041",
+      "tcgplayerProductId": 532752,
+      "cardmarketProductId": 753910,
+      "tcgplayerImageDigest": "9c0c59d2105c8c38210e29dbf8e42aab485bca25a5a96da972fd8d5f40de5063",
+      "cardmarketImageDigest": "985c3cbcb050feca68f9139738ea8bd1d08ccc870c1e6b34045e494d89746fff",
+      "minimumCorrelation": 0.98,
+      "allowSharedCardmarketProduct": false,
+      "evidence": "The complete 10-by-10 P-041 image matrix uniquely identifies the Bandai Card Games Fest artwork; its 0.983706 correlation and 0.608693 reverse margin were reviewed on 2026-07-23."
+    },
+    {
+      "reviewId": "P-041:544782:766646",
+      "printedNumber": "P-041",
+      "tcgplayerProductId": 544782,
+      "cardmarketProductId": 766646,
+      "tcgplayerImageDigest": "e43592601d0c5e1d8bb360335d5a8d0746d926d868bea33911ba840c40ff9b32",
+      "cardmarketImageDigest": "901508ce2d4445b58778a5724562075ad972e58506c687c4e2c68ed9b0238bfe",
+      "minimumCorrelation": 0.99,
+      "allowSharedCardmarketProduct": true,
+      "evidence": "Cardmarket consolidates the visually identical offline and online Regional participant releases; this exact offline scan has 0.999382 correlation in the complete P-041 matrix."
+    },
+    {
+      "reviewId": "P-041:544783:766646",
+      "printedNumber": "P-041",
+      "tcgplayerProductId": 544783,
+      "cardmarketProductId": 766646,
+      "tcgplayerImageDigest": "4b0fee200e99e786230659c23df22015700da9425f6181d22c58e96cc09b1505",
+      "cardmarketImageDigest": "901508ce2d4445b58778a5724562075ad972e58506c687c4e2c68ed9b0238bfe",
+      "minimumCorrelation": 0.99,
+      "allowSharedCardmarketProduct": true,
+      "evidence": "Cardmarket consolidates the visually identical offline and online Regional participant releases; this exact online scan has 0.999465 correlation in the complete P-041 matrix."
+    },
+    {
+      "reviewId": "P-041:544784:766647",
+      "printedNumber": "P-041",
+      "tcgplayerProductId": 544784,
+      "cardmarketProductId": 766647,
+      "tcgplayerImageDigest": "9c98fe9b5766e1adacbdd0b87e13c16419eea466c0bc92954b56fe60240acf79",
+      "cardmarketImageDigest": "d06fe19fdf5de80fa1697901c26d9f902e912db45a576ab5b225c335aff52afe",
+      "minimumCorrelation": 0.99,
+      "allowSharedCardmarketProduct": true,
+      "evidence": "Cardmarket consolidates the visually identical offline and online Regional finalist releases; the shared source scan has 0.999458 correlation in the complete P-041 matrix."
+    },
+    {
+      "reviewId": "P-041:544785:766647",
+      "printedNumber": "P-041",
+      "tcgplayerProductId": 544785,
+      "cardmarketProductId": 766647,
+      "tcgplayerImageDigest": "9c98fe9b5766e1adacbdd0b87e13c16419eea466c0bc92954b56fe60240acf79",
+      "cardmarketImageDigest": "d06fe19fdf5de80fa1697901c26d9f902e912db45a576ab5b225c335aff52afe",
+      "minimumCorrelation": 0.99,
+      "allowSharedCardmarketProduct": true,
+      "evidence": "Cardmarket consolidates the visually identical offline and online Regional finalist releases; the shared source scan has 0.999458 correlation in the complete P-041 matrix."
+    },
+    {
+      "reviewId": "P-041:544786:766648",
+      "printedNumber": "P-041",
+      "tcgplayerProductId": 544786,
+      "cardmarketProductId": 766648,
+      "tcgplayerImageDigest": "2aa3013b8608f4aee6b29dc6ec3aaa364d915270f5fb8b6aeff5996d1c27de22",
+      "cardmarketImageDigest": "116cc37a028e2ae328b32359988f9e876490b31dfafd28bbdc9c74b6915b4f66",
+      "minimumCorrelation": 0.99,
+      "allowSharedCardmarketProduct": true,
+      "evidence": "Cardmarket consolidates the visually identical offline and online Regional winner releases; this exact offline scan has 0.999344 correlation in the complete P-041 matrix."
+    },
+    {
+      "reviewId": "P-041:544787:766648",
+      "printedNumber": "P-041",
+      "tcgplayerProductId": 544787,
+      "cardmarketProductId": 766648,
+      "tcgplayerImageDigest": "dd36f020e9dbca91f300e15d5e53ee46fedb1822e3503c16a7c3f15f22f5e545",
+      "cardmarketImageDigest": "116cc37a028e2ae328b32359988f9e876490b31dfafd28bbdc9c74b6915b4f66",
+      "minimumCorrelation": 0.99,
+      "allowSharedCardmarketProduct": true,
+      "evidence": "Cardmarket consolidates the visually identical offline and online Regional winner releases; this exact online scan has 0.999449 correlation in the complete P-041 matrix."
+    },
+    {
+      "reviewId": "P-041:580055:787461",
+      "printedNumber": "P-041",
+      "tcgplayerProductId": 580055,
+      "cardmarketProductId": 787461,
+      "tcgplayerImageDigest": "f8b6756df4458cde097d7b01a15572627230586d6961e829205810622a894476",
+      "cardmarketImageDigest": "876d0835203eef617f79acfadcc79f330948c82a0b80aa0a4d59bd8381c71262",
+      "minimumCorrelation": 0.99,
+      "allowSharedCardmarketProduct": false,
+      "evidence": "The complete 10-by-10 P-041 image matrix uniquely identifies the Championship 2024 participation artwork; its 0.999408 correlation and 0.715739 reverse margin were reviewed on 2026-07-23."
     }
   ],
   "verifiedPairInvariants": [

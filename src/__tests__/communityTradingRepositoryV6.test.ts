@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { DemoAsset } from '../data/demo';
-import { SupabaseCommunityTradingRepositoryV6 } from '../services/supabase/communityTradingRepositoryV6';
+import {
+  communityTradeRealtimeFilterV7,
+  SupabaseCommunityTradingRepositoryV6,
+} from '../services/supabase/communityTradingRepositoryV6';
 
 function ownedCard(overrides: Partial<DemoAsset> = {}): DemoAsset {
   return {
@@ -30,6 +33,18 @@ function ownedCard(overrides: Partial<DemoAsset> = {}): DemoAsset {
 }
 
 describe('Supabase community trading repository v6', () => {
+  it('builds a bounded, de-duplicated Realtime membership filter', () => {
+    expect(communityTradeRealtimeFilterV7([
+      '5b46755e-4d45-4f8e-a5aa-d9b2ec8cd602',
+      '5b46755e-4d45-4f8e-a5aa-d9b2ec8cd602',
+      '8c69fb38-20d5-4e4d-ac66-79aa873dd6d1',
+    ])).toBe(
+      'community_id=in.(5b46755e-4d45-4f8e-a5aa-d9b2ec8cd602,8c69fb38-20d5-4e4d-ac66-79aa873dd6d1)',
+    );
+    expect(() => communityTradeRealtimeFilterV7([])).toThrow(/at least one/i);
+    expect(() => communityTradeRealtimeFilterV7(['not-a-community'])).toThrow(/invalid identifier/i);
+  });
+
   it('creates a zero-euro giveaway through the atomic RPC using the owned collection row', async () => {
     const rpc = vi.fn().mockResolvedValue({ data: 'trade-post-1', error: null });
     const client = {
@@ -102,5 +117,57 @@ describe('Supabase community trading repository v6', () => {
     }, [ownedCard({ id: 'card-op01-001-base-de', language: 'German' })], [], 'owner-1'))
       .rejects.toThrow(/German/i);
     expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('subscribes to every joined community and removes the channel on cleanup', async () => {
+    const filters: unknown[] = [];
+    let changeListener: (() => void) | undefined;
+    let statusListener: ((status: string, reason?: Error) => void) | undefined;
+    const channel = {
+      on(_event: string, filter: unknown, listener: () => void) {
+        filters.push(filter);
+        changeListener = listener;
+        return this;
+      },
+      subscribe(listener?: (status: string, reason?: Error) => void) {
+        statusListener = listener;
+        listener?.('SUBSCRIBED');
+        return this;
+      },
+    };
+    const removeChannel = vi.fn().mockResolvedValue('ok');
+    const client = {
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'owner-1' } }, error: null }) },
+      channel: vi.fn().mockReturnValue(channel),
+      removeChannel,
+    } as unknown as SupabaseClient;
+    const repository = new SupabaseCommunityTradingRepositoryV6(client);
+    const onChange = vi.fn();
+    const onFailure = vi.fn();
+
+    const unsubscribe = await repository.subscribe(
+      ['5b46755e-4d45-4f8e-a5aa-d9b2ec8cd602'],
+      'owner-1',
+      onChange,
+      onFailure,
+    );
+    expect(filters).toEqual([expect.objectContaining({
+      event: '*',
+      schema: 'public',
+      table: 'trade_posts',
+      filter: 'community_id=in.(5b46755e-4d45-4f8e-a5aa-d9b2ec8cd602)',
+    })]);
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    changeListener?.();
+    expect(onChange).toHaveBeenCalledTimes(2);
+    statusListener?.('CHANNEL_ERROR', new Error('socket lost'));
+    expect(onFailure).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'Live community trades disconnected: socket lost',
+    }));
+
+    unsubscribe();
+    await Promise.resolve();
+    expect(removeChannel).toHaveBeenCalledWith(channel);
   });
 });

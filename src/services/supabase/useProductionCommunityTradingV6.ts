@@ -49,7 +49,7 @@ export function useProductionCommunityTradingV6(
   const mutationInFlightRef = useRef(false);
   activeOwnerRef.current = enabled ? ownerId ?? null : null;
 
-  const load = useCallback(async (throwOnError: boolean) => {
+  const load = useCallback(async (throwOnError: boolean, quiet = false) => {
     const expectedOwnerId = enabled ? ownerId ?? null : null;
     const version = ++requestVersionRef.current;
     const current = () => (
@@ -77,7 +77,7 @@ export function useProductionCommunityTradingV6(
       if (throwOnError) throw new Error(message);
       return;
     }
-    if (current()) {
+    if (current() && !quiet) {
       setLoading(true);
       setError(null);
     }
@@ -94,10 +94,12 @@ export function useProductionCommunityTradingV6(
     } catch (reason) {
       const message = reason instanceof Error ? reason.message : 'Communities could not be loaded.';
       if (current()) {
-        setMemberships([]);
-        setPosts([]);
-        setLoadedOwnerId(null);
-        setError(message);
+        if (!quiet) {
+          setMemberships([]);
+          setPosts([]);
+          setLoadedOwnerId(null);
+          setError(message);
+        }
       }
       if (throwOnError) throw new Error(message);
     } finally {
@@ -175,6 +177,50 @@ export function useProductionCommunityTradingV6(
   const ownerReady = Boolean(enabled && ownerId && loadedOwnerId === ownerId);
   const visibleMemberships = ownerReady ? memberships : [];
   const membershipIds = new Set(visibleMemberships.map((membership) => membership.communityId));
+  const communitySubscriptionKey = [...membershipIds].sort().join(',');
+
+  useEffect(() => {
+    if (!repository || !ownerReady || !ownerId || !communitySubscriptionKey) return undefined;
+    const communityIds = communitySubscriptionKey.split(',');
+    let disposed = false;
+    let unsubscribe: (() => void) | undefined;
+    let refreshTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
+
+    const refreshSharedFeed = () => {
+      if (disposed) return;
+      if (refreshTimer !== undefined) globalThis.clearTimeout(refreshTimer);
+      refreshTimer = globalThis.setTimeout(() => {
+        if (!disposed) void load(false, true);
+      }, 120);
+    };
+    const refreshWhenVisible = () => {
+      if (typeof document === 'undefined' || document.visibilityState === 'visible') {
+        refreshSharedFeed();
+      }
+    };
+    const pollTimer = globalThis.setInterval(refreshWhenVisible, 15_000);
+    if (typeof window !== 'undefined') window.addEventListener('focus', refreshSharedFeed);
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', refreshWhenVisible);
+
+    void repository.subscribe(
+      communityIds,
+      ownerId,
+      refreshSharedFeed,
+      refreshSharedFeed,
+    ).then((cleanup) => {
+      if (disposed) cleanup();
+      else unsubscribe = cleanup;
+    }).catch(refreshSharedFeed);
+
+    return () => {
+      disposed = true;
+      if (refreshTimer !== undefined) globalThis.clearTimeout(refreshTimer);
+      globalThis.clearInterval(pollTimer);
+      if (typeof window !== 'undefined') window.removeEventListener('focus', refreshSharedFeed);
+      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', refreshWhenVisible);
+      unsubscribe?.();
+    };
+  }, [communitySubscriptionKey, load, ownerId, ownerReady, repository]);
 
   return {
     memberships: visibleMemberships,

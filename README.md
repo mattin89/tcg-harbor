@@ -178,6 +178,7 @@ The target database is defined by:
 - [`supabase/migrations/20260721124718_bind_collection_add_to_expected_owner.sql`](supabase/migrations/20260721124718_bind_collection_add_to_expected_owner.sql)
 - [`supabase/migrations/20260721131143_collection_owner_archived_catalog_read_v2.sql`](supabase/migrations/20260721131143_collection_owner_archived_catalog_read_v2.sql)
 - [`supabase/migrations/20260721153100_clear_collection_lot_purchase_context_v2.sql`](supabase/migrations/20260721153100_clear_collection_lot_purchase_context_v2.sql)
+- [`supabase/migrations/20260724110922_open_dresden_community_trading_v6.sql`](supabase/migrations/20260724110922_open_dresden_community_trading_v6.sql)
 - [`supabase/config.toml`](supabase/config.toml)
 - [`supabase/seed.sql`](supabase/seed.sql)
 - [`supabase/SECURITY.md`](supabase/SECURITY.md)
@@ -185,7 +186,7 @@ The target database is defined by:
 - [`docs/PRODUCTION_ACCOUNTS_v2.md`](docs/PRODUCTION_ACCOUNTS_v2.md)
 - [`docs/PRODUCTION_OPERATIONS_v3.md`](docs/PRODUCTION_OPERATIONS_v3.md)
 
-The migrations model users and profiles, extensible games/catalogs, collections and quantity history, provider mappings/raw responses/quotes/snapshots, reviewed store applications, approved stores, store-owned chat channels, revocable join codes, communities, trades, direct messages, notifications, blocks, reports, moderation evidence, and activity logs. RLS and guarded RPCs make approval and store/community capabilities server-enforced.
+The migrations model users and profiles, extensible games/catalogs, collections and quantity history, provider mappings/raw responses/quotes/snapshots, reviewed store applications, approved stores, store-owned chat channels, revocable join codes, open test communities, account-owned card offers and wanted-card posts, direct messages, notifications, blocks, reports, moderation evidence, and activity logs. RLS and guarded RPCs make approval and store/community capabilities server-enforced. The Dresden test community is seeded at Frauenkirche and can be joined by any signed-in active account without a QR; suspended memberships are never restored through that open path.
 
 The frontend installs `@supabase/supabase-js`, reads only the browser-safe project URL/publishable key, and connects Auth plus account/store-administration workflows. Signed-in player collections use owner-scoped Supabase RPCs and RLS instead of shared browser storage. Each addition creates a timestamped acquisition lot and captures the then-current provider reference; the daily catalog workflow appends current price snapshots and refreshes per-account valuation/growth history. Participant-only direct conversations, messages, sends, and read state now use Supabase with explicit authenticated-owner checks in addition to RLS. Legacy fixture adapters remain isolated development utilities and are not an authentication fallback. Durable player community-chat repositories and message Realtime subscriptions remain a subsequent integration phase.
 

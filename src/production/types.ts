@@ -127,6 +127,9 @@ export interface RegisteredStore {
   phone: string | null;
   websiteUrl: string | null;
   imageUrl: string | null;
+  communityId: string | null;
+  communityName: string | null;
+  communityJoinMode: "qr" | "open";
 }
 
 export interface CommunityChannel {

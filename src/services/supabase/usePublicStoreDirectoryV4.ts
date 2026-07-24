@@ -21,12 +21,14 @@ type PublicStoreRowV4 = {
   is_verified: boolean;
   is_active: boolean;
   deleted_at: string | null;
+  communities?: unknown;
 };
 
 const PUBLIC_STORE_COLUMNS_V4 = `
   id, slug, name, address_line_1, address_line_2, city, region, postcode,
   country_code, latitude, longitude, opening_hours, website_url, image_url,
-  is_verified, is_active, deleted_at
+  is_verified, is_active, deleted_at,
+  communities!communities_store_id_fkey(id, name, join_mode, is_active, deleted_at)
 `;
 
 export const PUBLIC_STORE_PAGE_SIZE_V4 = 1_000;
@@ -67,6 +69,15 @@ export function mapPublicStoreRowV4(row: PublicStoreRowV4): RegisteredStore {
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
     throw new Error('Public store directory returned invalid map coordinates.');
   }
+  const communities = Array.isArray(row.communities)
+    ? row.communities.map(publicRecordV4)
+    : [publicRecordV4(row.communities)];
+  const community = communities.find((candidate) => (
+    typeof candidate.id === 'string'
+    && candidate.id.length > 0
+    && candidate.is_active === true
+    && candidate.deleted_at === null
+  ));
 
   return {
     id: requiredTextV4(row, 'id'),
@@ -85,6 +96,9 @@ export function mapPublicStoreRowV4(row: PublicStoreRowV4): RegisteredStore {
     phone: null,
     websiteUrl: optionalTextV4(row.website_url),
     imageUrl: optionalTextV4(row.image_url),
+    communityId: optionalTextV4(community?.id),
+    communityName: optionalTextV4(community?.name),
+    communityJoinMode: community?.join_mode === 'open' ? 'open' : 'qr',
   };
 }
 

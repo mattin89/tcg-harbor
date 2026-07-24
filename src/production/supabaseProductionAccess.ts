@@ -123,7 +123,15 @@ function mapManagedStores(value: unknown): ManagedStore[] {
 }
 
 function mapRegisteredStores(value: unknown): RegisteredStore[] {
-  return asRows(value).flatMap((store) => text(store, "id") ? [{
+  return asRows(value).flatMap((store) => {
+    const rawCommunity = store.communities;
+    const communities = Array.isArray(rawCommunity) ? rawCommunity.map(asRow) : [asRow(rawCommunity)];
+    const community = communities.find((candidate) => (
+      text(candidate, "id")
+      && Boolean(candidate.is_active)
+      && candidate.deleted_at === null
+    ));
+    return text(store, "id") ? [{
     id: text(store, "id"),
     slug: text(store, "slug"),
     name: text(store, "name"),
@@ -140,7 +148,11 @@ function mapRegisteredStores(value: unknown): RegisteredStore[] {
     phone: optionalText(store, "phone"),
     websiteUrl: optionalText(store, "website_url"),
     imageUrl: optionalText(store, "image_url"),
-  }] : []);
+    communityId: community ? text(community, "id") : null,
+    communityName: community ? text(community, "name") : null,
+    communityJoinMode: community && text(community, "join_mode") === "open" ? "open" : "qr",
+  }] : [];
+  });
 }
 
 function mapChannel(value: unknown): CommunityChannel {
@@ -383,7 +395,7 @@ export class SupabaseProductionAccess {
         .is("revoked_at", null),
       this.client
         .from("stores")
-        .select("id,slug,name,address_line_1,address_line_2,city,region,postcode,country_code,latitude,longitude,opening_hours,contact_email,phone,website_url,image_url")
+        .select("id,slug,name,address_line_1,address_line_2,city,region,postcode,country_code,latitude,longitude,opening_hours,contact_email,phone,website_url,image_url,communities!communities_store_id_fkey(id,name,join_mode,is_active,deleted_at)")
         .eq("is_verified", true)
         .eq("is_active", true)
         .is("deleted_at", null)

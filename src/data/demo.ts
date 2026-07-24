@@ -390,6 +390,9 @@ export interface Store {
   email: string;
   accent: string;
   source?: 'demo' | 'registered';
+  communityId?: string | null;
+  communityName?: string | null;
+  communityJoinMode?: 'qr' | 'open';
 }
 
 export interface CommunityMessage {

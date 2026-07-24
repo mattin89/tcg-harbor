@@ -162,6 +162,42 @@
   margin: 0;
 }
 
+.community-trade-history-v8 {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
+  margin: 10px 0 0;
+  padding: 11px 14px;
+  color: var(--text-muted);
+  text-align: left;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.community-trade-history-v8:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+  background: var(--surface);
+}
+
+.community-trade-history-v8 > span {
+  min-width: 0;
+  flex: 1;
+}
+
+.community-trade-history-v8 strong,
+.community-trade-history-v8 small {
+  display: block;
+}
+
+.community-trade-history-v8 small {
+  margin-top: 2px;
+  color: var(--text-subtle);
+}
+
 .community-trade-grid-v6 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 430px), 1fr));

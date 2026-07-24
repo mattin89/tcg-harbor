@@ -41,6 +41,7 @@ interface ProfileRowV6 {
 }
 
 interface TradeItemRowV6 {
+  source_collection_item_id?: string | null;
   quantity: number;
   condition?: string | null;
   desired_condition?: string | null;
@@ -134,7 +135,7 @@ const TRADE_POST_SELECT_V6 = `
   id, community_id, author_id, post_kind, exchange_mode, cash_amount_cents,
   status, notes, created_at,
   offered_items:trade_post_offered_items(
-    quantity, condition, language,
+    source_collection_item_id, quantity, condition, language,
     card_variant:card_variants!trade_post_offered_items_card_variant_id_fkey(
       external_identifiers
     )
@@ -214,6 +215,10 @@ export class SupabaseCommunityTradingRepositoryV6 {
         cashAmountCents: row.cash_amount_cents === null ? null : Number(row.cash_amount_cents),
         primaryAssetId,
         specificAssetId: externalAssetIdV6(specific),
+        offeredCollectionItemId: row.author_id === expectedOwnerId
+          ? offered?.source_collection_item_id ?? null
+          : null,
+        offeredQuantity: Number(offered?.quantity ?? 0),
         quantity: Number(primary?.quantity ?? 1),
         condition: String(primary?.condition ?? primary?.desired_condition ?? 'near_mint'),
         language: String(primary?.language ?? primary?.desired_language ?? ''),

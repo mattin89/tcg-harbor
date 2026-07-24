@@ -100,7 +100,7 @@ export function ProductionCommunityTradingBoardV6({
 }: CommunityBasePropsV6 & { readonly communityId: string }) {
   const store = stores.find((candidate) => candidate.communityId === communityId);
   const [createOpen, setCreateOpen] = useState(false);
-  const [status, setStatus] = useState<CommunityTradeStatusV6 | 'all'>('open');
+  const [status, setStatus] = useState<CommunityTradeStatusV6 | 'all'>('all');
   const [query, setQuery] = useState('');
   const posts = useMemo(() => runtime.posts.filter((post) => (
     post.communityId === communityId
@@ -139,8 +139,8 @@ export function ProductionCommunityTradingBoardV6({
 
   return <div className="page community-trading-v6">
     <button className="back-link" onClick={() => navigate('/communities')}><Icon name="chevron"/>All communities</button>
-    <section className={`community-v6-header store-${store.accent}`}><span className="community-v6-header-mark"><Icon name="trade" size={30}/></span><div><div><Chip tone="positive"><Icon name="shield" size={13}/>Active member</Chip>{store.communityJoinMode === 'open' && <Chip tone="gold">Open test community</Chip>}</div><h2>{store.communityName ?? store.name}</h2><p>{store.address} · exact-printing card posts</p></div><Button onClick={() => setCreateOpen(true)} icon="plus">Create post</Button></section>
-    <section className="community-v6-toolbar"><label className="search-field"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search offered or wanted card" /></label><label className="select-field"><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value as CommunityTradeStatusV6 | 'all')}><option value="open">Open</option><option value="discussing">Discussing</option><option value="completed">Completed</option><option value="closed">Closed</option><option value="all">All</option></select></label></section>
+    <section className={`community-v6-header store-${store.accent}`}><span className="community-v6-header-mark"><Icon name="trade" size={30}/></span><div><div><Chip tone="positive"><Icon name="shield" size={13}/>Active member</Chip><Chip tone="positive"><span className="live-pulse"/>Live trade feed</Chip>{store.communityJoinMode === 'open' && <Chip tone="gold">Open test community</Chip>}</div><h2>{store.communityName ?? store.name}</h2><p>{store.address} · exact-printing card posts</p></div><Button onClick={() => setCreateOpen(true)} icon="plus">Create post</Button></section>
+    <section className="community-v6-toolbar"><label className="search-field"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search offered or wanted card" /></label><label className="select-field"><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value as CommunityTradeStatusV6 | 'all')}><option value="all">All posts</option><option value="open">Open</option><option value="discussing">Discussing</option><option value="completed">Completed</option><option value="closed">Closed</option></select></label></section>
     <div className="community-v6-explainer"><Icon name="info"/><p><strong>Four clear choices on either side.</strong> Ask or offer money, accept any card, name a specific card, or stay open to any action. An asking price of €0 is displayed as a free giveaway.</p></div>
     {runtime.loading ? <EmptyState icon="refresh" title="Loading trade board" detail="Retrieving member-only posts…"/>
       : runtime.error ? <EmptyState icon="info" title="Trade board needs attention" detail={runtime.error} action={<Button onClick={() => void runtime.refresh()} icon="refresh">Try again</Button>}/>

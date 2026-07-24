@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
 import type { DemoAsset } from '../../data/demo';
 import {
   initialsV6,
@@ -12,6 +12,19 @@ import {
 import { assertRowsOwnedByV3, requireAuthenticatedOwnerV3 } from './authSessionIsolationV3';
 
 type JsonRecord = Record<string, unknown>;
+let communityTradeRealtimeSequenceV7 = 0;
+
+const UUID_V7 = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function communityTradeRealtimeFilterV7(communityIds: readonly string[]): string {
+  const unique = [...new Set(communityIds)];
+  if (unique.length === 0) throw new Error('At least one joined community is required for live trades.');
+  if (unique.length > 100) throw new Error('Live trade updates support up to 100 joined communities.');
+  if (unique.some((communityId) => !UUID_V7.test(communityId))) {
+    throw new Error('A joined community has an invalid identifier.');
+  }
+  return `community_id=in.(${unique.join(',')})`;
+}
 
 interface MembershipRowV6 {
   community_id: string;
@@ -295,6 +308,40 @@ export class SupabaseCommunityTradingRepositoryV6 {
     if (error) throw databaseErrorV6('Update community trade post', error);
   }
 
+  async subscribe(
+    communityIds: readonly string[],
+    expectedOwnerId: string,
+    onChange: () => void,
+    onFailure: (reason: Error) => void = () => undefined,
+  ): Promise<() => void> {
+    await requireAuthenticatedOwnerV3(this.client, expectedOwnerId, 'Subscribe to community trades');
+    const filter = communityTradeRealtimeFilterV7(communityIds);
+    const channel = this.client
+      .channel(`community-trades-v7:${expectedOwnerId}:${++communityTradeRealtimeSequenceV7}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'trade_posts',
+        filter,
+      }, onChange)
+      .subscribe((status, reason) => {
+        // Reload once subscribed to close the gap between the initial load and
+        // the Realtime stream becoming active.
+        if (status === 'SUBSCRIBED') onChange();
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          onFailure(new Error(
+            reason?.message
+              ? `Live community trades disconnected: ${reason.message}`
+              : `Live community trades disconnected (${status.toLowerCase().replace('_', ' ')}).`,
+          ));
+        }
+      });
+
+    return () => {
+      void this.removeChannel(channel);
+    };
+  }
+
   private async resolveVariantId(assetId: string): Promise<string> {
     const { data, error } = await this.client
       .from('card_variants')
@@ -308,5 +355,9 @@ export class SupabaseCommunityTradingRepositoryV6 {
       throw new Error('The selected card printing does not have one verified database mapping.');
     }
     return rows[0].id;
+  }
+
+  private async removeChannel(channel: RealtimeChannel): Promise<void> {
+    await this.client.removeChannel(channel);
   }
 }

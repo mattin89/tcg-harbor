@@ -171,11 +171,15 @@ function generalActivityViewV3(
     store_join_code_generated: 'Store join code generated',
     store_join_code_deactivated: 'Store join code deactivated',
     store_administrator_revoked: 'Store administrator access revoked',
+    trade_post_created: 'Published community card post',
+    trade_status_changed: 'Updated community card post',
   };
   const activityType = row.activity_type.trim();
   const title = (titles[activityType] ?? humanizeActivityValueV3(activityType)) || 'Account activity';
   const icon = activityType.startsWith('community_')
     ? 'users'
+    : activityType.startsWith('trade_')
+      ? 'trade'
     : activityType.startsWith('store_application')
       ? 'store'
       : activityType.includes('revoked') || activityType.includes('deactivated')

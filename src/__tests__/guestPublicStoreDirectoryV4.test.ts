@@ -25,6 +25,13 @@ function publicStoreRow(overrides: Record<string, unknown> = {}) {
     is_verified: true,
     is_active: true,
     deleted_at: null,
+    communities: [{
+      id: 'community-1',
+      name: 'Test Dresden Community',
+      join_mode: 'open',
+      is_active: true,
+      deleted_at: null,
+    }],
     ...overrides,
   };
 }
@@ -76,6 +83,9 @@ describe('public store directory v4', () => {
       city: 'Dresden',
       latitude: 51.0504,
       longitude: 13.7373,
+      communityId: 'community-1',
+      communityName: 'Test Dresden Community',
+      communityJoinMode: 'open',
     });
   });
 

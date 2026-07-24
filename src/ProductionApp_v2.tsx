@@ -37,6 +37,9 @@ function toMapStore(store: RegisteredStore, index: number): Store {
     email: store.contactEmail ?? '',
     accent: storeAccents[index % storeAccents.length],
     source: 'registered',
+    communityId: store.communityId,
+    communityName: store.communityName,
+    communityJoinMode: store.communityJoinMode,
   };
 }
 

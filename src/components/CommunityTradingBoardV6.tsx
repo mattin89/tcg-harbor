@@ -11,6 +11,7 @@ import {
   type CommunityTradeStatusV6,
 } from '../domain/communityTradingV6';
 import type { ProductionCommunityTradingRuntimeV6 } from '../services/supabase/useProductionCommunityTradingV6';
+import { CommunityTradeCreateModalV9 } from './CommunityTradeCreateModalV9';
 import { Icon } from './Icon';
 import { Avatar, Button, CardArt, Chip, EmptyState, Modal, Segmented } from './ui';
 import '../styles-community-trading-v6.css';
@@ -156,7 +157,7 @@ export function ProductionCommunityTradingBoardV6({
       : runtime.error ? <EmptyState icon="info" title="Trade board needs attention" detail={runtime.error} action={<Button onClick={() => void runtime.refresh()} icon="refresh">Try again</Button>}/>
       : posts.length === 0 ? <EmptyState icon="trade" title="No matching posts" detail={status === 'active' && historicalPostCount > 0 ? 'There are no active trades. Completed and closed posts remain available in history.' : 'Create the first offer or wanted-card post for this community.'} action={<Button onClick={() => status === 'active' && historicalPostCount > 0 ? setStatus('all') : setCreateOpen(true)}>{status === 'active' && historicalPostCount > 0 ? 'View history' : 'Create post'}</Button>}/>
       : <div className="community-trade-grid-v6">{posts.map((post) => <CommunityTradeCardV6 key={post.id} post={post} collectionAssets={collectionAssets} mutating={runtime.mutating} onStatus={updateStatus}/>)}</div>}
-    <CommunityTradeCreateModalV6 open={createOpen} onClose={() => setCreateOpen(false)} communityId={communityId} collectionAssets={collectionAssets} runtime={runtime} notify={notify}/>
+    <CommunityTradeCreateModalV9 open={createOpen} onClose={() => setCreateOpen(false)} communityId={communityId} collectionAssets={collectionAssets} runtime={runtime} notify={notify}/>
   </div>;
 }
 

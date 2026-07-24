@@ -25,6 +25,8 @@ export interface CommunityTradePostV6 {
   readonly cashAmountCents: number | null;
   readonly primaryAssetId: string;
   readonly specificAssetId: string | null;
+  readonly offeredCollectionItemId: string | null;
+  readonly offeredQuantity: number;
   readonly quantity: number;
   readonly condition: string;
   readonly language: string;
@@ -32,6 +34,31 @@ export interface CommunityTradePostV6 {
   readonly status: CommunityTradeStatusV6;
   readonly createdAt: string;
   readonly own: boolean;
+}
+
+export function activeTradeReservedQuantityV8(
+  posts: readonly CommunityTradePostV6[],
+  collectionItemId: string | null | undefined,
+): number {
+  if (!collectionItemId) return 0;
+  return posts.reduce((total, post) => (
+    post.own
+    && (post.status === 'open' || post.status === 'discussing')
+    && post.offeredCollectionItemId === collectionItemId
+      ? total + post.offeredQuantity
+      : total
+  ), 0);
+}
+
+export function availableTradeQuantityV8(
+  ownedQuantity: number,
+  collectionItemId: string | null | undefined,
+  posts: readonly CommunityTradePostV6[],
+): number {
+  return Math.max(
+    Math.trunc(ownedQuantity) - activeTradeReservedQuantityV8(posts, collectionItemId),
+    0,
+  );
 }
 
 const EUR_INPUT_V6 = /^(?:0|[1-9]\d{0,6})(?:[.,]\d{1,2})?$/;

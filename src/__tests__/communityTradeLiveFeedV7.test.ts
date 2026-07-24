@@ -30,9 +30,9 @@ describe('community trade live feed v7', () => {
     expect(runtimeHook).toContain('unsubscribe?.()');
   });
 
-  it('shows all persisted statuses by default instead of hiding completed posts', () => {
-    expect(board).toContain("useState<CommunityTradeStatusV6 | 'all'>('all')");
+  it('keeps persisted trade history available alongside the live feed', () => {
     expect(board).toContain('<option value="all">All posts</option>');
+    expect(board).toContain('kept in history');
     expect(board).toContain('Live trade feed');
   });
 });

@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import {
   assertCardmarketMappingContinuity,
   matchCardmarketReleaseProducts,
+  transientCardmarketContinuityDeferrals,
 } from '../../scripts/lib/cardmarket-mapping-v8.mjs';
 
 const identity = (card) => card.id;
@@ -123,6 +124,45 @@ describe('Cardmarket v8 exact-mapping continuity', () => {
       nextAssets: [exact('card-optcg-changed', 690371)],
       generatedAt,
     })).toThrow(/continuity failed for 2 card printing/);
+  });
+
+  it('defers only transient drops while preserving hard failures for remaps', () => {
+    const previousAssets = [
+      exact('card-optcg-transient', 690370),
+      exact('card-optcg-remapped', 720061),
+    ];
+    const transientDropOnly = [
+      exact('card-optcg-transient', null),
+      exact('card-optcg-remapped', 720061),
+    ];
+
+    expect(transientCardmarketContinuityDeferrals({
+      previousAssets,
+      nextAssets: transientDropOnly,
+      transientAssetIds: new Set(['card-optcg-transient']),
+      generatedAt,
+    })).toEqual([{
+      assetId: 'card-optcg-transient',
+      previousProductId: 690370,
+      nextProductId: null,
+    }]);
+
+    expect(transientCardmarketContinuityDeferrals({
+      previousAssets,
+      nextAssets: transientDropOnly.map((asset) => (
+        asset.id === 'card-optcg-remapped'
+          ? { ...asset, cardmarketProductId: 720062 }
+          : asset
+      )),
+      transientAssetIds: new Set(['card-optcg-transient']),
+      generatedAt,
+    })).toEqual([]);
+    expect(transientCardmarketContinuityDeferrals({
+      previousAssets,
+      nextAssets: transientDropOnly,
+      transientAssetIds: new Set(),
+      generatedAt,
+    })).toEqual([]);
   });
 
   it('accepts only an exact, unexpired reviewed exception', () => {

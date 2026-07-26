@@ -31,6 +31,7 @@ jobs:
       artifact_name: ${{ steps.package.outputs.artifact_name }}
       archive_sha256: ${{ steps.package.outputs.archive_sha256 }}
       base_sha: ${{ steps.verification_context.outputs.base_sha }}
+      catalog_ready: ${{ steps.refresh.outputs.catalog_ready }}
       should_publish: ${{ steps.verification_context.outputs.should_publish }}
     steps:
       - name: Check out the selected branch without persisted credentials
@@ -85,14 +86,34 @@ jobs:
 
       - name: Refresh trusted market and catalog sources
         id: refresh
-        run: npm run sync:data
+        shell: bash
+        run: |
+          set +e
+          npm run sync:scheduled
+          SYNC_STATUS=$?
+          set -e
+
+          if (( SYNC_STATUS == 0 )); then
+            echo "catalog_ready=true" >> "$GITHUB_OUTPUT"
+          elif (( SYNC_STATUS == 75 )); then
+            if ! git diff --quiet || ! git diff --cached --quiet; then
+              echo "::error title=Unsafe transient deferral::The failed refresh changed tracked files; refusing to treat it as a safe no-op."
+              exit 1
+            fi
+            echo "catalog_ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Catalog refresh deferred::A classified transient upstream outage left the last verified catalog unchanged. The next scheduled run will retry."
+          else
+            exit "${SYNC_STATUS}"
+          fi
 
       - name: Verify catalog and domain invariants
         id: test
+        if: ${{ steps.refresh.outputs.catalog_ready == 'true' }}
         run: npm test
 
       - name: Verify the production build
         id: build
+        if: ${{ steps.refresh.outputs.catalog_ready == 'true' }}
         run: npm run build
 
       # Normalize archive metadata so identical verified inputs produce the
@@ -100,6 +121,7 @@ jobs:
       # source cache, and immutable sealed-product image cache.
       - name: Package the deterministic verified catalog artifact
         id: package
+        if: ${{ steps.refresh.outputs.catalog_ready == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -141,6 +163,7 @@ jobs:
 
       - name: Upload the verified catalog artifact
         id: upload
+        if: ${{ steps.refresh.outputs.catalog_ready == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ steps.package.outputs.artifact_name }}
@@ -150,6 +173,16 @@ jobs:
           if-no-files-found: error
           compression-level: 0
           retention-days: 1
+
+      - name: Record safe transient-source deferral
+        if: ${{ steps.refresh.outputs.catalog_ready == 'false' }}
+        shell: bash
+        run: |
+          {
+            echo "## Catalog refresh deferred safely"
+            echo
+            echo "A classified transient upstream outage prevented complete source verification. The last verified catalog remains active; nothing was ingested or pushed, and the next scheduled run will retry."
+          } >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Record safe verification failure details
         if: ${{ failure() }}
@@ -181,7 +214,7 @@ jobs:
 
   ingest:
     needs: verify
-    if: ${{ needs.verify.result == 'success' && needs.verify.outputs.should_publish == 'true' }}
+    if: ${{ needs.verify.result == 'success' && needs.verify.outputs.catalog_ready == 'true' && needs.verify.outputs.should_publish == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions: {}

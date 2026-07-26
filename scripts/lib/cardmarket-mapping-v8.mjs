@@ -185,3 +185,52 @@ export function assertCardmarketMappingContinuity({
   }
   return approvedChanges;
 }
+
+/**
+ * A scheduled refresh may safely keep the last verified snapshot when every
+ * otherwise-unapproved continuity loss is a dropped mapping tied to an
+ * explicitly classified transient source failure. Real remaps and unrelated
+ * drops remain hard failures.
+ */
+export function transientCardmarketContinuityDeferrals({
+  previousAssets = [],
+  nextAssets = [],
+  transientAssetIds = new Set(),
+  approvals = new Map(),
+  generatedAt,
+}) {
+  const previousById = new Map(previousAssets.map((asset) => [asset.id, asset]));
+  const deferredChanges = [];
+  const continuityCandidate = nextAssets.map((asset) => {
+    const previousProductId = positiveProductId(
+      previousById.get(asset.id)?.cardmarketProductId,
+    );
+    const nextProductId = positiveProductId(asset.cardmarketProductId);
+    if (
+      previousProductId != null
+      && nextProductId == null
+      && transientAssetIds.has(asset.id)
+    ) {
+      deferredChanges.push({
+        assetId: asset.id,
+        previousProductId,
+        nextProductId: null,
+      });
+      return { ...asset, cardmarketProductId: previousProductId };
+    }
+    return asset;
+  });
+
+  if (deferredChanges.length === 0) return [];
+  try {
+    assertCardmarketMappingContinuity({
+      previousAssets,
+      nextAssets: continuityCandidate,
+      approvals,
+      generatedAt,
+    });
+  } catch {
+    return [];
+  }
+  return deferredChanges;
+}

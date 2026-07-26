@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_PUBLIC_SITE_ORIGIN_V1,
+  normalizeAgentSkillContentsV1,
   PRIVATE_ROUTE_PREFIXES_V1,
   PUBLIC_AGENT_SKILL_V1,
   PUBLIC_CANONICAL_PATHS_V1,
@@ -78,7 +79,17 @@ describe('public discovery v1', () => {
       type: 'skill-md',
       description: skillContents.match(/^description:\s*(.+?)\s*$/m)?.[1],
       url: `${DEFAULT_PUBLIC_SITE_ORIGIN_V1}${PUBLIC_AGENT_SKILL_V1.relativePath}`,
-      digest: `sha256:${createHash('sha256').update(skillContents, 'utf8').digest('hex')}`,
+      digest: `sha256:${createHash('sha256')
+        .update(normalizeAgentSkillContentsV1(skillContents), 'utf8')
+        .digest('hex')}`,
     });
+  });
+
+  it('generates the same skill digest on Windows and Linux checkouts', () => {
+    const lf = '---\nname: browse-tcg-harbor\ndescription: Stable discovery.\n---\n\n# Skill\n';
+    const crlf = lf.replace(/\n/g, '\r\n');
+
+    expect(renderAgentSkillsIndexV1({ skillContents: crlf }))
+      .toBe(renderAgentSkillsIndexV1({ skillContents: lf }));
   });
 });

@@ -48,11 +48,12 @@ describe('daily catalog workflow', () => {
     expect(jobs.ingest).toContain('timeout-minutes: 15');
     expect(jobs.push).toContain('timeout-minutes: 10');
     expect(jobs.ingest).toContain('needs: verify');
+    expect(jobs.ingest).toContain("needs.verify.outputs.catalog_ready == 'true'");
     expect(jobs.ingest).toContain("needs.verify.outputs.should_publish == 'true'");
     expect(jobs.push).toContain('needs: [verify, ingest]');
     expect(jobs.push).toContain("needs.ingest.outputs.changed == 'true'");
 
-    expect(jobs.verify).toContain('run: npm run sync:data');
+    expect(jobs.verify).toContain('npm run sync:scheduled');
     expect(jobs.verify).toContain('run: npm test');
     expect(jobs.verify).toContain('run: npm run build');
     expect(jobs.ingest).toContain('run: npm ci --ignore-scripts');
@@ -225,6 +226,21 @@ describe('daily catalog workflow', () => {
     expect(workflow).toContain('No unverified snapshot was pushed.');
     expect(workflow).toContain('No publication token was available and no commit was pushed.');
     expect(workflow).not.toContain('continue-on-error');
+  });
+
+  it('defers only classified transient source outages without publishing', async () => {
+    const workflow = await readFile(workflowUrl, 'utf8');
+    const jobs = workflowJobs(workflow);
+
+    expect(jobs.verify).toContain('catalog_ready: ${{ steps.refresh.outputs.catalog_ready }}');
+    expect(jobs.verify).toContain('SYNC_STATUS=$?');
+    expect(jobs.verify).toContain('SYNC_STATUS == 75');
+    expect(jobs.verify).toContain('git diff --quiet');
+    expect(jobs.verify).toContain('catalog_ready=false');
+    expect(jobs.verify).toContain('Catalog refresh deferred safely');
+    expect(jobs.verify.match(/steps\.refresh\.outputs\.catalog_ready == 'true'/g)).toHaveLength(4);
+    expect(jobs.ingest).toContain("needs.verify.outputs.catalog_ready == 'true'");
+    expect(jobs.verify).not.toContain('exit 0 # ignore');
   });
 
   it('leaves bounded headroom for discovery retries and transient evidence grace', async () => {

@@ -21,7 +21,9 @@ import {
 import {
   assertCardmarketMappingContinuity,
   matchCardmarketReleaseProducts,
+  transientCardmarketContinuityDeferrals,
 } from './lib/cardmarket-mapping-v8.mjs';
+import { TransientCatalogSourceErrorV11 } from './lib/catalog-sync-outcome-v11.mjs';
 import {
   CARDMARKET_REGULAR_ART_POLICY_V1,
   artworkCorrelationV1,
@@ -2551,6 +2553,7 @@ for (const result of artworkDiscoveryResultsV10) {
       groupCode: ambiguity?.groupCode ?? null,
       number: ambiguity?.number ?? null,
       reason: result.error,
+      transient: result.transient === true,
     });
   }
 }
@@ -4101,6 +4104,27 @@ const promoAssets = numberedTcgcsvPromoProducts.map((product) => {
 });
 
 const cardAssets = [...coreCardAssets, ...promoAssets];
+const transientArtworkAssetIdsV11 = new Set(
+  artworkReferenceFailuresV10
+    .filter((failure) => failure.transient === true)
+    .map((failure) => coreCardByPrintingIdentityV10.get(failure.identity))
+    .filter(Boolean)
+    .map((card) => cardStableId(card)),
+);
+const transientContinuityDeferralsV11 = previousSnapshot?.assets
+  ? transientCardmarketContinuityDeferrals({
+    previousAssets: previousSnapshot.assets,
+    nextAssets: cardAssets,
+    transientAssetIds: transientArtworkAssetIdsV11,
+    approvals: APPROVED_CARDMARKET_MAPPING_CHANGES,
+    generatedAt,
+  })
+  : [];
+if (transientContinuityDeferralsV11.length > 0) {
+  throw new TransientCatalogSourceErrorV11(
+    `Deferred this scheduled refresh because transient artwork-source failures would temporarily drop ${transientContinuityDeferralsV11.length} previously verified Cardmarket mapping(s). The committed snapshot remains the last known-good catalog.`,
+  );
+}
 const approvedCardmarketMappingChanges = previousSnapshot?.assets
   ? assertCardmarketMappingContinuity({
     previousAssets: previousSnapshot.assets,

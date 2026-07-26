@@ -47,6 +47,10 @@ export const PUBLIC_AGENT_SKILL_V1 = Object.freeze({
   relativePath: '/.well-known/agent-skills/browse-tcg-harbor/SKILL.md',
 });
 
+export function normalizeAgentSkillContentsV1(contents) {
+  return String(contents).replace(/\r\n?/g, '\n');
+}
+
 export function normalizePublicSiteOriginV1(value = DEFAULT_PUBLIC_SITE_ORIGIN_V1) {
   const url = new URL(String(value).trim());
   const isLoopback = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
@@ -115,9 +119,10 @@ export function renderAgentSkillsIndexV1({
   if (typeof skillContents !== 'string' || !skillContents.trim()) {
     throw new Error('A non-empty SKILL.md is required to generate the discovery index.');
   }
+  const normalizedSkillContents = normalizeAgentSkillContentsV1(skillContents);
   const normalizedOrigin = normalizePublicSiteOriginV1(origin);
-  const digest = createHash('sha256').update(skillContents, 'utf8').digest('hex');
-  const frontmatter = skillContents.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+  const digest = createHash('sha256').update(normalizedSkillContents, 'utf8').digest('hex');
+  const frontmatter = normalizedSkillContents.match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
   const skillName = frontmatter?.[1].match(/^name:\s*(.+?)\s*$/m)?.[1];
   const description = frontmatter?.[1].match(/^description:\s*(.+?)\s*$/m)?.[1];
   if (skillName !== PUBLIC_AGENT_SKILL_V1.name || !description) {

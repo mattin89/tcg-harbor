@@ -109,7 +109,7 @@ const TCGCSV_CATEGORY_ID = 68;
 const TCGCSV_GROUPS = `https://tcgcsv.com/tcgplayer/${TCGCSV_CATEGORY_ID}/groups`;
 // Match the whole source abbreviation. Event, anniversary, pre-release,
 // starter, promo, and Japanese groups therefore cannot enter by substring.
-const TCGCSV_MARKET_GROUP_ABBREVIATION = /^(?:OP\d{2}|EB-\d{2}|PRB-\d{2}|OP\d{2}-EB\d{2})$/;
+const TCGCSV_MARKET_GROUP_ABBREVIATION = /^(?:OP\d{2}|EB-\d{2}(?:-\d{2})?|PRB-\d{2}|OP\d{2}-EB\d{2})$/;
 const MINIMUM_RELEASED_ENGLISH_MAIN_SET = 16;
 const BANDAI_ENGLISH_PRODUCTS = 'https://en.onepiece-cardgame.com/products/';
 const BANDAI_PRODUCTS_MAX_PAGES = 40;
@@ -130,9 +130,13 @@ const OFFICIAL_RELEASE_CONTINUITY = [{
 }];
 const REQUIRED_RELEASED_SPECIAL_GROUPS = ['EB-01', 'EB-02', 'EB-03', 'PRB-01', 'PRB-02'];
 // Bandai calls the January 2026 product OP14-EB04, while TCGCSV identifies the
-// exact English market group as OP14. Keep the one audited alias explicit; all
-// other current/future codes are derived without a hand-maintained release list.
-const OFFICIAL_TO_TCGCSV_GROUP_OVERRIDES = new Map([['OP14-EB04', 'OP14']]);
+// exact English market group as OP14. Similarly, Bandai designates the Heroines
+// booster as EB-03, which TCGCSV titles/abbreviates as EB-03-04. Keep audited
+// aliases explicit; all other current/future codes are derived without manual lists.
+const OFFICIAL_TO_TCGCSV_GROUP_OVERRIDES = new Map([
+  ['OP14-EB04', 'OP14'],
+  ['EB-03', 'EB-03-04'],
+]);
 const TCGCSV_PROMO_GROUP_ID = 17675;
 const TCGCSV_PROMO_PRODUCTS = `https://tcgcsv.com/tcgplayer/${TCGCSV_CATEGORY_ID}/${TCGCSV_PROMO_GROUP_ID}/products`;
 const TCGCSV_PROMO_PRICES = `https://tcgcsv.com/tcgplayer/${TCGCSV_CATEGORY_ID}/${TCGCSV_PROMO_GROUP_ID}/prices`;
@@ -1153,7 +1157,10 @@ function selectReleasedEnglishMarketGroups(groups, bandaiCatalog, cutoff = new D
     throw new Error(`Released English main-set groups are incomplete: ${mainOrdinals.join(', ') || 'none'}.`);
   }
   for (const requiredSpecial of REQUIRED_RELEASED_SPECIAL_GROUPS) {
-    if (!abbreviations.includes(requiredSpecial)) {
+    const found = selected.some(({ release }) =>
+      release.officialCode === requiredSpecial || release.abbreviation === requiredSpecial,
+    );
+    if (!found) {
       throw new Error(`Released English special group ${requiredSpecial} is missing from TCGCSV.`);
     }
   }

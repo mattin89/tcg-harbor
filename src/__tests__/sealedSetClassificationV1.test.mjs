@@ -26,6 +26,7 @@ describe('released sealed-set classification v1', () => {
       ['OP02', 5263],
       ['ST-30', 6608],
       ['EB-01', 5585],
+      ['EB-03-04', 6449],
     ]);
     const officialDeckTitles = new Map([['luffyace', 'ST30']]);
 
@@ -45,6 +46,11 @@ describe('released sealed-set classification v1', () => {
       category: booster,
       releasedSetCodeByExpansionId: byExpansion,
     })).toBe('ST30');
+    expect(resolveSealedSetCodeV1({
+      product: { idProduct: 867330, idExpansion: 6449, name: 'Heroines Edition Booster' },
+      category: booster,
+      releasedSetCodeByExpansionId: byExpansion,
+    })).toBe('EB03');
   });
 
   it('uses an explicit member code inside a proven composite expansion', () => {

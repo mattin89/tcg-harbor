@@ -6,7 +6,7 @@ function positiveInteger(value) {
 function normalizedCatalogSetCode(value) {
   const normalized = String(value ?? '').trim().toUpperCase().replace(/\s+/g, '');
   return normalized
-    .replace(/^(OP|ST|EB|PRB)-(\d{1,2})$/, (_match, prefix, ordinal) =>
+    .replace(/^(OP|ST|EB|PRB)-(\d{1,2})(?:-\d{1,2})?$/, (_match, prefix, ordinal) =>
       `${prefix}${String(ordinal).padStart(2, '0')}`)
     .replace(/^(OP|ST|EB|PRB)(\d)$/, (_match, prefix, ordinal) =>
       `${prefix}0${ordinal}`);

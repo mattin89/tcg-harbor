@@ -683,7 +683,7 @@ describe('source-backed catalog snapshot', () => {
     const expectedReleasedGroups = releaseManifest.officialProducts
       .filter((release) => release.category === 'boosters' && isAvailable(release))
       .map((release) => release.abbreviation)
-      .filter((abbreviation) => /^(?:OP\d{2}|EB-\d{2}|PRB-\d{2}|OP\d{2}-EB\d{2})$/.test(abbreviation))
+      .filter((abbreviation) => /^(?:OP\d{2}|EB-\d{2}(?:-\d{2})?|PRB-\d{2}|OP\d{2}-EB\d{2})$/.test(abbreviation))
       .sort();
 
     expect(releaseManifest.archivePagesChecked).toBeGreaterThan(10);

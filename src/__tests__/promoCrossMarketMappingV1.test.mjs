@@ -72,7 +72,7 @@ describe('promotional cross-market artwork mapping v1', () => {
         idExpansion: 5262,
         imageFolder: 'STP',
         language: 'English',
-        excludedUnnumberedProductCount: 20,
+        excludedUnnumberedProductCount: 21,
       },
       {
         idExpansion: 5267,
@@ -109,6 +109,7 @@ describe('promotional cross-market artwork mapping v1', () => {
       821345,
       826292,
       826293,
+      906851,
     ]);
     expect(registry.expansions[2].excludedUnnumberedProductIds).toEqual([]);
     expect(registry.requiredCompletePricedPrintedNumbers).toEqual(['P-041']);

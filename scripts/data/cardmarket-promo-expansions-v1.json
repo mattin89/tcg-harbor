@@ -25,7 +25,7 @@
       "language": "English",
       "releasedOn": "2022-12-02",
       "evidenceUrl": "https://www.cardmarket.com/en/OnePiece/Products/Singles/Special-Tournaments-Promos/MonkeyDLuffy-P-041",
-      "evidence": "Cardmarket identifies this as the English STP expansion and its official image CDN serves product 787461 from the STP folder. The exact allowlist records the twenty unnumbered DON!! products that cannot enter a printed-number artwork matrix.",
+      "evidence": "Cardmarket identifies this as the English STP expansion and its official image CDN serves product 787461 from the STP folder. The exact allowlist records the unnumbered DON!! and championship trophy products that cannot enter a printed-number artwork matrix.",
       "excludedUnnumberedProductIds": [
         696662,
         696663,
@@ -46,7 +46,8 @@
         773429,
         821345,
         826292,
-        826293
+        826293,
+        906851
       ]
     },
     {

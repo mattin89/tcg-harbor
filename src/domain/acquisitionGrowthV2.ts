@@ -1,4 +1,5 @@
 import type { DemoAsset, Market } from '../data/demo';
+import { extractAssetAveragePrice } from './cardPriceHistory';
 
 export interface AcquisitionBasisSummary {
   /** Sum of acquisition-time market references that are known. */
@@ -69,15 +70,17 @@ export function summarizePortfolioGrowth(
   let currentPricedQuantity = 0;
 
   for (const asset of assets) {
-    const unitValue = asset.quote[market];
-    if (unitValue === null || !Number.isFinite(unitValue)) continue;
+    const avgPrice = extractAssetAveragePrice(asset, market);
+    const unitValue = avgPrice > 0 ? avgPrice : asset.quote[market];
+    if (unitValue === null || !Number.isFinite(unitValue) || unitValue <= 0) continue;
     currentKnownValue += unitValue * asset.quantity;
     currentPricedQuantity += asset.quantity;
   }
 
+  currentKnownValue = Math.round(currentKnownValue * 100) / 100;
   const currentComplete = currentPricedQuantity === basis.totalQuantity;
   const canCalculate = basis.complete && currentComplete;
-  const absoluteGrowth = canCalculate ? currentKnownValue - basis.knownValue : null;
+  const absoluteGrowth = canCalculate ? Math.round((currentKnownValue - basis.knownValue) * 100) / 100 : null;
   const percentageGrowth = absoluteGrowth !== null && basis.knownValue > 0
     ? (absoluteGrowth / basis.knownValue) * 100
     : null;

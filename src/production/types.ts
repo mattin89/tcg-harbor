@@ -1,4 +1,5 @@
 import type { Session } from "@supabase/supabase-js";
+import type { UserCardPriceHistory } from "../domain/cardPriceHistory";
 
 export type AccountKind = "player" | "store";
 
@@ -26,8 +27,10 @@ export interface ProductionProfile {
   preferredCurrency: "EUR" | "USD";
   approximateCity: string;
   approximatePostcode: string;
+  storeSignupDetails: StoreSignupDetails | null;
   roles: AppRole[];
   accountStatus: "active" | "suspended" | "deactivated";
+  cardPriceHistory?: UserCardPriceHistory;
 }
 
 export interface ProductionProfileSettingsDraft {
@@ -227,14 +230,72 @@ export interface PendingApplication extends StoreApplication {
   } | null;
 }
 
+export interface StoreSignupDetails {
+  storeName: string;
+  addressLine1: string;
+  city: string;
+  postcode: string;
+  countryCode: string;
+  websiteUrl?: string;
+}
+
 export interface SignUpDraft {
   email: string;
   password: string;
   username: string;
   displayName?: string;
   accountKind: AccountKind;
+  storeDetails?: StoreSignupDetails;
   emailRedirectPath?: string;
 }
+
+export interface PlatformAdminStore {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  addressLine1: string;
+  addressLine2: string | null;
+  city: string;
+  region: string | null;
+  postcode: string;
+  countryCode: string;
+  latitude: number;
+  longitude: number;
+  timezone: string;
+  openingHours: Record<string, unknown>;
+  contactEmail: string | null;
+  phone: string | null;
+  websiteUrl: string | null;
+  imageUrl: string | null;
+  isVerified: boolean;
+  isActive: boolean;
+  createdAt: string;
+  ownerUserId: string | null;
+  ownerUsername: string | null;
+  ownerDisplayName: string | null;
+  communityId: string | null;
+  communityName: string | null;
+}
+
+export interface PlatformAdminUpdateStoreDraft {
+  storeId: string;
+  name: string;
+  slug: string;
+  addressLine1: string;
+  addressLine2?: string | null;
+  city: string;
+  region?: string | null;
+  postcode: string;
+  countryCode: string;
+  latitude: number;
+  longitude: number;
+  contactEmail?: string | null;
+  phone?: string | null;
+  websiteUrl?: string | null;
+  ownerUsername?: string | null;
+}
+
 
 export interface SignUpResult {
   session: Session | null;

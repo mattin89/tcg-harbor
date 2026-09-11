@@ -1,5 +1,10 @@
 import App from './App';
-import { ProductionAccessGate, useProductionIdentity } from './production';
+import {
+  ProductionAccessGate,
+  StoreApplicationPanel,
+  useProductionAccessContext,
+  useProductionIdentity,
+} from './production';
 import type { RegisteredStore } from './production';
 import type { Store } from './data/demo';
 import { useProductionNotificationsV5 } from './services/supabase/useProductionNotificationsV5';
@@ -70,6 +75,7 @@ function ProductionGuestBridge({ onRequestAuthentication }: { onRequestAuthentic
 }
 
 function ProductionIdentityBridge() {
+  const access = useProductionAccessContext();
   const identity = useProductionIdentity();
   const productionNotifications = useProductionNotificationsV5(
     identity.configured && identity.authenticated,
@@ -79,6 +85,12 @@ function ProductionIdentityBridge() {
   if (!identity.configured || !identity.authenticated || !identity.profile) {
     return <main className="production-loading-page" aria-busy="true"><h1>Opening your account</h1></main>;
   }
+
+  const existingPlayerStorePortal = identity.profile.accountKind === 'player'
+    && identity.managedStores.length === 0
+    && !identity.isPlatformAdministrator
+    ? <StoreApplicationPanel access={access} />
+    : undefined;
 
   return <App key={identity.profile.id} identity={{
     userId: identity.profile.id,
@@ -107,5 +119,8 @@ function ProductionIdentityBridge() {
     onChangePassword: identity.changePassword,
     onSignOut: identity.signOut,
     onSignOutEverywhere: identity.signOutEverywhere,
+    cardPriceHistory: identity.profile.cardPriceHistory,
+    onUpdateCardPriceHistory: access.updateCardPriceHistory,
+    storePortal: existingPlayerStorePortal,
   }} />;
 }

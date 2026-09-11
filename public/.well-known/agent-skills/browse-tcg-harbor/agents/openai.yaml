@@ -1,0 +1,4 @@
+interface:
+  display_name: "Browse TCG Harbor"
+  short_description: "Search public cards and approved stores"
+  default_prompt: "Use $browse-tcg-harbor to find One Piece cards or approved stores in TCG Harbor."

@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 import { SupabaseProductionAccess } from "../production/supabaseProductionAccess";
 import type { PlatformAdminUpdateStoreDraft } from "../production/types";
-import { fitLocations, type StoreMapStore } from "../components/StoreMap";
+import { fitLocations, locateStores, type StoreMapStore } from "../components/StoreMap";
 
 vi.mock("maplibre-gl", () => ({
   default: {
@@ -315,6 +315,26 @@ describe("platformAdminStores", () => {
           [13.7521, 51.0673],
         ],
         expect.objectContaining({ padding: 72, maxZoom: 13.5 })
+      );
+    });
+
+    it("locates stores with real coordinates and maps them for street-level centering", () => {
+      const stores: StoreMapStore[] = [
+        { id: "store-1", name: "Dresden Cards", city: "Dresden", country: "DE", accent: "coral", members: 10, trades: 2, hours: "10-18", address: "Prager Str 1", source: "registered", longitude: 13.7352, latitude: 51.0455 } as unknown as StoreMapStore,
+      ];
+      const locations = locateStores(stores);
+      expect(locations).toHaveLength(1);
+      expect(locations[0].coordinates).toEqual([13.7352, 51.0455]);
+      expect(locations[0].usesFallbackCoordinates).toBe(false);
+
+      const easeTo = vi.fn();
+      const mockMap = { easeTo, fitBounds: vi.fn() } as unknown as Parameters<typeof fitLocations>[0];
+      fitLocations(mockMap, locations);
+      expect(easeTo).toHaveBeenCalledWith(
+        expect.objectContaining({
+          center: [13.7352, 51.0455],
+          zoom: 16,
+        })
       );
     });
   });

@@ -32,6 +32,8 @@ export interface StoreMapProps {
   stores: readonly StoreMapStore[];
   /** Omit for internal selection state; pass null for a controlled map with no selection. */
   selectedStoreId?: string | null;
+  /** Monotonically increasing trigger or token to force re-centering on the selected store */
+  focusNonce?: number;
   onSelectStore?: (store: StoreMapStore) => void;
   className?: string;
   height?: number | string;
@@ -283,6 +285,7 @@ function StoreFallback({
 export function StoreMap({
   stores,
   selectedStoreId,
+  focusNonce = 0,
   onSelectStore,
   className = '',
   height = 480,
@@ -305,11 +308,39 @@ export function StoreMap({
   const descriptionId = useId();
   const isControlled = selectedStoreId !== undefined;
   const activeSelectedId = (isControlled ? selectedStoreId : internalSelectedId) ?? null;
+  const activeSelectedIdRef = useRef(activeSelectedId);
+  activeSelectedIdRef.current = activeSelectedId;
+
+  const centerOnStore = useCallback((storeId: string, smooth = true) => {
+    const map = mapRef.current;
+    if (!map || loadState !== 'ready') return;
+    const selectedLocation = locationsRef.current.find(({ store }) => store.id === storeId);
+    if (!selectedLocation) return;
+
+    map.easeTo({
+      center: selectedLocation.coordinates,
+      zoom: 16,
+      duration: smooth && !prefersReducedMotion() ? 600 : 0,
+    });
+
+    popupRef.current?.remove();
+    popupRef.current = new maplibregl.Popup({
+      closeButton: true,
+      closeOnClick: false,
+      focusAfterOpen: false,
+      offset: 22,
+      maxWidth: '300px',
+    })
+      .setLngLat(selectedLocation.coordinates)
+      .setDOMContent(createPopupContent(selectedLocation))
+      .addTo(map);
+  }, [loadState]);
 
   const selectStore = useCallback((store: StoreMapStore) => {
     if (!isControlled) setInternalSelectedId(store.id);
+    centerOnStore(store.id, true);
     onSelectStore?.(store);
-  }, [isControlled, onSelectStore]);
+  }, [centerOnStore, isControlled, onSelectStore]);
 
   const retry = useCallback(() => setRetryKey((current) => current + 1), []);
 
@@ -338,7 +369,11 @@ export function StoreMap({
         const map = mapRef.current;
         if (!map) return;
         map.resize();
-        fitLocations(map, locationsRef.current);
+        if (activeSelectedIdRef.current) {
+          centerOnStore(activeSelectedIdRef.current, false);
+        } else {
+          fitLocations(map, locationsRef.current);
+        }
       });
     });
     observer.observe(container);
@@ -346,7 +381,7 @@ export function StoreMap({
       window.cancelAnimationFrame(frame);
       observer.disconnect();
     };
-  }, []);
+  }, [centerOnStore]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -355,10 +390,14 @@ export function StoreMap({
     const frame = window.requestAnimationFrame(() => {
       if (container.getBoundingClientRect().width < 1) return;
       map.resize();
-      fitLocations(map, locationsRef.current);
+      if (activeSelectedIdRef.current) {
+        centerOnStore(activeSelectedIdRef.current, false);
+      } else {
+        fitLocations(map, locationsRef.current);
+      }
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [active, loadState, locations]);
+  }, [active, centerOnStore, loadState, locations]);
 
   useEffect(() => {
     let cancelled = false;
@@ -411,7 +450,13 @@ export function StoreMap({
         setLoadState('ready');
         window.requestAnimationFrame(() => {
           map?.resize();
-          if (map) fitLocations(map, locationsRef.current);
+          if (map) {
+            if (activeSelectedIdRef.current) {
+              centerOnStore(activeSelectedIdRef.current, false);
+            } else {
+              fitLocations(map, locationsRef.current);
+            }
+          }
         });
       });
       map.on('error', ({ error }) => {
@@ -492,30 +537,14 @@ export function StoreMap({
       marker.setAttribute('aria-pressed', String(selected));
     }
 
-    popupRef.current?.remove();
-    popupRef.current = null;
-    const map = mapRef.current;
-    const selectedLocation = locations.find(({ store }) => store.id === activeSelectedId);
-    if (loadState !== 'ready' || !map || !selectedLocation) return;
+    if (!activeSelectedId) {
+      popupRef.current?.remove();
+      popupRef.current = null;
+      return;
+    }
 
-    // Smoothly ease camera to the selected store showing a close-up street view
-    map.easeTo({
-      center: selectedLocation.coordinates,
-      zoom: 16,
-      duration: prefersReducedMotion() ? 0 : 600,
-    });
-
-    popupRef.current = new maplibregl.Popup({
-      closeButton: true,
-      closeOnClick: false,
-      focusAfterOpen: false,
-      offset: 22,
-      maxWidth: '300px',
-    })
-      .setLngLat(selectedLocation.coordinates)
-      .setDOMContent(createPopupContent(selectedLocation))
-      .addTo(map);
-  }, [activeSelectedId, loadState, locations]);
+    centerOnStore(activeSelectedId, true);
+  }, [activeSelectedId, centerOnStore, focusNonce, loadState, locations]);
 
   const zoom = (direction: 'in' | 'out') => {
     const duration = prefersReducedMotion() ? 0 : 250;
@@ -548,7 +577,18 @@ export function StoreMap({
         <button
           type="button"
           className="store-map__fit-control"
-          onClick={() => mapRef.current && fitLocations(mapRef.current, locations)}
+          onClick={() => {
+            if (mapRef.current) {
+              if (!isControlled) setInternalSelectedId(null);
+              popupRef.current?.remove();
+              popupRef.current = null;
+              for (const [, marker] of markerElementsRef.current) {
+                marker.classList.remove('is-selected');
+                marker.setAttribute('aria-pressed', 'false');
+              }
+              fitLocations(mapRef.current, locations);
+            }
+          }}
           disabled={controlsDisabled}
           aria-label="Fit all stores"
           title="Fit all stores"

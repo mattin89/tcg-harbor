@@ -1,5 +1,6 @@
 import type { Session, SupabaseClient } from "@supabase/supabase-js";
 import { verifiedSupabaseSessionV3 } from "../services/supabase/authSessionIsolationV3";
+import type { UserCardPriceHistory } from "../domain/cardPriceHistory";
 import type {
   AppRole,
   CommunityChannel,
@@ -8,6 +9,8 @@ import type {
   GeneratedStoreQrInvite,
   ManagedStore,
   PendingApplication,
+  PlatformAdminStore,
+  PlatformAdminUpdateStoreDraft,
   ProductionAccessSnapshot,
   ProductionNotificationPreferences,
   ProductionProfile,
@@ -23,6 +26,7 @@ import type {
   StoreApplicationDraft,
   StoreApplicationStatus,
 } from "./types";
+import { storeSignupMetadataV12 } from "./storeSignupV12";
 
 type Row = Record<string, unknown>;
 
@@ -155,6 +159,38 @@ function mapRegisteredStores(value: unknown): RegisteredStore[] {
   });
 }
 
+function mapPlatformAdminStore(value: unknown): PlatformAdminStore {
+  const row = asRow(value);
+  return {
+    id: text(row, "id"),
+    slug: text(row, "slug"),
+    name: text(row, "name"),
+    description: optionalText(row, "description"),
+    addressLine1: text(row, "address_line_1"),
+    addressLine2: optionalText(row, "address_line_2"),
+    city: text(row, "city"),
+    region: optionalText(row, "region"),
+    postcode: text(row, "postcode"),
+    countryCode: text(row, "country_code"),
+    latitude: number(row, "latitude"),
+    longitude: number(row, "longitude"),
+    timezone: text(row, "timezone") || "Europe/Berlin",
+    openingHours: asRow(row.opening_hours),
+    contactEmail: optionalText(row, "contact_email"),
+    phone: optionalText(row, "phone"),
+    websiteUrl: optionalText(row, "website_url"),
+    imageUrl: optionalText(row, "image_url"),
+    isVerified: Boolean(row.is_verified),
+    isActive: Boolean(row.is_active),
+    createdAt: text(row, "created_at"),
+    ownerUserId: optionalText(row, "owner_user_id"),
+    ownerUsername: optionalText(row, "owner_username"),
+    ownerDisplayName: optionalText(row, "owner_display_name"),
+    communityId: optionalText(row, "community_id"),
+    communityName: optionalText(row, "community_name"),
+  };
+}
+
 function mapChannel(value: unknown): CommunityChannel {
   const row = asRow(value);
   return {
@@ -224,6 +260,13 @@ function mapStoreJoinResult(value: unknown): StoreJoinResult {
 function message(error: unknown): string {
   if (error && typeof error === "object" && "message" in error) {
     const value = (error as { message?: unknown }).message;
+    const code = "code" in error ? (error as { code?: unknown }).code : undefined;
+    if (code === "email_address_not_authorized") {
+      return "Confirmation email delivery is not configured for this address. Please contact TCG Harbor support.";
+    }
+    if (code === "over_email_send_rate_limit") {
+      return "Too many confirmation emails were requested. Please wait a minute before trying again.";
+    }
     if (typeof value === "string") return value;
   }
   return "Something went wrong. Please try again.";
@@ -276,6 +319,12 @@ export class SupabaseProductionAccess {
   async signUp(draft: SignUpDraft): Promise<SignUpResult> {
     const redirectPath = draft.emailRedirectPath?.startsWith("/") ? draft.emailRedirectPath : "/";
     const redirectTo = typeof window === "undefined" ? undefined : `${window.location.origin}${redirectPath}`;
+    if (draft.accountKind === "store" && !draft.storeDetails) {
+      throw new ProductionAccessError("signUp", new Error("Store registration details are required."));
+    }
+    const storeMetadata = draft.accountKind === "store"
+      ? storeSignupMetadataV12(draft.storeDetails!)
+      : {};
     const { data, error } = await this.client.auth.signUp({
       email: draft.email,
       password: draft.password,
@@ -285,11 +334,23 @@ export class SupabaseProductionAccess {
           username: draft.username.toLowerCase(),
           display_name: draft.displayName?.trim() || draft.username,
           account_kind: draft.accountKind,
+          ...storeMetadata,
         },
       },
     });
     if (error) throw new ProductionAccessError("signUp", error);
     return { session: data.session, emailConfirmationRequired: data.session === null };
+  }
+
+  async resendSignUpConfirmation(email: string, emailRedirectPath = "/"): Promise<void> {
+    const redirectPath = emailRedirectPath.startsWith("/") ? emailRedirectPath : "/";
+    const emailRedirectTo = typeof window === "undefined" ? undefined : `${window.location.origin}${redirectPath}`;
+    const { error } = await this.client.auth.resend({
+      type: "signup",
+      email: email.trim(),
+      options: { emailRedirectTo },
+    });
+    if (error) throw new ProductionAccessError("resendSignUpConfirmation", error);
   }
 
   async signOut(): Promise<void> {
@@ -381,11 +442,22 @@ export class SupabaseProductionAccess {
     }
   }
 
+  async updateCardPriceHistory(userId: string, history: UserCardPriceHistory): Promise<void> {
+    const { error } = await this.client
+      .from("user_profiles")
+      .update({
+        card_price_history: history,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", userId);
+    if (error) throw new ProductionAccessError("updateCardPriceHistory", error);
+  }
+
   async loadSnapshot(session: Session): Promise<ProductionAccessSnapshot> {
     const userId = session.user.id;
     const [appUserResult, profileResult, preferencesResult, applicationResult, storesResult, registeredStoresResult] = await Promise.all([
       this.client.from("app_users").select("status,roles").eq("id", userId).single(),
-      this.client.from("user_profiles").select("username,display_name,avatar_url,account_kind,primary_market,preferred_currency,approximate_city,approximate_postcode").eq("user_id", userId).single(),
+      this.client.from("user_profiles").select("username,display_name,avatar_url,account_kind,primary_market,preferred_currency,approximate_city,approximate_postcode,store_signup_name,store_signup_address_line_1,store_signup_city,store_signup_postcode,store_signup_country_code,store_signup_website_url,card_price_history").eq("user_id", userId).single(),
       this.client.from("notification_preferences").select("direct_messages,community_replies,matching_trades,trade_updates,email_enabled").eq("user_id", userId).single(),
       this.client.from("store_applications").select("*").eq("applicant_user_id", userId).order("submitted_at", { ascending: false }).limit(1).maybeSingle(),
       this.client
@@ -421,8 +493,21 @@ export class SupabaseProductionAccess {
       preferredCurrency: text(profile, "preferred_currency") === "USD" ? "USD" : "EUR",
       approximateCity: optionalText(profile, "approximate_city") ?? "",
       approximatePostcode: optionalText(profile, "approximate_postcode") ?? "",
+      storeSignupDetails: text(profile, "account_kind") === "store" && text(profile, "store_signup_name")
+        ? {
+            storeName: text(profile, "store_signup_name"),
+            addressLine1: text(profile, "store_signup_address_line_1"),
+            city: text(profile, "store_signup_city"),
+            postcode: text(profile, "store_signup_postcode"),
+            countryCode: text(profile, "store_signup_country_code"),
+            websiteUrl: optionalText(profile, "store_signup_website_url") ?? undefined,
+          }
+        : null,
       roles,
       accountStatus: text(appUser, "status") as ProductionProfile["accountStatus"],
+      cardPriceHistory: profile.card_price_history && typeof profile.card_price_history === "object"
+        ? (profile.card_price_history as UserCardPriceHistory)
+        : undefined,
     };
 
     return {
@@ -496,6 +581,40 @@ export class SupabaseProductionAccess {
     });
     if (error) throw new ProductionAccessError("beginReviewApplication", error);
     return mapApplication(Array.isArray(data) ? data[0] : data);
+  }
+
+  async platformAdminListStores(): Promise<PlatformAdminStore[]> {
+    const { data, error } = await this.client.rpc("platform_admin_list_stores");
+    if (error) throw new ProductionAccessError("platformAdminListStores", error);
+    return asRows(data).map(mapPlatformAdminStore);
+  }
+
+  async platformAdminUpdateStore(draft: PlatformAdminUpdateStoreDraft): Promise<void> {
+    const { error } = await this.client.rpc("platform_admin_update_store", {
+      p_store_id: draft.storeId,
+      p_name: draft.name.trim(),
+      p_slug: draft.slug.trim().toLowerCase(),
+      p_address_line_1: draft.addressLine1.trim(),
+      p_city: draft.city.trim(),
+      p_postcode: draft.postcode.trim(),
+      p_country_code: draft.countryCode.trim().toUpperCase(),
+      p_latitude: draft.latitude,
+      p_longitude: draft.longitude,
+      p_address_line_2: draft.addressLine2?.trim() || null,
+      p_region: draft.region?.trim() || null,
+      p_contact_email: draft.contactEmail?.trim() || null,
+      p_phone: draft.phone?.trim() || null,
+      p_website_url: draft.websiteUrl?.trim() || null,
+      p_owner_username: draft.ownerUsername?.trim() || null,
+    });
+    if (error) throw new ProductionAccessError("platformAdminUpdateStore", error);
+  }
+
+  async platformAdminDeleteStore(storeId: string): Promise<void> {
+    const { error } = await this.client.rpc("platform_admin_delete_store", {
+      p_store_id: storeId,
+    });
+    if (error) throw new ProductionAccessError("platformAdminDeleteStore", error);
   }
 
   async listCommunityChannels(communityId: string): Promise<CommunityChannel[]> {

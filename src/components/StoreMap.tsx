@@ -74,7 +74,7 @@ function dresdenFallbackCoordinates(storeId: string): Coordinate {
   return [Number(longitude.toFixed(6)), Number(latitude.toFixed(6))];
 }
 
-function locateStores(stores: readonly StoreMapStore[]): StoreLocation[] {
+export function locateStores(stores: readonly StoreMapStore[]): StoreLocation[] {
   return stores.map((store) => {
     const longitude = store.longitude;
     const latitude = store.latitude;
@@ -108,30 +108,46 @@ function osmRasterStyle(): StyleSpecification {
 }
 
 function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined') return false;
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }
 
-function fitLocations(map: MapLibreMap, locations: readonly StoreLocation[]): void {
+export function fitLocations(map: MapLibreMap, locations: readonly StoreLocation[]): void {
   const duration = prefersReducedMotion() ? 0 : 550;
   if (locations.length === 0) {
     map.easeTo({ center: DRESDEN_CENTER, zoom: 11.6, duration });
     return;
   }
   if (locations.length === 1) {
-    map.easeTo({ center: locations[0].coordinates, zoom: 13.8, duration });
+    map.easeTo({ center: locations[0].coordinates, zoom: 16, duration });
     return;
   }
 
   const longitudes = locations.map(({ coordinates }) => coordinates[0]);
   const latitudes = locations.map(({ coordinates }) => coordinates[1]);
+  const minLng = Math.min(...longitudes);
+  const maxLng = Math.max(...longitudes);
+  const minLat = Math.min(...latitudes);
+  const maxLat = Math.max(...latitudes);
+
+  // If coordinates span across continents or oceans (e.g. US stores and European stores,
+  // where the longitudinal or latitudinal span is > 15 degrees), fitting the entire bounds
+  // places the map camera right in the middle of the Atlantic ocean!
+  // Instead, focus on the primary store cluster or first store location.
+  if (Math.abs(maxLng - minLng) > 15 || Math.abs(maxLat - minLat) > 15) {
+    const primary = locations[0]?.coordinates ?? DRESDEN_CENTER;
+    map.easeTo({ center: primary, zoom: 13.5, duration });
+    return;
+  }
+
   map.fitBounds(
     [
-      [Math.min(...longitudes), Math.min(...latitudes)],
-      [Math.max(...longitudes), Math.max(...latitudes)],
+      [minLng, minLat],
+      [maxLng, maxLat],
     ],
     // Keep a city-wide view even on high-DPI/narrow responsive canvases so every
-    // registered Dresden marker remains visible after fitting.
-    { padding: 72, maxZoom: 11.2, duration },
+    // registered marker remains visible after fitting.
+    { padding: 72, maxZoom: 13.5, duration },
   );
 }
 
@@ -481,6 +497,13 @@ export function StoreMap({
     const map = mapRef.current;
     const selectedLocation = locations.find(({ store }) => store.id === activeSelectedId);
     if (loadState !== 'ready' || !map || !selectedLocation) return;
+
+    // Smoothly ease camera to the selected store showing a close-up street view
+    map.easeTo({
+      center: selectedLocation.coordinates,
+      zoom: 16,
+      duration: prefersReducedMotion() ? 0 : 600,
+    });
 
     popupRef.current = new maplibregl.Popup({
       closeButton: true,

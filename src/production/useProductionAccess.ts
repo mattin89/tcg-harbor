@@ -4,12 +4,15 @@ import { resolveAuthStateTransitionV3 } from "../services/supabase/authSessionIs
 import { LatestRequestGateV2 } from "../domain/latestRequestGateV2";
 import { authFailurePhaseV2 } from "../domain/authRecoveryV2";
 import { SupabaseProductionAccess } from "./supabaseProductionAccess";
+import type { UserCardPriceHistory } from "../domain/cardPriceHistory";
 import type {
   CommunityChannel,
   CommunityChannelDraft,
   CommunityMessage,
   GeneratedStoreQrInvite,
   PendingApplication,
+  PlatformAdminStore,
+  PlatformAdminUpdateStoreDraft,
   ProductionAccessSnapshot,
   ProductionNotificationPreferences,
   ProductionProfileSettingsDraft,
@@ -36,6 +39,7 @@ export interface ProductionAccessController {
   passwordRecovery: boolean;
   signIn(email: string, password: string): Promise<void>;
   signUp(draft: SignUpDraft): Promise<SignUpResult>;
+  resendSignUpConfirmation(email: string, emailRedirectPath?: string): Promise<void>;
   signOut(): Promise<void>;
   signOutEverywhere(): Promise<void>;
   requestPasswordReset(email: string): Promise<void>;
@@ -43,11 +47,15 @@ export interface ProductionAccessController {
   changePassword(currentPassword: string, password: string): Promise<void>;
   updateProfileSettings(draft: ProductionProfileSettingsDraft): Promise<void>;
   updateNotificationPreferences(preferences: ProductionNotificationPreferences): Promise<void>;
+  updateCardPriceHistory(history: UserCardPriceHistory): Promise<void>;
   submitStoreApplication(draft: StoreApplicationDraft): Promise<void>;
   withdrawStoreApplication(applicationId: string): Promise<void>;
   listPendingApplications(): Promise<PendingApplication[]>;
   beginReviewApplication(applicationId: string): Promise<void>;
   reviewApplication(applicationId: string, decision: "approved" | "rejected", note?: string): Promise<void>;
+  listApprovedStores(): Promise<PlatformAdminStore[]>;
+  updateApprovedStore(draft: PlatformAdminUpdateStoreDraft): Promise<void>;
+  deleteApprovedStore(storeId: string): Promise<void>;
   listCommunityChannels(communityId: string): Promise<CommunityChannel[]>;
   createCommunityChannel(draft: CommunityChannelDraft): Promise<CommunityChannel>;
   updateCommunityChannel(channelId: string, draft: Omit<CommunityChannelDraft, "communityId">): Promise<CommunityChannel>;
@@ -211,6 +219,10 @@ export function useProductionAccess(): ProductionAccessController {
       });
       return result;
     },
+    async resendSignUpConfirmation(email, emailRedirectPath) {
+      if (!service) return;
+      await run(() => service.resendSignUpConfirmation(email, emailRedirectPath));
+    },
     async signOut() {
       if (!service) return;
       sessionRequestGate.invalidate();
@@ -284,6 +296,10 @@ export function useProductionAccess(): ProductionAccessController {
       if (!service || !snapshot) return;
       await run(() => service.updateNotificationPreferences(snapshot.profile.id, preferences), { refresh: true });
     },
+    async updateCardPriceHistory(history) {
+      if (!service || !snapshot) return;
+      await service.updateCardPriceHistory(snapshot.profile.id, history);
+    },
     async submitStoreApplication(draft) {
       if (!service) return;
       await run(() => service.submitStoreApplication(draft).then(() => undefined), { refresh: true });
@@ -308,6 +324,23 @@ export function useProductionAccess(): ProductionAccessController {
     async beginReviewApplication(applicationId) {
       if (!service) return;
       await run(() => service.beginReviewApplication(applicationId).then(() => undefined), { refresh: true });
+    },
+    async listApprovedStores() {
+      if (!service) return [];
+      try {
+        return await service.platformAdminListStores();
+      } catch (nextError) {
+        setError(errorMessage(nextError));
+        throw nextError;
+      }
+    },
+    async updateApprovedStore(draft) {
+      if (!service) throw new Error("Production Supabase is not configured.");
+      await run(() => service.platformAdminUpdateStore(draft), { refresh: true });
+    },
+    async deleteApprovedStore(storeId) {
+      if (!service) throw new Error("Production Supabase is not configured.");
+      await run(() => service.platformAdminDeleteStore(storeId), { refresh: true });
     },
     async listCommunityChannels(communityId) {
       if (!service) return [];

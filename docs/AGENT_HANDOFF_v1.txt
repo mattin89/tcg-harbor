@@ -1,0 +1,595 @@
+TCG HARBOR - NEXT AGENT HANDOFF
+Version: 1
+Prepared: 24 July 2026 (Europe/Berlin)
+Owner: Mario
+
+PURPOSE
+=======
+
+This file gives the next agent enough operational and technical context to
+inspect, modify, test, migrate, publish, and monitor the TCG Harbor web app.
+
+SECURITY RULE: This handoff intentionally contains no password, API key,
+publishable key, service-role/secret key, GitHub token, CLI access token, or
+session cookie. Do not add any of those values to this file, Git, chat output,
+browser screenshots, or client-side code.
+
+
+1. PROJECT LOCATIONS AND PUBLIC ENDPOINTS
+=========================================
+
+Local repository:
+  C:\Users\delor\Documents\Codex\Projects\tcg-harbor
+
+GitHub repository:
+  https://github.com/mattin89/tcg-harbor
+
+Production web app:
+  https://tcg-harbor.onrender.com
+
+Important production routes:
+  https://tcg-harbor.onrender.com/
+  https://tcg-harbor.onrender.com/cards
+  https://tcg-harbor.onrender.com/stores
+  https://tcg-harbor.onrender.com/communities
+  https://tcg-harbor.onrender.com/market-comparison
+
+Supabase project:
+  Project reference: zsvmztgkwjbrtvplymqe
+  Project URL: https://zsvmztgkwjbrtvplymqe.supabase.co
+  Dashboard: https://supabase.com/dashboard/project/zsvmztgkwjbrtvplymqe
+
+Render:
+  Workspace: My Workspace
+  Workspace/owner ID: tea-d9f2gjlaeets73c9r560
+  Static-site service name: tcg-harbor
+  Service ID: srv-d9f4mjnavr4c73c588i0
+  Dashboard:
+    https://dashboard.render.com/static/srv-d9f4mjnavr4c73c588i0
+  Production URL:
+    https://tcg-harbor.onrender.com
+  Deployment branch: main
+  Build command: npm ci && npm run build
+  Publish path: dist
+  Auto-deploy setting: enabled for commits
+
+No custom domain is owned. The Render subdomain is the canonical public origin.
+
+
+2. CURRENT RELEASE STATE
+========================
+
+Latest production GitHub commit at handoff:
+  5500fbd3a30b15ed3cdebedb47070766cb9acd08
+  "Keep community trade feeds live (#10)"
+
+Latest production Render deployment at handoff:
+  dep-d9hnf537uimc73dntc5g
+  Status: live
+  Commit: 5500fbd3a30b15ed3cdebedb47070766cb9acd08
+
+Relevant pull requests:
+  PR #8 - merged - open Dresden community trading
+    https://github.com/mattin89/tcg-harbor/pull/8
+  PR #9 - closed without merge - superseded because its old squash-merged
+    branch history conflicted with main
+  PR #10 - merged - live cross-account trade-feed updates
+    https://github.com/mattin89/tcg-harbor/pull/10
+
+Current local branch when this handoff was written:
+  agent/community-trade-live-feed-v7
+
+Its local commit is f67c7c0, while main contains the squash-equivalent 5500fbd.
+Do not continue stacking changes on this already merged branch. Start new work
+from the latest origin/main after inspecting the mixed working tree:
+
+  git status -sb
+  git fetch origin main
+  git switch -c agent/<short-description> origin/main
+
+Never use git reset --hard, force-push, or delete user files to clean this repo.
+
+
+3. WORKING-TREE SAFETY - READ BEFORE EDITING
+============================================
+
+The repository has unrelated, user-owned, untracked files. They were present
+before the latest trading fixes and were deliberately left untouched:
+
+  docs/audits/
+  public/.well-known/agent-skills/browse-tcg-harbor/agents/
+  public/catalog/sealed/v1/*.webp
+
+The sealed directory contains many individually named untracked WebP files.
+Do not delete them, move them, stage them, or assume they belong to a new task.
+
+Rules for future commits:
+
+  1. Run git status -sb before editing and before staging.
+  2. Stage only explicit paths belonging to the current task.
+  3. Never use git add -A in this mixed worktree.
+  4. Run git diff --check and git diff --cached --check.
+  5. Preserve existing versioned files when a substantial rewrite is needed;
+     prefer a new V<number> file or migration where appropriate.
+
+
+4. LOCAL RUNTIME AND STARTUP
+============================
+
+Stack:
+  React 18
+  strict TypeScript
+  Vite 6
+  Supabase JS 2.110.7
+  MapLibre GL
+  Vitest
+  Node.js 22 or newer
+
+The system Node available from PATH has sometimes resolved to Node 18 and
+produced EPERM/realpath errors or a missing Web Crypto randomUUID in tests.
+Use the bundled Node 22 runtime in this Codex environment:
+
+  C:\Users\delor\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe
+
+Recommended PowerShell setup:
+
+  $nodeBin = 'C:\Users\delor\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin'
+  $env:PATH = "$nodeBin;$env:PATH"
+  node --version
+  npm --version
+
+Expected Node major version: 22 or newer.
+
+Environment:
+  Copy .env.example to the gitignored .env only when .env does not already
+  exist. Never overwrite an existing populated .env.
+
+Browser-safe required variables:
+  VITE_SUPABASE_URL
+  VITE_SUPABASE_PUBLISHABLE_KEY
+
+Legacy browser-safe fallback:
+  VITE_SUPABASE_ANON_KEY
+
+Server-only variables must never use the VITE_ prefix:
+  SUPABASE_SECRET_KEY
+  SUPABASE_SERVICE_ROLE_KEY (legacy fallback)
+  CARDMARKET_ACCESS_TOKEN
+  CARDMARKET_APP_TOKEN
+  TCGPLAYER_PUBLIC_KEY
+  TCGPLAYER_PRIVATE_KEY
+  TCGPLAYER_BEARER_TOKEN
+
+Install and start:
+
+  npm ci
+  npm run dev
+
+Local URL:
+  http://127.0.0.1:4173/
+
+The port is fixed in vite.config.ts. The app intentionally starts in guest
+browse mode, not on the login screen. Guests can browse cards and stores but
+cannot save collection items or join communities.
+
+
+5. VALIDATION COMMANDS AND KNOWN TEST BEHAVIOUR
+===============================================
+
+Primary checks:
+
+  npm test
+  npm run build
+
+Direct Node 22 equivalents if npm resolves the wrong Node:
+
+  & 'C:\Users\delor\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe' `
+    .\node_modules\vitest\vitest.mjs run
+
+  & 'C:\Users\delor\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe' `
+    .\node_modules\typescript\bin\tsc --noEmit
+
+To avoid overwriting an existing dist directory, use a new unique temporary
+output directory for a diagnostic build:
+
+  $out = Join-Path $env:TEMP "tcg-harbor-build-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+  & 'C:\Users\delor\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe' `
+    .\node_modules\vite\bin\vite.js build --outDir $out
+
+Latest validation:
+  - TypeScript no-emit check passed.
+  - Focused community feed tests: 13 passed.
+  - There are currently 386 tests.
+  - In the complete parallel run, 385 passed and
+    sealedProductImageCacheV10.test.mjs exceeded its existing 5-second limit.
+  - That sealed-image test passed alone in about 0.6 seconds. This is known
+    full-suite resource contention, not a trading regression.
+  - The production Vite build passed under Node 22.
+  - Render's npm audit found zero vulnerabilities.
+  - Render's client-bundle secret scan passed.
+
+Known non-failing build warning:
+  The generated catalog produces a very large JavaScript chunk (about 21 MB
+  uncompressed). Vite warns about chunk size. This predates the trade-feed fix.
+
+
+6. APPLICATION ARCHITECTURE AND KEY FILES
+=========================================
+
+Shipped entry and main routing:
+  src/main.tsx
+  src/ProductionApp_v2.tsx
+  src/App.tsx
+
+Production authentication and account boundary:
+  src/services/supabase/client.ts
+  src/services/supabase/authSessionIsolationV3.ts
+  src/production/supabaseProductionAccess.ts
+  src/production/types.ts
+
+Collection persistence and valuation:
+  src/services/supabase/collectionRepositoryV2.ts
+  src/services/supabase/useProductionCollectionV2.ts
+  src/services/supabase/activityRepositoryV3.ts
+  src/services/supabase/useProductionActivityV3.ts
+
+Store directory and Dresden map:
+  src/services/supabase/usePublicStoreDirectoryV4.ts
+  src/components/DresdenMap.tsx
+  src/data/demo.ts
+
+Community trading:
+  src/domain/communityTradingV6.ts
+  src/components/CommunityTradingBoardV6.tsx
+  src/services/supabase/communityTradingRepositoryV6.ts
+  src/services/supabase/useProductionCommunityTradingV6.ts
+  src/styles-community-trading-v6.css
+
+Notifications and Realtime reference implementation:
+  src/services/supabase/notificationRepositoryV5.ts
+  src/services/supabase/useProductionNotificationsV5.ts
+
+Generated One Piece catalog:
+  src/data/generated/onepiece-market-v10.json
+  scripts/sync-onepiece-data-v10.mjs
+
+Agent/public discovery:
+  public/robots.txt
+  public/.well-known/
+  public/auth.md
+  scripts/generate-public-discovery-v1.mjs
+  scripts/create-static-spa-entrypoints-v1.mjs
+
+Database:
+  supabase/config.toml
+  supabase/migrations/
+  supabase/seed.sql
+  supabase/SECURITY.md
+  supabase/SECURITY_v2.md
+
+Operations documentation:
+  README.md
+  docs/ARCHITECTURE.md
+  docs/PRODUCTION_ACCOUNTS_v2.md
+  docs/PRODUCTION_OPERATIONS_v3.md
+
+
+7. SUPABASE ACCESS AND SAFE MIGRATION WORKFLOW
+==============================================
+
+The Supabase CLI was authenticated through the official browser/device flow
+and the repo is linked to project zsvmztgkwjbrtvplymqe. The CLI stores its
+access token outside the repository. Never print, copy, or commit that token.
+
+Bundled Supabase CLI invocation:
+
+  $env:SUPABASE_TELEMETRY_DISABLED = '1'
+  $node = 'C:\Users\delor\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe'
+  $cli = '.\node_modules\supabase\dist\supabase.js'
+  & $node $cli --version
+
+Expected CLI version at handoff:
+  2.109.1
+
+Check authentication/link:
+
+  & $node $cli projects list
+  & $node $cli migration list --linked
+
+If authentication expired:
+  Use the official command and let Mario approve the one-time browser code:
+
+  & $node $cli login
+
+Do not ask Mario to paste a long-lived token into chat.
+
+This project uses imperative migrations. For a schema change:
+
+  1. Read the current Supabase skill/docs/changelog first.
+  2. Inspect the live schema with read-only SQL where needed:
+
+       & $node $cli db query --linked "<read-only SQL>"
+
+  3. Create the migration filename through the CLI; do not invent a timestamp:
+
+       & $node $cli migration new <descriptive_name>
+
+  4. Edit the created migration using apply_patch.
+  5. Dry-run:
+
+       & $node $cli db push --linked --dry-run
+
+  6. Apply only after tests and review:
+
+       & $node $cli db push --linked --yes
+
+  7. Verify the live schema/data and migration list.
+  8. Run the security advisor:
+
+       & $node $cli db advisors --linked --type security --level error --fail-on error
+
+Docker Desktop is not installed. Remote db push/query/advisors still work.
+The CLI may warn that it cannot cache the migrations catalog because Docker is
+absent; this warning does not mean the remote migration failed. Verify remotely.
+
+Supabase security invariants:
+  - Never expose SUPABASE_SECRET_KEY or service-role credentials in Vite.
+  - Every public-schema table exposed through the Data API must have RLS.
+  - Explicit GRANT and RLS are separate controls; verify both.
+  - User collections, acquisition values, private notes, and direct messages
+    are owner/participant scoped.
+  - Store administrators do not receive a direct-message bypass.
+  - SECURITY DEFINER RPCs must explicitly check auth.uid(), use an empty/fixed
+    search_path, revoke PUBLIC/anon execute, and grant only the intended role.
+  - Run the security advisor after functions, views, RLS, or grants change.
+
+
+8. TEST DRESDEN COMMUNITY AND TRADE FEED
+========================================
+
+Seeded production test store:
+  Store name: Test Dresden Community
+  Location: An der Frauenkirche, 01067 Dresden
+  Coordinates: 51.05195, 13.74161
+  Store ID: 5b46755e-4d45-4f8e-a5aa-d9b2ec8cd601
+
+Seeded production community:
+  Community ID: 5b46755e-4d45-4f8e-a5aa-d9b2ec8cd602
+  Join mode: open
+  Any signed-in active account can join without a QR code.
+  Guests cannot join.
+
+Trade options supported for card offers:
+  - Ask for money
+  - EUR 0 means a free giveaway
+  - Trade for any card
+  - Trade for a specific exact card printing
+  - Open to any action
+
+Trade options supported for wanted-card posts:
+  - Buy it
+  - Trade with any owned card
+  - Offer a specific owned card
+  - Open to any action
+
+Database migrations:
+  supabase/migrations/20260724110922_open_dresden_community_trading_v6.sql
+  supabase/migrations/20260724141817_community_trade_feed_realtime_v7.sql
+
+V6 security:
+  - Atomic create_community_trade_post_v6 RPC.
+  - join_open_community_v6 RPC.
+  - set_community_trade_post_status_v6 RPC.
+  - Direct multi-table trade mutations revoked from authenticated clients.
+  - Offered cards are verified against the author's collection.
+  - German-language One Piece cards are rejected.
+
+V7 live-feed fix:
+  - trade_posts is in the supabase_realtime publication.
+  - Existing member RLS remains the read boundary for every Realtime event.
+  - The client subscribes only to joined community IDs.
+  - Realtime changes trigger a quiet full feed reload.
+  - Focus, visibility, and 15-second polling are fallbacks.
+  - The status filter defaults to All posts, so completed/closed posts do not
+    look as if they disappeared.
+  - Channel cleanup is tested to prevent account-switch leaks.
+
+Diagnosis evidence before V7:
+  - Four real trade posts existed in Test Dresden Community.
+  - They came from two active member accounts.
+  - All four were marked completed.
+  - RLS simulations showed each account could read all four posts, including
+    posts created by the other account.
+  - The missing UI behaviour was stale clients plus the default Open filter,
+    not a failed write or cross-account RLS denial.
+
+Current expected behaviour:
+  When member A posts or changes status, member B's already-open community board
+  refreshes through Realtime. If the WebSocket fails, member B refreshes within
+  15 seconds or immediately on returning focus. All persisted statuses are
+  visible by default.
+
+
+9. GITHUB PUBLISHING WORKFLOW
+=============================
+
+GitHub CLI is installed:
+  gh version 2.96.0 at handoff
+
+Check authentication:
+  gh auth status
+
+If authentication expires:
+  gh auth login -h github.com -p https -w
+
+Mario must approve the one-time device code in the official GitHub browser
+page. Never copy the resulting token into files or output.
+
+Safe publish sequence:
+
+  1. git status -sb
+  2. git fetch origin main
+  3. Start a fresh agent/<description> branch from origin/main.
+  4. Stage only explicit task files.
+  5. Run tests/build and git diff --cached --check.
+  6. Commit with a terse message.
+  7. git push -u origin <branch>
+  8. Open a draft PR, document root cause and validation.
+  9. Check mergeability before marking ready.
+ 10. Merge only a clean, validated PR.
+
+The GitHub connector previously returned 403 "Resource not accessible by
+integration" when opening a PR. The authenticated gh CLI is the working
+fallback.
+
+The only GitHub Actions workflow currently visible is:
+  .github/workflows/sync-onepiece-catalog.yml
+
+It is scheduled/manual, not a normal PR-check workflow. Its trusted publication
+path requires encrypted repository secrets SUPABASE_URL and
+SUPABASE_SECRET_KEY. Never put those secret values in the repo or Vite config.
+
+
+10. RENDER DEPLOYMENT AND MONITORING
+====================================
+
+Use the Render MCP integration when available.
+
+Workspace selection:
+  list_workspaces
+  get_selected_workspace
+
+There was only one accessible workspace and it auto-selected "My Workspace."
+Never select a different workspace without Mario's confirmation.
+
+Service:
+  srv-d9f4mjnavr4c73c588i0
+
+Useful MCP operations:
+  list_services
+  list_deploys(serviceId, limit)
+  get_deploy(serviceId, deployId)
+  list_logs(resource=[serviceId], ...)
+  trigger_deploy(serviceId, clearCache=false)
+
+Important known issue:
+  Render is configured for auto-deploy from main, but recent GitHub merge
+  webhooks did not create deployments. Build logs say:
+
+    "It looks like we don't have access to your repo, but we'll try to clone it anyway."
+
+  The public repo can still be cloned, and manual API-triggered deployments
+  succeed. After merging:
+
+  1. Wait briefly and call list_deploys.
+  2. Match the full Git commit SHA.
+  3. If no deployment is created and the webhook is clearly missed, trigger
+     exactly one manual deployment.
+  4. Do not trigger another build if the correct commit is already building.
+  5. Monitor until status is live or inspect logs on failure.
+
+Production verification:
+  - Make a cache-busted GET to / and /stores.
+  - Confirm both return HTTP 200 and text/html.
+  - Parse the current hashed CSS and JS paths from index.html.
+  - Confirm those assets return HTTP 200 with the correct content types.
+  - Search only for expected non-secret feature literals in the public bundle.
+  - Check Render error logs after the deployment.
+
+For release 5500fbd, the cache-busted production bundle contained:
+  community-trades-v7
+  postgres_changes
+  Live trade feed
+  All posts
+  visibilitychange
+  .community-trade-grid-v6
+
+No Render error logs appeared after that deployment.
+
+
+11. DATA, IMAGES, AND MARKET RULES
+==================================
+
+The browser does not directly query Cardmarket or TCGplayer. The generated v10
+snapshot is built/ingested server-side:
+  scripts/sync-onepiece-data-v10.mjs
+  src/data/generated/onepiece-market-v10.json
+
+Current README snapshot claims at handoff:
+  - 5,359 card printings
+  - 380 released sealed products
+  - source-backed images for every included card printing
+  - local immutable WebPs for released sealed products
+  - Cardmarket trend data and exact TCGplayer product mappings where defensible
+  - released sets through the current v10 coverage; future products stay gated
+
+Do not invent or interpolate missing market data. Preserve null/unavailable
+states when an exact printing cannot be matched. Regular and alternate art are
+separate printings and must not be shown as a low-high price range.
+
+Catalog sync:
+  npm run sync:data
+
+Supabase ingest of an existing verified snapshot:
+  npm run sync:ingest
+
+These need network access and server-only secrets. The workflow is intended to
+run at most daily. Review the script, tests, provider terms, and generated diff
+before publishing a refreshed snapshot.
+
+
+12. AUTHENTICATION AND ACCOUNT RULES
+====================================
+
+There is no reusable live/demo account credential in the repository.
+Do not create or display plaintext production credentials in a handoff.
+
+Expected behaviour:
+  - Guests begin in read-only browsing mode.
+  - New players and stores have empty collections and messages.
+  - Signed-in player data is owner-scoped.
+  - Store accounts apply/register stores; platform approval is required.
+  - Stores administer their own community messages and memberships.
+  - Logout/login returns the user to the dashboard.
+  - Clicking the top-right account icon opens account/settings navigation.
+  - Sessions must never be copied between different users or devices.
+
+Administrative bootstrap guidance:
+  scripts/bootstrap-platform-admin-v2.mjs
+  docs/PRODUCTION_ACCOUNTS_v2.md
+  docs/PRODUCTION_OPERATIONS_v3.md
+
+The bootstrap script requires server-only environment values. Account role
+promotion remains a separate exact-UUID operation. Never use user-editable
+metadata as the authorization source.
+
+
+13. QUICK TAKEOVER CHECKLIST
+============================
+
+At the start of the next task:
+
+  [ ] Read this file, README.md, relevant operations docs, and AGENTS.md.
+  [ ] cd C:\Users\delor\Documents\Codex\Projects\tcg-harbor
+  [ ] git status -sb
+  [ ] Note and preserve the unrelated untracked files.
+  [ ] Ensure Node 22 is first on PATH.
+  [ ] git fetch origin main
+  [ ] Confirm origin/main is at least 5500fbd.
+  [ ] Start a fresh agent/<task> branch from origin/main.
+  [ ] Check .env exists without printing its values.
+  [ ] Start http://127.0.0.1:4173 with npm run dev when local UI testing is needed.
+  [ ] Use Supabase CLI read-only queries to diagnose database behaviour.
+  [ ] Create versioned migrations through "supabase migration new".
+  [ ] Run focused tests, TypeScript, complete tests, and a production build.
+  [ ] Stage only explicit task files.
+  [ ] Open a draft PR and verify mergeability.
+  [ ] Merge only after validation.
+  [ ] Monitor Render for the exact merged SHA.
+  [ ] If its known webhook misses the merge, trigger one manual deployment.
+  [ ] Verify cache-busted production routes/assets and error logs.
+  [ ] Never expose a secret, delete a user file, or reset the working tree.
+
+
+END OF HANDOFF
+==============

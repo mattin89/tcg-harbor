@@ -1,6 +1,7 @@
 import { useId, useMemo, useState, type ReactNode } from 'react';
 import { Icon } from './Icon';
 import { formatMoney, type DemoAsset, type Market, type Period } from '../data/demo';
+import { buildMultiPointCurve, type UserCardPriceHistory } from '../domain/cardPriceHistory';
 import sealedProductPlaceholder from '../assets/sealed-product-placeholder-v1.png';
 
 export function Button({ children, variant = 'primary', size = 'md', icon, className = '', ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger'; size?: 'sm' | 'md' | 'icon'; icon?: Parameters<typeof Icon>[0]['name'] }) {
@@ -65,26 +66,27 @@ export function Trend({ value, suffix = '%' }: { value: number | null; suffix?: 
   return <span className={`trend ${positive ? 'trend-positive' : 'trend-negative'}`}><Icon name={positive ? 'arrow-up' : 'arrow-down'} size={14} />{positive ? '+' : ''}{value.toFixed(2)}{suffix}</span>;
 }
 
-export function PriceChart({ assets, market, period, compact = false }: { assets: DemoAsset[]; market: Market; period: Period; compact?: boolean }) {
+export function PriceChart({ assets, market, period, compact = false, priceHistory }: { assets: DemoAsset[]; market: Market; period: Period; compact?: boolean; priceHistory?: UserCardPriceHistory }) {
   const [hover, setHover] = useState<number | null>(null);
   const id = useId();
-  const points = useMemo(() => {
-    const current = assets.reduce((sum, asset) => sum + (asset.quote[market] ?? 0) * asset.quantity, 0);
-    const start = assets.reduce((sum, asset) => {
-      const q = asset.quote[market], c = asset.change[market][period];
-      return q === null ? sum : sum + (c === null ? q : q / (1 + c / 100)) * asset.quantity;
-    }, 0);
-    return [start, current];
-  }, [assets, market, period]);
+  const curve = useMemo(() => buildMultiPointCurve(assets, market, period, priceHistory), [assets, market, period, priceHistory]);
+  const points = curve.points;
   const min = Math.min(...points) * 0.998;
   const max = Math.max(...points) * 1.002;
-  const coords = points.map((value, i) => ({ x: (i / (points.length - 1)) * 1000, y: 260 - ((value - min) / Math.max(1, max - min)) * 220, value }));
+  const coords = points.map((value, i) => ({
+    x: points.length > 1 ? (i / (points.length - 1)) * 1000 : 500,
+    y: 260 - ((value - min) / Math.max(1, max - min)) * 220,
+    value,
+    date: curve.dates[i],
+    label: curve.labels[i],
+  }));
   const line = coords.map((point, i) => `${i ? 'L' : 'M'}${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
   const area = `${line} L1000,280 L0,280 Z`;
   const active = coords[hover ?? coords.length - 1];
-  const start = points[0];
-  const pct = start ? ((active.value - start) / start) * 100 : 0;
-  return <div className={`price-chart ${compact ? 'price-chart-compact' : ''}`} tabIndex={0} role="img" aria-label={`Portfolio chart. Current value ${formatMoney(points.at(-1) ?? 0, market)}. ${pct >= 0 ? 'Up' : 'Down'} ${Math.abs(pct).toFixed(2)} percent.`} onMouseLeave={() => setHover(null)} onMouseMove={(event) => {
+  const start = points[0] ?? 0;
+  const diff = active.value - start;
+  const pct = start > 0 ? ((active.value - start) / start) * 100 : (start === 0 && active.value === 0 ? 0 : null);
+  return <div className={`price-chart ${compact ? 'price-chart-compact' : ''}`} tabIndex={0} role="img" aria-label={`Portfolio chart. Current value ${formatMoney(points.at(-1) ?? 0, market)}. ${diff >= 0 ? 'Up' : 'Down'}.`} onMouseLeave={() => setHover(null)} onMouseMove={(event) => {
     const box = event.currentTarget.getBoundingClientRect();
     const index = Math.max(0, Math.min(points.length - 1, Math.round(((event.clientX - box.left) / box.width) * (points.length - 1))));
     setHover(index);
@@ -96,7 +98,7 @@ export function PriceChart({ assets, market, period, compact = false }: { assets
       <path d={line} className="chart-line" vectorEffect="non-scaling-stroke" />
       {hover !== null && <><line x1={active.x} x2={active.x} y1="20" y2="278" className="chart-cursor" vectorEffect="non-scaling-stroke"/><circle cx={active.x} cy={active.y} r="7" className="chart-point" vectorEffect="non-scaling-stroke"/></>}
     </svg>
-    {!compact && <div className="chart-tooltip" style={{ left: `${Math.min(74, Math.max(24, active.x / 10))}%` }}><span>{active.x === 0 ? `${period === '1D' ? '1-day' : period === '1W' ? '7-day' : '30-day'} average` : 'Current trend'} · {market === 'cardmarket' ? 'Cardmarket' : 'US market'}</span><strong>{formatMoney(active.value, market)}</strong><em className={pct >= 0 ? 'positive' : 'negative'}>{pct >= 0 ? '+' : ''}{formatMoney(active.value - start, market)} · {pct.toFixed(2)}%</em></div>}
+    {!compact && <div className="chart-tooltip" style={{ left: `${Math.min(74, Math.max(24, active.x / 10))}%` }}><span>{active.label} · {market === 'cardmarket' ? 'Cardmarket' : 'US market'}</span><strong>{formatMoney(active.value, market)}</strong><em className={diff >= 0 ? 'positive' : 'negative'}>{diff >= 0 ? '+' : ''}{formatMoney(diff, market)}{pct !== null ? ` · ${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%` : ''}</em></div>}
   </div>;
 }
 

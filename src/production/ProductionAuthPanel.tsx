@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Icon } from "../components/Icon";
 import type { ProductionAccessController } from "./useProductionAccess";
 import type { AccountKind } from "./types";
+import { resendConfirmationNoticeV13, signupConfirmationNoticeV13 } from "./storeSignupStatusV13";
 
 type AuthMode = "sign-in" | "sign-up" | "reset";
 
@@ -13,6 +14,8 @@ function Field({
   placeholder,
   required = true,
   minLength,
+  maxLength,
+  pattern,
 }: {
   label: string;
   name: string;
@@ -21,6 +24,8 @@ function Field({
   placeholder?: string;
   required?: boolean;
   minLength?: number;
+  maxLength?: number;
+  pattern?: string;
 }) {
   return (
     <label className="production-field">
@@ -32,6 +37,8 @@ function Field({
         placeholder={placeholder}
         required={required}
         minLength={minLength}
+        maxLength={maxLength}
+        pattern={pattern}
       />
     </label>
   );
@@ -54,6 +61,7 @@ export function ProductionAuthPanel({
   const [accountKind, setAccountKind] = useState<AccountKind>("player");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [pendingConfirmation, setPendingConfirmation] = useState<{ email: string; redirectPath: string } | null>(null);
 
   if (access.passwordRecovery) {
     return (
@@ -95,19 +103,31 @@ export function ProductionAuthPanel({
         await access.requestPasswordReset(email);
         setNotice("If that email belongs to an account, a secure reset link is on its way.");
       } else {
+        const emailRedirectPath = pendingStoreJoin ? "/join/store" : "/";
         const result = await access.signUp({
           email,
           password: String(data.get("password") ?? ""),
           username: String(data.get("username") ?? "").trim(),
           displayName: String(data.get("displayName") ?? "").trim(),
           accountKind,
-          emailRedirectPath: pendingStoreJoin ? "/join/store" : "/",
+          storeDetails: accountKind === "store" ? {
+            storeName: String(data.get("storeName") ?? ""),
+            addressLine1: String(data.get("storeAddress") ?? ""),
+            city: String(data.get("storeCity") ?? ""),
+            postcode: String(data.get("storePostcode") ?? ""),
+            countryCode: String(data.get("storeCountryCode") ?? ""),
+            websiteUrl: String(data.get("storeWebsite") ?? ""),
+          } : undefined,
+          emailRedirectPath,
         });
         if (result.emailConfirmationRequired) {
           const handoffReady = !pendingStoreJoin || Boolean(onEmailConfirmationHandoff?.());
-          setNotice(handoffReady
-            ? "Check your inbox to confirm your email. This invitation will be waiting for up to 15 minutes."
-            : "Check your inbox to confirm your email. Keep this tab open, or scan the store QR again afterwards.");
+          setPendingConfirmation({ email, redirectPath: emailRedirectPath });
+          setNotice(signupConfirmationNoticeV13({
+            email,
+            pendingStoreJoin,
+            handoffReady,
+          }));
           setMode("sign-in");
         }
       }
@@ -128,7 +148,7 @@ export function ProductionAuthPanel({
       : "We will email you a secure link to choose a new password.";
 
   return (
-    <AuthShell title={title} detail={detail}>
+    <AuthShell title={title} detail={detail} expanded={mode === "sign-up" && accountKind === "store"}>
       {pendingStoreJoin && <div className="production-pending-join" role="status"><Icon name="qr" size={18} /><span><strong>Store invitation ready</strong><small>This QR will be validated after you sign in. You will choose whether to join before membership is created.</small></span>{onCancelPendingStoreJoin && <button type="button" onClick={onCancelPendingStoreJoin}>Cancel</button>}</div>}
       {mode === "sign-up" && (
         <fieldset className="production-account-choice">
@@ -151,11 +171,37 @@ export function ProductionAuthPanel({
         {mode === "sign-up" && <>
           <Field label="Username" name="username" autoComplete="username" placeholder="harbor_player" minLength={3} />
           <Field label="Display name" name="displayName" autoComplete="name" placeholder="How others see you" required={false} />
+          {accountKind === "store" && <section className="production-store-signup-fields" aria-labelledby="store-signup-heading">
+            <header>
+              <span className="production-store-signup-icon"><Icon name="store" size={19} /></span>
+              <div><strong id="store-signup-heading">Physical store details</strong><small>Saved to your private onboarding profile and prefilled for administrator review.</small></div>
+            </header>
+            <div className="production-store-signup-grid">
+              <Field label="Store name" name="storeName" autoComplete="organization" placeholder="Dresden Card Harbor" minLength={2} maxLength={160} />
+              <Field label="Street address" name="storeAddress" autoComplete="address-line1" placeholder="Street and number" minLength={2} maxLength={200} />
+              <Field label="City" name="storeCity" autoComplete="address-level2" placeholder="Dresden" minLength={2} maxLength={120} />
+              <Field label="Postcode" name="storePostcode" autoComplete="postal-code" placeholder="01067" minLength={2} maxLength={24} />
+              <Field label="Country code" name="storeCountryCode" autoComplete="country" placeholder="DE" minLength={2} maxLength={2} pattern="[A-Za-z]{2}" />
+              <Field label="Store website (optional)" name="storeWebsite" type="url" autoComplete="url" placeholder="https://example.com" required={false} maxLength={500} />
+            </div>
+          </section>}
         </>}
         <Field label="Email" name="email" type="email" autoComplete="email" placeholder="you@example.com" />
         {mode !== "reset" && <Field label="Password" name="password" type="password" autoComplete={mode === "sign-up" ? "new-password" : "current-password"} minLength={12} />}
         <AuthError message={access.error} />
         {notice && <p className="production-notice production-notice-success" role="status"><Icon name="check" size={16} />{notice}</p>}
+        {mode === "sign-in" && pendingConfirmation && <button className="production-secondary production-resend-confirmation" type="button" disabled={busy} onClick={async () => {
+          access.clearError();
+          setBusy(true);
+          try {
+            await access.resendSignUpConfirmation(pendingConfirmation.email, pendingConfirmation.redirectPath);
+            setNotice(resendConfirmationNoticeV13(pendingConfirmation.email));
+          } catch {
+            // The controller exposes a safe message through access.error.
+          } finally {
+            setBusy(false);
+          }
+        }}><Icon name="refresh" size={15} />Resend confirmation email</button>}
         <button className="production-primary" type="submit" disabled={busy}>
           {busy ? "Please wait…" : mode === "sign-in" ? "Sign in" : mode === "sign-up" ? "Create account" : "Send reset link"}
         </button>
@@ -173,10 +219,10 @@ export function ProductionAuthPanel({
   );
 }
 
-function AuthShell({ title, detail, children }: { title: string; detail: string; children: React.ReactNode }) {
+function AuthShell({ title, detail, children, expanded = false }: { title: string; detail: string; children: React.ReactNode; expanded?: boolean }) {
   return (
     <main className="production-auth-page">
-      <section className="production-auth-card">
+      <section className={`production-auth-card${expanded ? " is-expanded" : ""}`}>
         <div className="production-brand-mark"><Icon name="cards" size={26} /></div>
         <p className="production-eyebrow">TCG Harbor</p>
         <h1>{title}</h1>

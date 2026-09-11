@@ -4,6 +4,7 @@ export { ProductionAccessProvider, useProductionAccessContext, useProductionIden
 export { ProductionAuthPanel } from "./ProductionAuthPanel";
 export { ProductionStoreJoinPage } from "./ProductionStoreJoinPage";
 export { StoreQrInviteManager } from "./StoreQrInviteManager";
+export { StoreMemberApprovalManager } from "./StoreMemberApprovalManager";
 export { CommunityModerationPanel } from "./CommunityModerationPanel";
 export {
   captureStoreJoinIntent,

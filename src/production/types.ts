@@ -106,6 +106,7 @@ export interface ManagedStore {
   countryCode: string;
   isVerified: boolean;
   isActive: boolean;
+  requiresMemberApproval?: boolean;
   community: {
     id: string;
     name: string;
@@ -133,6 +134,18 @@ export interface RegisteredStore {
   communityId: string | null;
   communityName: string | null;
   communityJoinMode: "qr" | "open";
+  requiresMemberApproval?: boolean;
+}
+
+export interface StoreJoinRequest {
+  id: string;
+  storeId: string;
+  userId: string;
+  userName: string;
+  userInitials: string;
+  note?: string;
+  requestedAt: string;
+  status: "pending" | "accepted" | "rejected";
 }
 
 export interface CommunityChannel {
@@ -276,6 +289,7 @@ export interface PlatformAdminStore {
   ownerDisplayName: string | null;
   communityId: string | null;
   communityName: string | null;
+  requiresMemberApproval?: boolean;
 }
 
 export interface PlatformAdminUpdateStoreDraft {

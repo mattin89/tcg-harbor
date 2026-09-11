@@ -10,6 +10,7 @@ import {
 import { CommunityModerationPanel } from "./CommunityModerationPanel";
 import { AuthError } from "./ProductionAuthPanel";
 import { StoreQrInviteManager } from "./StoreQrInviteManager";
+import { StoreMemberApprovalManager } from "./StoreMemberApprovalManager";
 import type { ProductionAccessController } from "./useProductionAccess";
 import type {
   CommunityChannel,
@@ -499,6 +500,7 @@ export function StoreWorkspacePanel({ stores, access }: { stores: ManagedStore[]
             <span><Icon name="settings" size={17} /><strong>Community</strong><small>Rules and store details</small></span>
           </div>
           <StoreQrInviteManager store={store} access={access} />
+          <StoreMemberApprovalManager store={store} access={access} />
           {store.community && <>
             <CommunityChannelManager communityId={store.community.id} access={access} />
             <CommunityModerationPanel communityId={store.community.id} access={access} />

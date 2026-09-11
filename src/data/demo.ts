@@ -393,7 +393,42 @@ export interface Store {
   communityId?: string | null;
   communityName?: string | null;
   communityJoinMode?: 'qr' | 'open';
+  requiresMemberApproval?: boolean;
 }
+
+export interface StoreJoinRequest {
+  id: string;
+  storeId: string;
+  userId: string;
+  userName: string;
+  userInitials: string;
+  note?: string;
+  requestedAt: string;
+  status: 'pending' | 'accepted' | 'rejected';
+}
+
+export const initialStoreJoinRequests: StoreJoinRequest[] = [
+  {
+    id: 'req-1',
+    storeId: 'berlin-dock',
+    userId: 'user-kai',
+    userName: 'KaiT',
+    userInitials: 'KT',
+    note: 'Hi! Local player visiting Friday locals, looking to trade OP06 leaders.',
+    requestedAt: '10 mins ago',
+    status: 'pending',
+  },
+  {
+    id: 'req-2',
+    storeId: 'berlin-dock',
+    userId: 'user-zoro',
+    userName: 'ZoroCollector',
+    userInitials: 'ZC',
+    note: 'Active in Dresden, play Green Zoro constructed.',
+    requestedAt: '1 hour ago',
+    status: 'pending',
+  },
+];
 
 export interface CommunityMessage {
   id: string;
@@ -403,6 +438,7 @@ export interface CommunityMessage {
   time: string;
   own?: boolean;
   failed?: boolean;
+  role?: string;
 }
 
 export interface TradePost {

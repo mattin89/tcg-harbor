@@ -6,6 +6,7 @@ import { ProductionAccessProvider, useProductionAccessContext } from "./Producti
 import { ProductionAuthPanel } from "./ProductionAuthPanel";
 import { ProductionStoreJoinPage } from "./ProductionStoreJoinPage";
 import { PlatformApprovalPanel, StoreApplicationPanel, StoreWorkspacePanel } from "./StoreAccessPanels";
+import { PlatformInventoryPanel } from "../components/admin/PlatformInventoryPanel";
 import {
   captureStoreJoinIntentFromBrowser,
   clearStoredStoreJoinIntent,
@@ -20,6 +21,7 @@ export interface ProductionAccessGateProps {
   renderPlayer?: (snapshot: ProductionAccessSnapshot) => ReactNode;
   renderStoreWorkspace?: (snapshot: ProductionAccessSnapshot) => ReactNode;
   renderPlatformApprovals?: (snapshot: ProductionAccessSnapshot) => ReactNode;
+  renderPlatformInventory?: (snapshot: ProductionAccessSnapshot) => ReactNode;
 }
 
 export interface ProductionGuestRenderContextV4 {
@@ -32,7 +34,14 @@ export function ProductionAccessGate(props: ProductionAccessGateProps) {
 }
 
 /** Use inside an existing ProductionAccessProvider when App also needs the context hook. */
-export function ProductionAccessBoundary({ children, renderGuest, renderPlayer, renderStoreWorkspace, renderPlatformApprovals }: ProductionAccessGateProps) {
+export function ProductionAccessBoundary({
+  children,
+  renderGuest,
+  renderPlayer,
+  renderStoreWorkspace,
+  renderPlatformApprovals,
+  renderPlatformInventory,
+}: ProductionAccessGateProps) {
   const access = useProductionAccessContext();
   const [area, setArea] = useState<PortalAreaV2>("player");
   const [authRequested, setAuthRequested] = useState(false);
@@ -205,6 +214,7 @@ export function ProductionAccessBoundary({ children, renderGuest, renderPlayer, 
           <button type="button" className={area === "player" ? "is-active" : ""} onClick={() => setArea("player")}><Icon name="cards" size={16} />Player area</button>
           {canUseStoreArea && <button type="button" className={area === "store" ? "is-active" : ""} onClick={() => setArea("store")}><Icon name="store" size={16} />Store workspace{snapshot.application?.status === "pending" && <i />}</button>}
           {isPlatformAdmin && <button type="button" className={area === "approvals" ? "is-active" : ""} onClick={() => setArea("approvals")}><Icon name="shield" size={16} />Approvals</button>}
+          {isPlatformAdmin && <button type="button" className={area === "inventory" ? "is-active" : ""} onClick={() => setArea("inventory")}><Icon name="box" size={16} />Inventory</button>}
         </nav>
         <button className="production-signout" type="button" onClick={() => void access.signOut()} aria-label="Sign out"><Icon name="logout" size={17} /><span>Sign out</span></button>
       </header>
@@ -215,6 +225,7 @@ export function ProductionAccessBoundary({ children, renderGuest, renderPlayer, 
           ? renderStoreWorkspace?.(snapshot) ?? <StoreWorkspacePanel stores={snapshot.managedStores} access={access} />
           : <StoreApplicationPanel access={access} />)}
         {area === "approvals" && isPlatformAdmin && (renderPlatformApprovals?.(snapshot) ?? <PlatformApprovalPanel access={access} />)}
+        {area === "inventory" && isPlatformAdmin && (renderPlatformInventory?.(snapshot) ?? <PlatformInventoryPanel access={access} />)}
       </div>
     </div>
   );

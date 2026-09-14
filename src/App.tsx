@@ -36,6 +36,7 @@ import {
   resolveCardmarketArtworkReferenceV10,
   resolveCatalogCardmarketReferenceV10,
 } from './domain/cardmarketSearchReferenceV10';
+import { PlatformInventoryPanel } from './components/admin/PlatformInventoryPanel';
 import { useProductionCollectionV2, type ProductionCollectionRuntimeV2 } from './services/supabase/useProductionCollectionV2';
 import { useProductionDirectMessagesV2, type ProductionDirectMessagesRuntimeV2 } from './services/supabase/useProductionDirectMessagesV2';
 import type { ProductionDirectConversationV2 } from './services/supabase/directMessageRepositoryV2';
@@ -438,6 +439,7 @@ export default function App({ identity, guest }: AppProps = {}) {
     : path === '/communities' ? ['Your communities', 'Trade and connect where you play']
     : path.startsWith('/messages/') || path === '/messages' ? ['Private messages', 'Available only between collectors who share a community']
     : path === '/settings' ? ['Profile & settings', 'Control your market, privacy, and notifications']
+    : path === '/inventory' ? ['Catalog inventory & diagnostics', 'Review cards, sealed products, and resolve errors']
     : path === '/store-admin' ? [isPlatformAdministrator ? 'Store approvals' : isApprovedStoreAdministrator ? 'Store administration' : 'Register your store', isPlatformAdministrator ? 'Review store applications and protect community access' : 'Manage store identity and community access after approval']
     : path === '/scan' ? ['Scan a store code', 'Join a community while you are physically at the store']
     : path.startsWith('/join/') ? ['Join community', 'Confirm the store you are visiting']
@@ -467,6 +469,8 @@ export default function App({ identity, guest }: AppProps = {}) {
                 : <CommunityPage communityId={path.split('/')[2]} joinedIds={joinedIds} assets={assets} messages={communityMessages} setMessages={setCommunityMessages} trades={tradePosts} setTrades={setTradePosts} market={market} navigate={navigate} notify={notify} isStoreManager={!identity} pendingRequests={storeJoinRequests.filter(r => r.storeId === (path.split('/')[2]) && r.status === 'pending')} onAcceptJoinRequest={(id) => setStoreJoinRequests(prev => prev.filter(r => r.id !== id))} onRejectJoinRequest={(id) => setStoreJoinRequests(prev => prev.filter(r => r.id !== id))} profileName={profileName} profileInitials={profileInitials} />
               : path === '/messages' || path.startsWith('/messages/')
                 ? <MessagesPage conversationId={path.split('/')[2]} conversations={conversations} setConversations={setConversations} productionMessages={identity ? productionDirectMessages : undefined} navigate={navigate} notify={notify} />
+                : path === '/inventory'
+                  ? <PlatformInventoryPanel />
                 : path === '/settings'
                   ? <SettingsPageV5 market={market} setMarket={setMarket} navigate={navigate} notify={notify} signOut={signOut} identity={identity} />
                   : path === '/store-admin'
@@ -488,6 +492,7 @@ export default function App({ identity, guest }: AppProps = {}) {
       <div className="sidebar-grow" />
       {isGuest ? <section className="guest-auth-card"><Icon name="lock"/><div><strong>Browsing as a guest</strong><small>Sign in to save cards or join a store community.</small></div><Button type="button" size="sm" onClick={guest?.onRequestAuthentication}>Sign in / Create account</Button></section> : <>
         {canOpenStorePortal && <button className={`side-utility ${path === '/store-admin' ? 'active' : ''}`} aria-current={path === '/store-admin' ? 'page' : undefined} onClick={() => navigate('/store-admin')}><Icon name="shield" /><span>{isPlatformAdministrator ? 'Store approvals' : isApprovedStoreAdministrator ? 'Store admin' : identity ? 'Register store' : 'Store admin'}</span></button>}
+        {isPlatformAdministrator && <button className={`side-utility ${path === '/inventory' ? 'active' : ''}`} aria-current={path === '/inventory' ? 'page' : undefined} onClick={() => navigate('/inventory')}><Icon name="box" /><span>Catalog inventory</span></button>}
         <button className={`profile-card ${path === '/settings' ? 'active' : ''}`} aria-current={path === '/settings' ? 'page' : undefined} onClick={() => navigate('/settings')}><Avatar initials={profileInitials} size="md" /><span><strong>{profileName}</strong><small>{accountLabel}</small></span><Icon name="more" size={18} /></button>
       </>}
       <p className="unofficial">Unofficial collector/community {isGuest ? 'public preview' : identity ? 'platform' : 'demo'}<br />Not affiliated with any publisher or marketplace.</p>

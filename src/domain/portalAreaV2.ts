@@ -1,4 +1,4 @@
-export type PortalAreaV2 = 'player' | 'store' | 'approvals';
+export type PortalAreaV2 = 'player' | 'store' | 'approvals' | 'inventory';
 
 export function preferredPortalAreaV2(input: {
   readonly roles: readonly string[];

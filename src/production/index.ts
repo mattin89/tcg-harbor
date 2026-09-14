@@ -19,6 +19,7 @@ export {
   storeJoinUrl,
 } from "./storeJoinRoute";
 export { PlatformApprovalPanel, StoreApplicationPanel, StoreWorkspacePanel } from "./StoreAccessPanels";
+export { PlatformInventoryPanel } from "../components/admin/PlatformInventoryPanel";
 export { useProductionAccess } from "./useProductionAccess";
 export type { ProductionAccessController, ProductionAccessPhase } from "./useProductionAccess";
 export type * from "./types";

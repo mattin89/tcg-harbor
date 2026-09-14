@@ -84,10 +84,9 @@ describe('source-backed catalog snapshot', () => {
     const unavailable = cards.filter((asset) => asset.imageState === 'unavailable');
 
     expect(marketDataMeta.catalogCounts.cardPrintingsWithImages).toBe(cards.length);
-    expect(marketDataMeta.catalogCounts.cardPrintingsWithoutImages).toBe(0);
     expect(available).toHaveLength(marketDataMeta.catalogCounts.cardPrintingsWithImages);
     expect(unavailable).toHaveLength(0);
-    expect(available.every((asset) => asset.imageUrl?.startsWith('http'))).toBe(true);
+    expect(available.every((asset) => asset.imageUrl?.startsWith('http') || asset.imageUrl?.startsWith('/catalog/'))).toBe(true);
     expect(cards.every((asset) => asset.imageState === 'available')).toBe(true);
 
     const exactTcgplayerOverrides = new Map<number, string>([

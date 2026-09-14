@@ -137,12 +137,10 @@ function activeContinuityApproval(approval, generatedAt) {
 }
 
 /**
- * Prevents a daily catalog refresh from silently rebinding an already exact
- * card printing to another Cardmarket product (or dropping it). New exact
- * mappings are allowed. Every exception must name the old and new product ID,
- * carry a reason, and remain unexpired at the snapshot timestamp.
+ * Evaluates Cardmarket exact-mapping continuity across consecutive catalog snapshots.
+ * Returns approved changes and unapproved violations without throwing.
  */
-export function assertCardmarketMappingContinuity({
+export function evaluateCardmarketMappingContinuity({
   previousAssets = [],
   nextAssets = [],
   approvals = new Map(),
@@ -157,7 +155,8 @@ export function assertCardmarketMappingContinuity({
     const previousProductId = positiveProductId(previous.cardmarketProductId);
     if (previousProductId == null) continue;
 
-    const nextProductId = positiveProductId(nextById.get(previous.id)?.cardmarketProductId);
+    const nextAsset = nextById.get(previous.id);
+    const nextProductId = positiveProductId(nextAsset?.cardmarketProductId);
     if (nextProductId === previousProductId) continue;
 
     const approval = approvals.get(previous.id);
@@ -168,6 +167,10 @@ export function assertCardmarketMappingContinuity({
         : positiveProductId(approval.nextProductId) === nextProductId);
     const change = {
       assetId: previous.id,
+      cardName: previous.name ?? nextAsset?.name ?? previous.id,
+      cardNumber: previous.cardNumber ?? nextAsset?.cardNumber ?? null,
+      setCode: previous.setCode ?? nextAsset?.setCode ?? null,
+      changeType: nextProductId == null ? 'dropped' : 'remapped',
       previousProductId,
       nextProductId,
     };
@@ -178,12 +181,61 @@ export function assertCardmarketMappingContinuity({
     }
   }
 
-  if (violations.length > 0) {
+  return { approvedChanges, violations };
+}
+
+/**
+ * Prevents a daily catalog refresh from silently rebinding an already exact
+ * card printing to another Cardmarket product (or dropping it). New exact
+ * mappings are allowed. Every exception must name the old and new product ID,
+ * carry a reason, and remain unexpired at the snapshot timestamp.
+ *
+ * When maxFlaggedChanges is specified, isolated violations below this limit
+ * do not throw. For dropped mappings, previous product IDs are retained as
+ * pricing fallbacks, and the violations are returned as flaggedChanges.
+ */
+export function assertCardmarketMappingContinuity({
+  previousAssets = [],
+  nextAssets = [],
+  approvals = new Map(),
+  generatedAt,
+  maxFlaggedChanges,
+  fallbackDroppedMappings = true,
+}) {
+  const { approvedChanges, violations } = evaluateCardmarketMappingContinuity({
+    previousAssets,
+    nextAssets,
+    approvals,
+    generatedAt,
+  });
+
+  const maxAllowed = maxFlaggedChanges ?? 0;
+  if (violations.length > maxAllowed) {
     throw new Error(
       `Cardmarket exact-mapping continuity failed for ${violations.length} card printing(s): ${JSON.stringify(violations.slice(0, 20))}`,
     );
   }
-  return approvedChanges;
+
+  if (fallbackDroppedMappings && violations.length > 0) {
+    const nextById = new Map(nextAssets.map((asset) => [asset.id, asset]));
+    for (const violation of violations) {
+      if (violation.changeType === 'dropped') {
+        const nextAsset = nextById.get(violation.assetId);
+        if (nextAsset) {
+          nextAsset.cardmarketProductId = violation.previousProductId;
+        }
+      }
+    }
+  }
+
+  if (maxFlaggedChanges === undefined) {
+    return approvedChanges;
+  }
+
+  return {
+    approvedChanges,
+    flaggedChanges: violations,
+  };
 }
 
 /**

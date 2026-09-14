@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import {
   assertCardmarketMappingContinuity,
+  evaluateCardmarketMappingContinuity,
   matchCardmarketReleaseProducts,
   transientCardmarketContinuityDeferrals,
 } from '../../scripts/lib/cardmarket-mapping-v8.mjs';
@@ -236,5 +237,101 @@ describe('Cardmarket v8 exact-mapping continuity', () => {
       nextAssets,
       generatedAt: '2026-07-22T00:00:00.000Z',
     })).toThrow(/continuity failed for 1 card printing/);
+  });
+
+  it('evaluates continuity discrepancies and provides rich change metadata without throwing', () => {
+    const previousAssets = [
+      { id: 'card-1', kind: 'card', name: 'Zoro', cardNumber: 'OP01-025', setCode: 'OP01', cardmarketProductId: 100 },
+      { id: 'card-2', kind: 'card', name: 'Luffy', cardNumber: 'OP01-001', setCode: 'OP01', cardmarketProductId: 200 },
+    ];
+    const nextAssets = [
+      { id: 'card-1', kind: 'card', name: 'Zoro', cardNumber: 'OP01-025', setCode: 'OP01', cardmarketProductId: null },
+      { id: 'card-2', kind: 'card', name: 'Luffy', cardNumber: 'OP01-001', setCode: 'OP01', cardmarketProductId: 201 },
+    ];
+
+    const { approvedChanges, violations } = evaluateCardmarketMappingContinuity({
+      previousAssets,
+      nextAssets,
+      generatedAt,
+    });
+
+    expect(approvedChanges).toEqual([]);
+    expect(violations).toEqual([
+      {
+        assetId: 'card-1',
+        cardName: 'Zoro',
+        cardNumber: 'OP01-025',
+        setCode: 'OP01',
+        changeType: 'dropped',
+        previousProductId: 100,
+        nextProductId: null,
+      },
+      {
+        assetId: 'card-2',
+        cardName: 'Luffy',
+        cardNumber: 'OP01-001',
+        setCode: 'OP01',
+        changeType: 'remapped',
+        previousProductId: 200,
+        nextProductId: 201,
+      },
+    ]);
+  });
+
+  it('flags isolated mapping changes within threshold and falls back to previous ID for dropped cards', () => {
+    const droppedAsset = { id: 'card-dropped', kind: 'card', name: 'Nami', cardNumber: 'OP01-016', cardmarketProductId: null };
+    const remappedAsset = { id: 'card-remapped', kind: 'card', name: 'Carrot', cardNumber: 'EB03-013', cardmarketProductId: 871977 };
+    const previousAssets = [
+      { id: 'card-dropped', kind: 'card', name: 'Nami', cardNumber: 'OP01-016', cardmarketProductId: 500 },
+      { id: 'card-remapped', kind: 'card', name: 'Carrot', cardNumber: 'EB03-013', cardmarketProductId: 871978 },
+    ];
+    const nextAssets = [droppedAsset, remappedAsset];
+
+    const result = assertCardmarketMappingContinuity({
+      previousAssets,
+      nextAssets,
+      generatedAt,
+      maxFlaggedChanges: 5,
+      fallbackDroppedMappings: true,
+    });
+
+    expect(result.approvedChanges).toEqual([]);
+    expect(result.flaggedChanges).toHaveLength(2);
+    expect(result.flaggedChanges[0]).toMatchObject({
+      assetId: 'card-dropped',
+      changeType: 'dropped',
+      previousProductId: 500,
+      nextProductId: null,
+    });
+    expect(result.flaggedChanges[1]).toMatchObject({
+      assetId: 'card-remapped',
+      changeType: 'remapped',
+      previousProductId: 871978,
+      nextProductId: 871977,
+    });
+    // Dropped asset has its previous Cardmarket ID restored as fallback
+    expect(droppedAsset.cardmarketProductId).toBe(500);
+    // Remapped asset keeps its newly assigned ID
+    expect(remappedAsset.cardmarketProductId).toBe(871977);
+  });
+
+  it('fails with fatal error when violations exceed maxFlaggedChanges', () => {
+    const previousAssets = [
+      exact('card-1', 101),
+      exact('card-2', 102),
+      exact('card-3', 103),
+    ];
+    const nextAssets = [
+      exact('card-1', null),
+      exact('card-2', null),
+      exact('card-3', null),
+    ];
+
+    expect(() => assertCardmarketMappingContinuity({
+      previousAssets,
+      nextAssets,
+      generatedAt,
+      maxFlaggedChanges: 2,
+    })).toThrow(/continuity failed for 3 card printing/);
   });
 });

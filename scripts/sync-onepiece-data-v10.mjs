@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
@@ -2224,6 +2224,15 @@ const artworkTransientFallbacksV10 = new Map();
 let deferredArtworkReferencesV10 = 0;
 const CARDMARKET_ARTWORK_MATCH_POLICY_V10 = 'cardmarket-image-correlation-v2-complete-candidates';
 const artworkVerificationObservedAtV10 = new Date().toISOString();
+const snapshotStallMsV10 = Math.max(
+  0,
+  Date.parse(artworkVerificationObservedAtV10) - Date.parse(previousSnapshot?.generatedAt ?? ''),
+);
+const effectiveArtworkEvidenceMaxAgeMsV10 = ARTWORK_EVIDENCE_MAX_AGE_MS_V10 + snapshotStallMsV10;
+const effectiveTransientGraceMsV10 = Math.max(
+  ARTWORK_EVIDENCE_TRANSIENT_GRACE_MS_V10,
+  snapshotStallMsV10 + ARTWORK_EVIDENCE_TRANSIENT_GRACE_MS_V10,
+);
 
 function artworkSourceImageV10(card, number) {
   const starterEnrichment = card.__source === 'starter'
@@ -2297,21 +2306,13 @@ for (const entry of ambiguousArtworkEntriesV10) {
     ?? legacyImageVerifiedAtV10;
   const evidenceAgeMs = Date.parse(artworkVerificationObservedAtV10)
     - Date.parse(previousImageVerifiedAtV10 ?? '');
-  const snapshotStallMs = Math.max(
-    0,
-    Date.parse(artworkVerificationObservedAtV10) - Date.parse(previousSnapshot?.generatedAt ?? ''),
-  );
-  const effectiveTransientGraceMs = Math.max(
-    ARTWORK_EVIDENCE_TRANSIENT_GRACE_MS_V10,
-    snapshotStallMs + ARTWORK_EVIDENCE_TRANSIENT_GRACE_MS_V10,
-  );
   if (
     previousReference?.matchPolicy === CARDMARKET_ARTWORK_MATCH_POLICY_V10
     && completeCandidateCoverageProven
     && candidateSetUnchanged
     && Number.isFinite(evidenceAgeMs)
     && evidenceAgeMs >= 0
-    && evidenceAgeMs <= effectiveTransientGraceMs
+    && evidenceAgeMs <= effectiveTransientGraceMsV10
     && Number(previousReference.expansionId) === Number(ambiguity.expansionId)
     && currentCandidate
   ) {
@@ -2323,7 +2324,7 @@ for (const entry of ambiguousArtworkEntriesV10) {
   }
   const imageEvidenceIsFresh = Number.isFinite(evidenceAgeMs)
     && evidenceAgeMs >= 0
-    && evidenceAgeMs <= ARTWORK_EVIDENCE_MAX_AGE_MS_V10
+    && evidenceAgeMs <= effectiveArtworkEvidenceMaxAgeMsV10
     && !sourceRefreshScheduledV10(previousProductId, artworkVerificationObservedAtV10);
   if (
     completeCandidateCoverageProven
@@ -3611,14 +3612,7 @@ function reusablePromoReferenceV1(tcgplayerCandidate, cardmarketCandidates) {
   );
   const evidenceAgeMs = Date.parse(artworkVerificationObservedAtV10)
     - Date.parse(reference?.imageVerifiedAt ?? '');
-  const snapshotStallMs = Math.max(
-    0,
-    Date.parse(artworkVerificationObservedAtV10) - Date.parse(previousSnapshot?.generatedAt ?? ''),
-  );
-  const effectiveTransientGraceMs = Math.max(
-    ARTWORK_EVIDENCE_TRANSIENT_GRACE_MS_V10,
-    snapshotStallMs + ARTWORK_EVIDENCE_TRANSIENT_GRACE_MS_V10,
-  );
+  const effectiveTransientGraceMs = effectiveTransientGraceMsV10;
   const reviewedMapping = reviewedPromoArtworkMappingByReviewIdV1.get(
     reference?.reviewedMappingId,
   ) ?? null;
@@ -3723,7 +3717,7 @@ for (const [number, cardmarketCandidates] of cardmarketPromoCandidatesByNumberV1
     .sort((left, right) => left.evidenceAgeMs - right.evidenceAgeMs)[0] ?? null;
   const refreshSourceId = Math.min(...sortedPromoCandidateIdsV1(cardmarketCandidates));
   const imageEvidenceIsFresh = freshestReusable
-    && freshestReusable.evidenceAgeMs <= ARTWORK_EVIDENCE_MAX_AGE_MS_V10
+    && freshestReusable.evidenceAgeMs <= effectiveArtworkEvidenceMaxAgeMsV10
     && !sourceRefreshScheduledV10(refreshSourceId, artworkVerificationObservedAtV10);
   if (imageEvidenceIsFresh) {
     for (const tcgplayerCandidate of tcgplayerCandidates) {
@@ -4155,19 +4149,102 @@ const transientContinuityDeferralsV11 = previousSnapshot?.assets
     generatedAt,
   })
   : [];
-if (transientContinuityDeferralsV11.length > 0) {
+const MAX_FLAGGED_CARDMARKET_MAPPING_CHANGES = 25;
+
+if (transientContinuityDeferralsV11.length > MAX_FLAGGED_CARDMARKET_MAPPING_CHANGES) {
   throw new TransientCatalogSourceErrorV11(
     `Deferred this scheduled refresh because transient artwork-source failures would temporarily drop ${transientContinuityDeferralsV11.length} previously verified Cardmarket mapping(s). The committed snapshot remains the last known-good catalog.`,
   );
 }
-const approvedCardmarketMappingChanges = previousSnapshot?.assets
+if (transientContinuityDeferralsV11.length > 0) {
+  const deferredById = new Map(transientContinuityDeferralsV11.map((d) => [d.assetId, d]));
+  for (const asset of cardAssets) {
+    const deferred = deferredById.get(asset.id);
+    if (deferred) {
+      asset.cardmarketProductId = deferred.previousProductId;
+    }
+  }
+}
+
+const continuityResult = previousSnapshot?.assets
   ? assertCardmarketMappingContinuity({
     previousAssets: previousSnapshot.assets,
     nextAssets: cardAssets,
     approvals: APPROVED_CARDMARKET_MAPPING_CHANGES,
     generatedAt,
+    maxFlaggedChanges: MAX_FLAGGED_CARDMARKET_MAPPING_CHANGES,
+    fallbackDroppedMappings: true,
   })
-  : [];
+  : { approvedChanges: [], flaggedChanges: [] };
+
+const approvedCardmarketMappingChanges = continuityResult.approvedChanges;
+const flaggedCardmarketMappingChanges = continuityResult.flaggedChanges;
+
+for (const flagged of flaggedCardmarketMappingChanges) {
+  if (flagged.changeType === 'dropped') {
+    const asset = cardAssets.find((a) => a.id === flagged.assetId);
+    if (asset && (asset.quote?.cardmarket == null || asset.cardmarketPriceState !== 'available')) {
+      const fallbackPrice = cardmarketPricesByProduct.get(flagged.previousProductId);
+      if (fallbackPrice?.trend != null) {
+        asset.cardmarketProductId = flagged.previousProductId;
+        asset.cardmarketPriceState = 'available';
+        asset.cardmarketPriceReason = 'Retained previously verified Cardmarket product ID as continuity fallback; daily trend populated from current price guide.';
+        asset.quote = asset.quote ?? {};
+        asset.quote.cardmarket = round(fallbackPrice.trend);
+        asset.pricing = asset.pricing ?? {};
+        asset.pricing.cardmarket = pricingDetails(fallbackPrice);
+      }
+    }
+  }
+}
+
+if (flaggedCardmarketMappingChanges.length > 0) {
+  console.warn(
+    `\n[WARNING] ${flaggedCardmarketMappingChanges.length} Cardmarket exact-mapping continuity change(s) flagged for human review:`,
+  );
+  for (const change of flaggedCardmarketMappingChanges) {
+    const details = change.changeType === 'remapped'
+      ? `${change.previousProductId} -> ${change.nextProductId}`
+      : `${change.previousProductId} -> dropped (retained previous ID as fallback)`;
+    console.warn(
+      `  - ${change.cardName ?? change.assetId} (${change.cardNumber ?? change.setCode ?? 'unknown'}): Cardmarket ID ${details} [${change.assetId}]`,
+    );
+  }
+  console.warn('');
+
+  const warningList = flaggedCardmarketMappingChanges
+    .slice(0, 5)
+    .map((c) => `${c.cardName ?? c.assetId} (${c.changeType}: ${c.previousProductId} -> ${c.nextProductId ?? 'fallback'})`)
+    .join('; ');
+  console.log(
+    `::warning title=Flagged Cardmarket mapping changes::${flaggedCardmarketMappingChanges.length} Cardmarket mapping change(s) flagged for human review: ${warningList}${flaggedCardmarketMappingChanges.length > 5 ? ' (and more)' : ''}`,
+  );
+
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    try {
+      const rows = flaggedCardmarketMappingChanges.map((c) => (
+        `| \`${c.assetId}\` | ${c.cardName ?? '—'} | ${c.cardNumber ?? '—'} | ${c.changeType} | \`${c.previousProductId}\` | \`${c.nextProductId ?? 'retained fallback'}\` |`
+      )).join('\n');
+
+      const summary = [
+        '### ⚠️ Flagged Cardmarket Mapping Changes',
+        '',
+        `The catalog refresh completed successfully, but **${flaggedCardmarketMappingChanges.length}** Cardmarket mapping change(s) were flagged for review:`,
+        '',
+        '| Asset ID | Card Name | Number | Change | Previous ID | Next ID |',
+        '| --- | --- | --- | --- | --- | --- |',
+        rows,
+        '',
+        '> To approve these mapping changes permanently, add them to `APPROVED_CARDMARKET_MAPPING_CHANGES` in `scripts/sync-onepiece-data-v10.mjs`.',
+        '',
+      ].join('\n');
+
+      await appendFile(process.env.GITHUB_STEP_SUMMARY, summary, 'utf8');
+    } catch (error) {
+      console.warn('Failed to append flagged mapping changes to GITHUB_STEP_SUMMARY:', error);
+    }
+  }
+}
 
 const sealedCatalogCandidates = nonSinglesCatalog.products
   .filter((product) => SEALED_CATEGORIES.has(product.categoryName))
@@ -5588,8 +5665,9 @@ const output = {
         rejectedProductConflictSamples: artworkReferenceConflictsV10.slice(0, 25),
         reviewedDigestMappings: REVIEWED_CARDMARKET_ARTWORK_MAPPINGS_V10.size,
       },
-      continuityPolicy: 'A previously exact card asset must retain the same Cardmarket product ID. Changes or removals fail the sync unless one stable asset has an exact old/new-ID approval with a reason and unexpired review window.',
+      continuityPolicy: 'A previously exact card asset must retain the same Cardmarket product ID. Isolated changes (up to 25) are flagged for human review without failing the sync. Large breaks (>25) fail the sync to prevent catalog corruption.',
       approvedMappingChanges: approvedCardmarketMappingChanges,
+      flaggedMappingChanges: flaggedCardmarketMappingChanges,
       ambiguousArtworkSamples: [...cardmarketAmbiguities.values()].slice(0, 50),
       unavailableSamples: [...cardmarketUnavailable.values()].slice(0, 50),
     },
@@ -5652,6 +5730,7 @@ const output = {
       cardmarketStarterExpansionMappings: starterExpansionEvidence.exact.size,
       cardmarketAmbiguousStarterExpansionMappings: starterExpansionEvidence.ambiguous.length,
       approvedCardmarketMappingChanges: approvedCardmarketMappingChanges.length,
+      flaggedCardmarketMappingChanges: flaggedCardmarketMappingChanges.length,
       tcgplayerMappedBaseArts: baseTcgplayerMatches.size,
       tcgplayerImageVerifiedArtworkMappings: tcgplayerArtworkMatchesV1.size,
       persistedTcgplayerArtworkMappings: persistedTcgplayerArtworkReferenceIdentitiesV1.size,

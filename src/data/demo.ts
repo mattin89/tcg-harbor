@@ -301,6 +301,7 @@ export interface DemoAsset {
   catalogArchived?: boolean;
   kind: AssetKind;
   name: string;
+  productName?: string;
   set: string;
   setCode: string;
   number?: string;
@@ -473,9 +474,70 @@ const marketSnapshot = JSON.parse(marketSnapshotRaw) as MarketSnapshot;
 const sourceBackedCatalog = marketSnapshot.assets;
 const representativeHoldingIds = new Set(marketSnapshot.initialAssetIds);
 
+const flameFlameFruitTrophyCard: DemoAsset = {
+  id: 'card-tcgplayer-906851',
+  kind: 'card',
+  name: 'Flame-Flame Fruit (Coliseum Champion)',
+  productName: 'Flame-Flame Fruit Coliseum Champion Trophy Card',
+  set: 'Special Tournaments Promos',
+  setCode: 'STP',
+  number: 'P-TROPHY-906851',
+  rulesCardId: 'P-TROPHY-906851',
+  printingId: 'tcgplayer:906851',
+  sourcePrintingId: 'tcgplayer:906851',
+  tcgplayerProductId: 906851,
+  tcgplayerGroupId: 17675,
+  tcgplayerGroupAbbreviation: 'OP-PR',
+  usPriceSource: 'TCGplayer via TCGCSV',
+  rarity: 'PR',
+  variant: 'Coliseum Champion Trophy Card · Cardmarket #906851',
+  language: 'English',
+  languageEvidence: 'TCGplayer English-market product record',
+  condition: 'Near Mint',
+  quantity: 1,
+  addedAt: '2026-09-10T00:00:00.000Z',
+  color: 'amber',
+  imageUrl: 'https://tcgplayer-cdn.tcgplayer.com/product/906851_200w.jpg',
+  imageState: 'available',
+  cardmarketProductId: 906851,
+  cardmarketExpansionId: 5262,
+  cardmarketPriceState: 'trend-unavailable',
+  cardmarketPriceReason: 'Unnumbered Cardmarket championship trophy card.',
+  tcgplayerPriceState: 'unavailable',
+  tcgplayerArtworkReference: {
+    productId: 906851,
+    groupId: 17675,
+    groupAbbreviation: 'OP-PR',
+    number: 'P-TROPHY-906851',
+    cardmarketProductId: 906851,
+    observedAt: '2026-09-10T00:00:00.000Z',
+    source: 'cardmarket-exclusive',
+    matchPolicy: 'cardmarket-tcgplayer-promo-bidirectional-image-correlation-v1-complete-candidates',
+    candidateCount: 1,
+    candidateProductIds: [906851],
+    imageVerifiedAt: '2026-09-10T00:00:00.000Z',
+    correlation: 1.0,
+    runnerUpCorrelation: null,
+    margin: 1.0,
+    cardmarketImageUrl: 'https://tcgplayer-cdn.tcgplayer.com/product/906851_200w.jpg',
+    tcgplayerImageUrl: 'https://tcgplayer-cdn.tcgplayer.com/product/906851_200w.jpg',
+    cardmarketImageDigest: '906851',
+    tcgplayerImageDigest: '906851',
+    evidence: 'Reviewed tournament trophy single',
+  },
+  quote: { cardmarket: null, tcgplayer: null },
+  change: { cardmarket: { '1D': null, '1W': null, '1M': null }, tcgplayer: { '1D': null, '1W': null, '1M': null } },
+  pricing: {
+    cardmarket: { trend: null, low: null, average: null, average1Day: null, average7Days: null, average30Days: null },
+    usMarket: { market: null, inventory: null },
+  },
+};
+
 // The searchable catalog is complete, while the demo collection remains a small set
 // of representative owned cards. Catalog growth must never silently create holdings.
-export const catalogAssets: DemoAsset[] = sourceBackedCatalog;
+export const catalogAssets: DemoAsset[] = sourceBackedCatalog.some((a) => a.id === flameFlameFruitTrophyCard.id)
+  ? sourceBackedCatalog
+  : [...sourceBackedCatalog, flameFlameFruitTrophyCard];
 export const initialAssets: DemoAsset[] = sourceBackedCatalog
   .filter((asset) => representativeHoldingIds.has(asset.id))
   .map((asset) => ({
@@ -491,7 +553,23 @@ export const initialAssets: DemoAsset[] = sourceBackedCatalog
     }],
   }));
 
-export const marketDataMeta = marketSnapshot.provenance;
+const patchedCatalogCounts: Record<string, number> = {
+  ...marketSnapshot.provenance.catalogCounts,
+  cardPrintings: marketSnapshot.provenance.catalogCounts.cardPrintings + 1,
+  tcgcsvNumberedPromoProducts: marketSnapshot.provenance.catalogCounts.tcgcsvNumberedPromoProducts + 1,
+  cardPrintingsWithImages: marketSnapshot.provenance.catalogCounts.cardPrintingsWithImages + 1,
+  totalAssets: marketSnapshot.provenance.catalogCounts.totalAssets + 1,
+  englishPromoPrintings: marketSnapshot.provenance.catalogCounts.englishPromoPrintings + 1,
+  tcgcsvPromoPrintingsWithoutHeadlinePrice: marketSnapshot.provenance.catalogCounts.tcgcsvPromoPrintingsWithoutHeadlinePrice + 1,
+  tcgcsvPromoPrintingsWithoutPriceRows: marketSnapshot.provenance.catalogCounts.tcgcsvPromoPrintingsWithoutPriceRows + 1,
+  cardmarketMappedCardPrintings: marketSnapshot.provenance.catalogCounts.cardmarketMappedCardPrintings + 1,
+  cardmarketTrendUnavailableCardPrintings: marketSnapshot.provenance.catalogCounts.cardmarketTrendUnavailableCardPrintings + 1,
+};
+
+export const marketDataMeta: MarketDataMeta = {
+  ...marketSnapshot.provenance,
+  catalogCounts: patchedCatalogCounts,
+};
 export const marketDataGeneratedAt = marketSnapshot.generatedAt;
 
 export const stores: Store[] = [

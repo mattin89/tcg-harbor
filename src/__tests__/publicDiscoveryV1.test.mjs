@@ -22,8 +22,8 @@ const publicRoot = resolve(repositoryRoot, 'public');
 
 describe('public discovery v1', () => {
   it('keeps generated robots and sitemap files synchronized with the route policy', async () => {
-    const robots = await readFile(resolve(publicRoot, 'robots.txt'), 'utf8');
-    const sitemap = await readFile(resolve(publicRoot, 'sitemap.xml'), 'utf8');
+    const robots = (await readFile(resolve(publicRoot, 'robots.txt'), 'utf8')).replace(/\r\n/g, '\n');
+    const sitemap = (await readFile(resolve(publicRoot, 'sitemap.xml'), 'utf8')).replace(/\r\n/g, '\n');
 
     expect(robots).toBe(renderRobotsTxtV1());
     expect(sitemap).toBe(renderSitemapXmlV1());
@@ -64,11 +64,11 @@ describe('public discovery v1', () => {
       publicRoot,
       PUBLIC_AGENT_SKILL_V1.relativePath.replace(/^\//, ''),
     );
-    const skillContents = await readFile(skillPath, 'utf8');
-    const indexContents = await readFile(
+    const skillContents = (await readFile(skillPath, 'utf8')).replace(/\r\n/g, '\n');
+    const indexContents = (await readFile(
       resolve(publicRoot, '.well-known/agent-skills/index.json'),
       'utf8',
-    );
+    )).replace(/\r\n/g, '\n');
     const index = JSON.parse(indexContents);
 
     expect(indexContents).toBe(renderAgentSkillsIndexV1({ skillContents }));

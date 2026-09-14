@@ -1,5 +1,6 @@
 export interface CatalogSearchCardV5 {
   name: string;
+  productName?: string;
   number?: string;
   setCode: string;
   variant: string;
@@ -18,7 +19,7 @@ export function cardMatchesCatalogQueryV5(
   // Set titles can contain a featured character (for example the Katakuri
   // starter deck) even when the individual card is a different character.
   // Search stable card fields here; the dedicated set filter handles titles.
-  return [card.name, card.number ?? '', card.setCode, card.variant]
+  return [card.name, card.productName ?? '', card.number ?? '', card.setCode, card.variant]
     .join(' ')
     .toLocaleLowerCase('en-US')
     .includes(normalizedQuery);

@@ -140,43 +140,58 @@ export function buildMultiPointCurve(
   const yesterdayStr = formatCalendarDate(new Date(refYear, refMonth, refDay - 1));
 
   const marketHistory = history?.[market] ?? {};
-  const curvePoints: MultiPointCurvePoint[] = [];
+  const dateStrings: string[] = [];
+  const labels: string[] = [];
+  const rawValues: (number | null)[] = [];
+
+  let todayValue = 0;
+  for (const asset of assets) {
+    if (asset.quantity <= 0) continue;
+    const currentPrice = extractAssetAveragePrice(asset, market);
+    todayValue += currentPrice * asset.quantity;
+  }
+  todayValue = Math.round(todayValue * 100) / 100;
 
   for (let index = 0; index < dayCount; index++) {
     const offset = -(dayCount - 1 - index);
     const dateObj = new Date(refYear, refMonth, refDay + offset);
     const dateStr = formatCalendarDate(dateObj);
     const label = formatPointDateLabel(dateStr, todayStr, yesterdayStr);
+    dateStrings.push(dateStr);
+    labels.push(label);
 
-    let dayValue = 0;
     if (dateStr === todayStr) {
-      // Current date: evaluate current average price
-      for (const asset of assets) {
-        if (asset.quantity <= 0) continue;
-        const currentPrice = extractAssetAveragePrice(asset, market);
-        dayValue += currentPrice * asset.quantity;
-      }
+      rawValues.push(todayValue);
     } else {
-      // Historical date: retrieve from user history, or consider as 0 if unrecorded
       const recordedDayPrices = marketHistory[dateStr];
-      if (recordedDayPrices) {
+      if (recordedDayPrices && Object.keys(recordedDayPrices).length > 0) {
+        let dayValue = 0;
         for (const asset of assets) {
           if (asset.quantity <= 0) continue;
           const recordedPrice = recordedDayPrices[asset.id] ?? 0;
           dayValue += recordedPrice * asset.quantity;
         }
+        rawValues.push(dayValue > 0 ? Math.round(dayValue * 100) / 100 : null);
       } else {
-        // "If there are no values for previous days, just consider those as 0."
-        dayValue = 0;
+        rawValues.push(null);
       }
     }
-
-    curvePoints.push({
-      date: dateStr,
-      label,
-      value: Math.round(dayValue * 100) / 100,
-    });
   }
+
+  // Carryover filling: backward-fill from first known valuation, then forward-fill
+  const firstKnownValue = rawValues.find((v) => v !== null) ?? todayValue;
+  let runningValue = firstKnownValue;
+  const curvePoints: MultiPointCurvePoint[] = dateStrings.map((date, i) => {
+    const raw = rawValues[i];
+    if (raw !== null) {
+      runningValue = raw;
+    }
+    return {
+      date,
+      label: labels[i],
+      value: runningValue,
+    };
+  });
 
   return {
     points: curvePoints.map((p) => p.value),

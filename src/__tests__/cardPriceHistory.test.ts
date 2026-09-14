@@ -159,8 +159,8 @@ describe('cardPriceHistory', () => {
       expect(result.dates[1]).toBe('2026-09-11');
       expect(result.labels[0]).toBe('Yesterday');
       expect(result.labels[1]).toBe('Today');
-      // Previous date has no history, so evaluates to 0
-      expect(result.points[0]).toBe(0);
+      // Previous date has no history, carries over baseline 30
+      expect(result.points[0]).toBe(30);
       // Current date evaluates to average * quantity = 15 * 2 = 30
       expect(result.points[1]).toBe(30);
     });
@@ -176,8 +176,8 @@ describe('cardPriceHistory', () => {
       expect(result.dates[6]).toBe('2026-09-11');
       expect(result.labels[6]).toBe('Today');
       expect(result.labels[5]).toBe('Yesterday');
-      // Unrecorded past days evaluate to 0
-      expect(result.points.slice(0, 6)).toEqual([0, 0, 0, 0, 0, 0]);
+      // Unrecorded past days carry over baseline 100
+      expect(result.points.slice(0, 6)).toEqual([100, 100, 100, 100, 100, 100]);
       expect(result.points[6]).toBe(100);
     });
 
@@ -190,8 +190,8 @@ describe('cardPriceHistory', () => {
       expect(result.labels).toHaveLength(30);
       expect(result.dates[29]).toBe('2026-09-11');
       expect(result.labels[29]).toBe('Today');
-      // Last point is today's value
-      expect(result.points[29]).toBe(50);
+      // All points carry over baseline 50
+      expect(result.points.every((p) => p === 50)).toBe(true);
       // First point is 29 days before today: 2026-08-13
       expect(result.dates[0]).toBe('2026-08-13');
     });
@@ -224,8 +224,8 @@ describe('cardPriceHistory', () => {
       expect(result.dates[6]).toBe('2026-09-11');
       expect(result.points[6]).toBe(80);
 
-      // Index 0 to 3 are unrecorded, evaluate to 0
-      expect(result.points.slice(0, 4)).toEqual([0, 0, 0, 0]);
+      // Index 0 to 3 are unrecorded, carry backward from first known valuation (65)
+      expect(result.points.slice(0, 4)).toEqual([65, 65, 65, 65]);
     });
   });
 

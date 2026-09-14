@@ -16,6 +16,15 @@ let communityTradeRealtimeSequenceV7 = 0;
 
 const UUID_V7 = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+function newClientRequestId(): string {
+  if (typeof globalThis.crypto?.randomUUID === 'function') return globalThis.crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 export function communityTradeRealtimeFilterV7(communityIds: readonly string[]): string {
   const unique = [...new Set(communityIds)];
   if (unique.length === 0) throw new Error('At least one joined community is required for live trades.');
@@ -291,7 +300,7 @@ export class SupabaseCommunityTradingRepositoryV6 {
       p_desired_condition: draft.desiredCondition,
       p_cash_amount_cents: normalized.cashAmountCents,
       p_notes: normalized.notes,
-      p_client_request_id: globalThis.crypto.randomUUID(),
+      p_client_request_id: newClientRequestId(),
     });
     if (error) throw databaseErrorV6('Create community trade post', error);
     if (typeof data !== 'string' || !data) {

@@ -293,7 +293,14 @@ const APPROVED_CATALOG_REMOVALS = new Map([
 // Exact Cardmarket product identity is append-only by default. Any exceptional
 // correction must be reviewed against the artwork, scoped to one stable asset,
 // and expire. Keep empty unless a documented upstream correction is proven.
-const APPROVED_CARDMARKET_MAPPING_CHANGES = new Map([]);
+const APPROVED_CARDMARKET_MAPPING_CHANGES = new Map([
+  ['card-optcg-a05e4e197f38e459d0ed', {
+    previousProductId: 871978,
+    nextProductId: 871977,
+    reason: 'Carrot (EB03-013) base regular art remapped to standard Cardmarket product 871977 after Cardmarket separated standard 871977 and alternate art 871978.',
+    expiresAt: '2027-01-01T00:00:00.000Z',
+  }],
+]);
 // These promo products and the two starter products were individually checked
 // against TCGplayer's documented 1000px derivative on 2026-07-16. Other
 // products retain TCGCSV's source-provided 200px URL rather than assuming that
@@ -2290,13 +2297,21 @@ for (const entry of ambiguousArtworkEntriesV10) {
     ?? legacyImageVerifiedAtV10;
   const evidenceAgeMs = Date.parse(artworkVerificationObservedAtV10)
     - Date.parse(previousImageVerifiedAtV10 ?? '');
+  const snapshotStallMs = Math.max(
+    0,
+    Date.parse(artworkVerificationObservedAtV10) - Date.parse(previousSnapshot?.generatedAt ?? ''),
+  );
+  const effectiveTransientGraceMs = Math.max(
+    ARTWORK_EVIDENCE_TRANSIENT_GRACE_MS_V10,
+    snapshotStallMs + ARTWORK_EVIDENCE_TRANSIENT_GRACE_MS_V10,
+  );
   if (
     previousReference?.matchPolicy === CARDMARKET_ARTWORK_MATCH_POLICY_V10
     && completeCandidateCoverageProven
     && candidateSetUnchanged
     && Number.isFinite(evidenceAgeMs)
     && evidenceAgeMs >= 0
-    && evidenceAgeMs <= ARTWORK_EVIDENCE_TRANSIENT_GRACE_MS_V10
+    && evidenceAgeMs <= effectiveTransientGraceMs
     && Number(previousReference.expansionId) === Number(ambiguity.expansionId)
     && currentCandidate
   ) {
@@ -3596,6 +3611,14 @@ function reusablePromoReferenceV1(tcgplayerCandidate, cardmarketCandidates) {
   );
   const evidenceAgeMs = Date.parse(artworkVerificationObservedAtV10)
     - Date.parse(reference?.imageVerifiedAt ?? '');
+  const snapshotStallMs = Math.max(
+    0,
+    Date.parse(artworkVerificationObservedAtV10) - Date.parse(previousSnapshot?.generatedAt ?? ''),
+  );
+  const effectiveTransientGraceMs = Math.max(
+    ARTWORK_EVIDENCE_TRANSIENT_GRACE_MS_V10,
+    snapshotStallMs + ARTWORK_EVIDENCE_TRANSIENT_GRACE_MS_V10,
+  );
   const reviewedMapping = reviewedPromoArtworkMappingByReviewIdV1.get(
     reference?.reviewedMappingId,
   ) ?? null;
@@ -3627,7 +3650,7 @@ function reusablePromoReferenceV1(tcgplayerCandidate, cardmarketCandidates) {
     && /^[a-f0-9]{64}$/i.test(String(reference.tcgplayerImageDigest ?? ''))
     && Number.isFinite(evidenceAgeMs)
     && evidenceAgeMs >= 0
-    && evidenceAgeMs <= ARTWORK_EVIDENCE_TRANSIENT_GRACE_MS_V10;
+    && evidenceAgeMs <= effectiveTransientGraceMs;
   return reusable ? {
     previousAsset,
     reference,
@@ -3911,6 +3934,7 @@ for (const result of promoCrossMarketDiscoveryResultsV1) {
   promoCrossMarketReferenceFailuresV1.push({
     number: result.number,
     reason: result.error,
+    transient: result.transient === true,
   });
   if (!result.transient) continue;
   for (const [tcgplayerProductId, reusable] of result.reusableByTcgplayerProduct ?? []) {
@@ -4111,13 +4135,17 @@ const promoAssets = numberedTcgcsvPromoProducts.map((product) => {
 });
 
 const cardAssets = [...coreCardAssets, ...promoAssets];
-const transientArtworkAssetIdsV11 = new Set(
-  artworkReferenceFailuresV10
+const transientArtworkAssetIdsV11 = new Set([
+  ...artworkReferenceFailuresV10
     .filter((failure) => failure.transient === true)
     .map((failure) => coreCardByPrintingIdentityV10.get(failure.identity))
     .filter(Boolean)
     .map((card) => cardStableId(card)),
-);
+  ...promoCrossMarketReferenceFailuresV1
+    .filter((failure) => failure.transient === true)
+    .flatMap((failure) => (tcgplayerPromoCandidatesByNumberV1.get(failure.number) ?? []))
+    .map((candidate) => promoStableId(candidate.product)),
+]);
 const transientContinuityDeferralsV11 = previousSnapshot?.assets
   ? transientCardmarketContinuityDeferrals({
     previousAssets: previousSnapshot.assets,

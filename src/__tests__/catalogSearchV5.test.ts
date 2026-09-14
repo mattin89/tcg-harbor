@@ -83,4 +83,21 @@ describe('catalog card search v5', () => {
     expect(results.some((asset) => asset.name.includes('DON!! Card (Katakuri)'))).toBe(true);
     expect(results.some((asset) => asset.name === 'Charlotte Opera')).toBe(false);
   });
+
+  it('matches the Flame-Flame Fruit Coliseum Champion Trophy Card via name and product label', () => {
+    const query = normalizeCatalogQueryV5('Coliseum Champion');
+    const results = groupedCatalogCards()
+      .map((arts) => selectCardGroupMatchV5(arts, query, 'all'))
+      .filter((asset): asset is DemoAsset => asset !== null);
+
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.some((asset) => asset.productName?.includes('Coliseum Champion'))).toBe(true);
+
+    const trophyQuery = normalizeCatalogQueryV5('Flame-Flame Fruit');
+    const trophyResults = groupedCatalogCards()
+      .map((arts) => selectCardGroupMatchV5(arts, trophyQuery, 'all'))
+      .filter((asset): asset is DemoAsset => asset !== null);
+
+    expect(trophyResults.some((asset) => asset.id === 'card-tcgplayer-906851')).toBe(true);
+  });
 });

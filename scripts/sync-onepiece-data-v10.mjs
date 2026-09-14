@@ -4399,8 +4399,15 @@ const newlyFetchedDynamicSealedReleaseAuditsV10 = await mapWithConcurrencyV1(
   3,
   async (product) => {
     const pageUrl = cardmarketProductPageUrlV1(product);
-    const pageHtml = await fetchText(pageUrl);
-    const audit = cardmarketProductPageReleaseAuditV1(pageHtml, product.name, generatedAt);
+    let pageHtml = null;
+    try {
+      pageHtml = await fetchText(pageUrl);
+    } catch (error) {
+      console.warn(`Cardmarket sealed product page scrape blocked or failed for ${product.idProduct} (${product.name}): ${error.message}`);
+    }
+    const audit = pageHtml
+      ? cardmarketProductPageReleaseAuditV1(pageHtml, product.name, generatedAt)
+      : { state: 'unknown', presaleMarkerPresent: false };
     const previousAudit = previousDynamicSealedReleaseAuditByProductIdV10.get(
       Number(product.idProduct),
     );
@@ -4434,6 +4441,14 @@ const newlyFetchedDynamicSealedReleaseAuditsV10 = await mapWithConcurrencyV1(
         policy: 'Exact Cardmarket product identity revalidated with no presale marker, and its Cardmarket expansion is uniquely mapped to a Bandai-confirmed released set or starter deck',
         evidenceUrl: pageUrl,
         cardmarketExpansionId: Number(product.idExpansion),
+      } : !pageHtml ? {
+        releasedOn: null,
+        releasePrecision: null,
+        state: 'future',
+        presaleMarkerPresent: false,
+        legacyBootstrap: false,
+        policy: 'Cardmarket page scrape blocked; safely deferred as future product pending manual review',
+        evidenceUrl: pageUrl,
       } : audit),
     };
   },

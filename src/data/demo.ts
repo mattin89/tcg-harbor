@@ -1,4 +1,8 @@
 import marketSnapshotRaw from './generated/onepiece-market-v10.json?raw';
+import {
+  allErrataAssets,
+  op01eErrataAssets,
+} from './catalogErrata';
 
 export type Market = 'cardmarket' | 'tcgplayer';
 export type Currency = 'EUR' | 'USD';
@@ -533,11 +537,15 @@ const flameFlameFruitTrophyCard: DemoAsset = {
   },
 };
 
-// The searchable catalog is complete, while the demo collection remains a small set
-// of representative owned cards. Catalog growth must never silently create holdings.
-export const catalogAssets: DemoAsset[] = sourceBackedCatalog.some((a) => a.id === flameFlameFruitTrophyCard.id)
+const baseCatalog = sourceBackedCatalog.some((a) => a.id === flameFlameFruitTrophyCard.id)
   ? sourceBackedCatalog
   : [...sourceBackedCatalog, flameFlameFruitTrophyCard];
+
+// The searchable catalog is complete, while the demo collection remains a small set
+// of representative owned cards. Catalog growth must never silently create holdings.
+export const catalogAssets: DemoAsset[] = baseCatalog.some((a) => a.id === op01eErrataAssets[0].id)
+  ? baseCatalog
+  : [...baseCatalog, ...allErrataAssets];
 export const initialAssets: DemoAsset[] = sourceBackedCatalog
   .filter((asset) => representativeHoldingIds.has(asset.id))
   .map((asset) => ({
@@ -555,14 +563,16 @@ export const initialAssets: DemoAsset[] = sourceBackedCatalog
 
 const patchedCatalogCounts: Record<string, number> = {
   ...marketSnapshot.provenance.catalogCounts,
-  cardPrintings: marketSnapshot.provenance.catalogCounts.cardPrintings + 1,
+  cardPrintings: marketSnapshot.provenance.catalogCounts.cardPrintings + 1 + allErrataAssets.length,
+  optcgCorePrintings: marketSnapshot.provenance.catalogCounts.optcgCorePrintings + allErrataAssets.length,
   tcgcsvNumberedPromoProducts: marketSnapshot.provenance.catalogCounts.tcgcsvNumberedPromoProducts + 1,
-  cardPrintingsWithImages: marketSnapshot.provenance.catalogCounts.cardPrintingsWithImages + 1,
-  totalAssets: marketSnapshot.provenance.catalogCounts.totalAssets + 1,
+  cardPrintingsWithImages: marketSnapshot.provenance.catalogCounts.cardPrintingsWithImages + 1 + allErrataAssets.length,
+  totalAssets: marketSnapshot.provenance.catalogCounts.totalAssets + 1 + allErrataAssets.length,
   englishPromoPrintings: marketSnapshot.provenance.catalogCounts.englishPromoPrintings + 1,
   tcgcsvPromoPrintingsWithoutHeadlinePrice: marketSnapshot.provenance.catalogCounts.tcgcsvPromoPrintingsWithoutHeadlinePrice + 1,
   tcgcsvPromoPrintingsWithoutPriceRows: marketSnapshot.provenance.catalogCounts.tcgcsvPromoPrintingsWithoutPriceRows + 1,
-  cardmarketMappedCardPrintings: marketSnapshot.provenance.catalogCounts.cardmarketMappedCardPrintings + 1,
+  cardmarketMappedCardPrintings: marketSnapshot.provenance.catalogCounts.cardmarketMappedCardPrintings + 1 + allErrataAssets.length,
+  cardmarketPricedCardPrintings: marketSnapshot.provenance.catalogCounts.cardmarketPricedCardPrintings + allErrataAssets.length,
   cardmarketTrendUnavailableCardPrintings: marketSnapshot.provenance.catalogCounts.cardmarketTrendUnavailableCardPrintings + 1,
 };
 

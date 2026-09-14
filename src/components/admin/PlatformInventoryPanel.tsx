@@ -111,10 +111,11 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
       const nameMatch = asset.name.toLowerCase().includes(query) || (asset.productName && asset.productName.toLowerCase().includes(query));
       const setMatch = asset.setCode.toLowerCase().includes(query) || asset.set.toLowerCase().includes(query);
       const numMatch = asset.number?.toLowerCase().includes(query) || asset.rulesCardId?.toLowerCase().includes(query);
+      const variantMatch = asset.variant ? asset.variant.toLowerCase().includes(query) : false;
       const cmMatch = asset.cardmarketProductId ? String(asset.cardmarketProductId).includes(query) : false;
       const tcgMatch = asset.tcgplayerProductId ? String(asset.tcgplayerProductId).includes(query) : false;
 
-      return nameMatch || setMatch || numMatch || cmMatch || tcgMatch;
+      return nameMatch || setMatch || numMatch || variantMatch || cmMatch || tcgMatch;
     });
   }, [activeCatalog, activeTab, issueFilter, searchQuery, overrides, diagnosticsMap]);
 

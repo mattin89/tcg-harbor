@@ -424,6 +424,13 @@ input:disabled { background: #efefeb; color: var(--subtle); }
 .market-external-link { margin-top: 8px; padding-top: 6px; border-top: 1px dashed #e4e1d9; display: inline-flex; align-items: center; justify-content: space-between; font-size: 8px; font-weight: 700; color: #23547a; text-decoration: none; transition: color .15s; }
 .market-external-link:hover { color: var(--coral, #e76f51); text-decoration: underline; }
 .market-external-link svg { color: inherit; opacity: .8; }
+.market-field-link { display: inline-flex; align-items: center; gap: 5px; color: #1a5682; font-weight: 700; text-decoration: none; font-size: 8px; transition: color .15s ease; }
+.market-field-link:hover { color: var(--coral, #e76f51); text-decoration: underline; }
+.read-only-field output .market-field-link { font-size: 9px; width: 100%; display: flex; justify-content: space-between; }
+.market-links-bar { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 7px 11px; background: #f4f2ec; border: 1px solid var(--line); border-radius: 9px; }
+.market-links-bar > span { color: var(--muted); font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-right: 2px; }
+.market-external-btn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); font-size: 8px; font-weight: 700; text-decoration: none; box-shadow: var(--shadow-sm); transition: all .15s ease; }
+.market-external-btn:hover { color: var(--coral); border-color: var(--coral); transform: translateY(-1px); }
 .detail-chart { margin-top: 15px; padding: 12px; border: 1px solid var(--line); border-radius: 11px; }
 .detail-chart header { display: flex; justify-content: space-between; }.detail-chart header div { display: grid; }.detail-chart header strong { font-size: 9px; }.detail-chart header small { color: var(--subtle); font-size: 7px; }
 .detail-chart .price-chart { height: 110px; margin-top: 5px; }.detail-chart .chart-tooltip { display: none; }

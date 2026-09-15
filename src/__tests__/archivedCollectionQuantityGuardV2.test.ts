@@ -50,8 +50,8 @@ describe('archived collection quantity guard', () => {
   it('marks archived holdings and disables only the increase control', () => {
     expect(repository).toContain('catalogArchived: holdingCatalogIsArchived(item)');
     expect(repository).toContain('(product.card_set !== null && product.card_set.archived_at !== null)');
-    expect(app).toContain("selected.catalogArchived ? 'Archived item · decrease or remove only'");
-    expect(app).toContain('disabled={productionCollection?.mutating || selected.catalogArchived}');
+    expect(app).toMatch(/(?:selected|asset)\.catalogArchived \? 'Archived item · decrease or remove only'/);
+    expect(app).toMatch(/disabled=\{(?:productionCollection\?\.mutating \|\| selected|mutating \|\| asset)\.catalogArchived\}/);
     expect(app).toContain('aria-label="Decrease quantity">−</Button>');
   });
 });

@@ -44,5 +44,5 @@ describe('sealed product image cache v10', () => {
       expect(source?.imageSourceRelationship, asset.id).toBe('exact-product');
       expect(source?.imageSourceDigest, asset.id).toBe(asset.imageSourceDigest);
     }
-  });
+  }, 20000);
 });

@@ -668,6 +668,27 @@ function AssetDetailModal({
               </a>
             </div>
           </div>
+          <div className="market-links-bar">
+            <span>Marketplace links:</span>
+            <a
+              href={cardmarketProductUrl(asset)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="market-external-btn"
+            >
+              <span>View on Cardmarket</span>
+              <Icon name="external-link" size={12} />
+            </a>
+            <a
+              href={tcgplayerProductUrl(asset)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="market-external-btn"
+            >
+              <span>View on TCGplayer</span>
+              <Icon name="external-link" size={12} />
+            </a>
+          </div>
           <div className="detail-chart">
             <header>
               <div>
@@ -705,6 +726,34 @@ function AssetDetailModal({
                 {latestAcquisition(asset)
                   ? `${formatMoney(latestAcquisition(asset)?.quoteAtAdd.cardmarket ?? null, 'EUR')} / ${formatMoney(latestAcquisition(asset)?.quoteAtAdd.tcgplayer ?? null, 'USD')}`
                   : 'Awaiting first account capture'}
+              </dd>
+            </div>
+            <div>
+              <dt>Cardmarket link</dt>
+              <dd>
+                <a
+                  href={cardmarketProductUrl(asset)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="market-field-link"
+                >
+                  <span>Open on Cardmarket</span>
+                  <Icon name="external-link" size={11} />
+                </a>
+              </dd>
+            </div>
+            <div>
+              <dt>TCGplayer link</dt>
+              <dd>
+                <a
+                  href={tcgplayerProductUrl(asset)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="market-field-link"
+                >
+                  <span>Open on TCGplayer</span>
+                  <Icon name="external-link" size={11} />
+                </a>
               </dd>
             </div>
           </dl>
@@ -1144,6 +1193,17 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
       })}</div>
     </section>}
     <div className="reference-pair"><div><span>{selectedCardmarketReference?.state === 'exact-low-offer' ? 'Cardmarket lowest offer · EUR' : 'Cardmarket trend · EUR'}</span><strong>{selectedCardmarketReference?.displayValue}</strong><small><span className="live-pulse"/>{selectedCardmarketReference?.label} · {marketSourceDate('cardmarket')}</small><a href={cardmarketProductUrl(selected)} target="_blank" rel="noopener noreferrer" className="market-external-link"><span>View on Cardmarket</span><Icon name="external-link" size={11} /></a></div><div><span>{assetUsSourceLabel(selected)}</span><strong>{formatMoney(selected.quote.tcgplayer, 'USD')}</strong><small><span className="live-pulse"/>Daily source snapshot · {assetUsSourceDate(selected)}</small><a href={tcgplayerProductUrl(selected)} target="_blank" rel="noopener noreferrer" className="market-external-link"><span>View on TCGplayer</span><Icon name="external-link" size={11} /></a></div></div>
+    <div className="market-links-bar">
+      <span>Marketplace links:</span>
+      <a href={cardmarketProductUrl(selected)} target="_blank" rel="noopener noreferrer" className="market-external-btn">
+        <span>View on Cardmarket</span>
+        <Icon name="external-link" size={12} />
+      </a>
+      <a href={tcgplayerProductUrl(selected)} target="_blank" rel="noopener noreferrer" className="market-external-btn">
+        <span>View on TCGplayer</span>
+        <Icon name="external-link" size={12} />
+      </a>
+    </div>
     <p className="reference-note"><Icon name="info"/>{selectedCardmarketReference?.detail} {selected?.kind === 'sealed' ? 'Cardmarket sealed trends are product-level and can combine listing languages.' : 'Source values are not adjusted by condition.'}</p>
     {selected?.kind === 'sealed' && selected.imageSourceRelationship === 'contained-unit' && <p className="reference-note"><Icon name="box"/>No verified photo exists for this exact outer case, so the catalog clearly shows the real corresponding contained product instead.</p>}
   </> : null;
@@ -1182,12 +1242,21 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
         <div className="panel-header"><div><p className="eyebrow">{browseOnly ? 'Catalog details' : 'Collection details'}</p><h2>{selected ? selected.name : `Select a ${tab === 'card' ? 'card' : 'product'}`}</h2></div>{selected && <Chip tone="gold">{selected.variant}</Chip>}</div>
         {!selected ? <EmptyState icon={tab === 'card' ? 'cards' : 'box'} title="Choose a catalog entry" detail={browseOnly ? 'Select an item on the left to inspect its exact art, language, and current market references.' : 'Select an item on the left to choose its exact art and capture today’s market references.'} /> : browseOnly ? <div className="guest-card-details">
           {selectedCatalogDetails}
-          <dl className="detail-facts"><div><dt>{selected.kind === 'card' ? 'Exact printing' : 'Product type'}</dt><dd>{selected.kind === 'card' ? selected.variant : selected.productType}</dd></div><div><dt>Language / region</dt><dd>{selected.language}{selected.region ? ` · ${selected.region}` : ''}</dd></div><div><dt>Set</dt><dd>{selected.setCode}</dd></div><div><dt>Card / product number</dt><dd>{selected.number ?? selected.productType}</dd></div></dl>
+          <dl className="detail-facts">
+            <div><dt>{selected.kind === 'card' ? 'Exact printing' : 'Product type'}</dt><dd>{selected.kind === 'card' ? selected.variant : selected.productType}</dd></div>
+            <div><dt>Language / region</dt><dd>{selected.language}{selected.region ? ` · ${selected.region}` : ''}</dd></div>
+            <div><dt>Set</dt><dd>{selected.setCode}</dd></div>
+            <div><dt>Card / product number</dt><dd>{selected.number ?? selected.productType}</dd></div>
+            <div><dt>Cardmarket link</dt><dd><a href={cardmarketProductUrl(selected)} target="_blank" rel="noopener noreferrer" className="market-field-link"><span>Open on Cardmarket</span><Icon name="external-link" size={11} /></a></dd></div>
+            <div><dt>TCGplayer link</dt><dd><a href={tcgplayerProductUrl(selected)} target="_blank" rel="noopener noreferrer" className="market-field-link"><span>Open on TCGplayer</span><Icon name="external-link" size={11} /></a></dd></div>
+          </dl>
         </div> : <form onSubmit={(event) => { event.preventDefault(); void save(); }}>
           {selectedCatalogDetails}
           <div className="form-grid">
             <label className="read-only-field">{selected.kind === 'card' ? 'Exact printing' : 'Product type'}<output>{selected.kind === 'card' ? selected.variant : selected.productType}</output></label>
             <label className="read-only-field">Language / region<output>{selected.language}{selected.region ? ` · ${selected.region}` : ''}</output><small>Fixed by source-backed product evidence</small></label>
+            <label className="read-only-field">Cardmarket link<output><a href={cardmarketProductUrl(selected)} target="_blank" rel="noopener noreferrer" className="market-field-link"><span>Open on Cardmarket</span><Icon name="external-link" size={12} /></a></output></label>
+            <label className="read-only-field">TCGplayer link<output><a href={tcgplayerProductUrl(selected)} target="_blank" rel="noopener noreferrer" className="market-field-link"><span>Open on TCGplayer</span><Icon name="external-link" size={12} /></a></output></label>
             <label>Condition<select value={condition} onChange={(event) => setCondition(event.target.value)}>{tab === 'card' ? <><option>Near Mint</option><option>Excellent</option><option>Good</option><option>Light Played</option></> : <option>Factory sealed</option>}</select></label>
             <label className="quantity-field">Quantity<div><Button type="button" variant="secondary" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))}>−</Button><input type="number" min="1" max="999" value={quantity} onChange={(event) => setQuantity(Number(event.target.value))}/><Button type="button" variant="secondary" size="icon" onClick={() => setQuantity(quantity + 1)}>+</Button></div></label>
             <div className="auto-capture"><Icon name="shield"/><span><strong>Added automatically at save time</strong><small>The timestamp and every available current market reference are stored; unavailable providers remain explicitly unpriced.</small></span></div>

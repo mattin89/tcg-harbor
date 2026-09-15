@@ -1,6 +1,6 @@
 import type { SVGProps } from 'react';
 
-type IconName = 'dashboard' | 'collection' | 'plus' | 'store' | 'users' | 'message' | 'settings' | 'search' | 'bell' | 'chevron' | 'arrow-up' | 'arrow-down' | 'cards' | 'box' | 'chart' | 'clock' | 'grid' | 'list' | 'filter' | 'close' | 'edit' | 'trash' | 'map' | 'locate' | 'scan' | 'qr' | 'send' | 'trade' | 'check' | 'more' | 'logout' | 'shield' | 'camera' | 'upload' | 'lock' | 'sparkle' | 'menu' | 'download' | 'copy' | 'refresh' | 'info';
+type IconName = 'dashboard' | 'collection' | 'plus' | 'store' | 'users' | 'message' | 'settings' | 'search' | 'bell' | 'chevron' | 'arrow-up' | 'arrow-down' | 'cards' | 'box' | 'chart' | 'clock' | 'grid' | 'list' | 'filter' | 'close' | 'edit' | 'trash' | 'map' | 'locate' | 'scan' | 'qr' | 'send' | 'trade' | 'check' | 'more' | 'logout' | 'shield' | 'camera' | 'upload' | 'lock' | 'sparkle' | 'menu' | 'download' | 'copy' | 'refresh' | 'info' | 'external-link';
 
 const paths: Record<IconName, React.ReactNode> = {
   dashboard: <><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="4" rx="2"/><rect x="14" y="11" width="7" height="10" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/></>,
@@ -44,6 +44,7 @@ const paths: Record<IconName, React.ReactNode> = {
   copy: <><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></>,
   refresh: <><path d="M20 11a8 8 0 1 0-2 5.3"/><path d="M20 4v7h-7"/></>,
   info: <><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></>,
+  'external-link': <><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></>,
 };
 
 export function Icon({ name, size = 20, ...props }: { name: IconName; size?: number } & SVGProps<SVGSVGElement>) {

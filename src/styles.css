@@ -421,6 +421,9 @@ input:disabled { background: #efefeb; color: var(--subtle); }
 .detail-prices { display: grid; grid-template-columns: repeat(2,1fr); gap: 9px; margin-top: 16px; }
 .detail-prices > div { padding: 11px; border: 1px solid var(--line); border-radius: 10px; display: grid; gap: 3px; background: #faf8f3; }
 .detail-prices span { color: var(--muted); font-size: 7px; }.detail-prices strong { font-size: 15px; }.detail-prices small { color: var(--subtle); font-size: 7px; }
+.market-external-link { margin-top: 8px; padding-top: 6px; border-top: 1px dashed #e4e1d9; display: inline-flex; align-items: center; justify-content: space-between; font-size: 8px; font-weight: 700; color: #23547a; text-decoration: none; transition: color .15s; }
+.market-external-link:hover { color: var(--coral, #e76f51); text-decoration: underline; }
+.market-external-link svg { color: inherit; opacity: .8; }
 .detail-chart { margin-top: 15px; padding: 12px; border: 1px solid var(--line); border-radius: 11px; }
 .detail-chart header { display: flex; justify-content: space-between; }.detail-chart header div { display: grid; }.detail-chart header strong { font-size: 9px; }.detail-chart header small { color: var(--subtle); font-size: 7px; }
 .detail-chart .price-chart { height: 110px; margin-top: 5px; }.detail-chart .chart-tooltip { display: none; }

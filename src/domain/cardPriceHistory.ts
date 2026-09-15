@@ -38,16 +38,16 @@ export function formatPointDateLabel(dateStr: string, todayStr: string, yesterda
 }
 
 /**
- * Extracts the primary average market price for an asset.
- * For Cardmarket: uses average, falling back to trend or quote.
+ * Extracts the primary market price for an asset.
+ * For Cardmarket: uses trend or quote, falling back to average.
  * For TCGplayer: uses market price from usMarket or quote.
  */
 export function extractAssetAveragePrice(asset: DemoAsset, market: Market): number {
   if (market === 'cardmarket') {
-    const avg = asset.pricing?.cardmarket?.average;
-    if (typeof avg === 'number' && Number.isFinite(avg) && avg > 0) return avg;
     const trend = asset.pricing?.cardmarket?.trend;
     if (typeof trend === 'number' && Number.isFinite(trend) && trend > 0) return trend;
+    const avg = asset.pricing?.cardmarket?.average;
+    if (typeof avg === 'number' && Number.isFinite(avg) && avg > 0) return avg;
     const quote = asset.quote?.cardmarket;
     if (typeof quote === 'number' && Number.isFinite(quote) && quote > 0) return quote;
     return 0;

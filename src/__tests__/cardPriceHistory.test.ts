@@ -61,11 +61,12 @@ function mockAsset(overrides: Partial<DemoAsset> = {}): DemoAsset {
 
 describe('cardPriceHistory', () => {
   describe('extractAssetAveragePrice', () => {
-    it('extracts cardmarket average price with proper fallback', () => {
-      const assetWithAvg = mockAsset({
+    it('extracts cardmarket price with proper fallback (prioritizing trend and quote over average)', () => {
+      const assetWithTrendAndAvg = mockAsset({
         pricing: mockPricing({ cardmarket: { average: 25.5, trend: 20 } }),
       });
-      expect(extractAssetAveragePrice(assetWithAvg, 'cardmarket')).toBe(25.5);
+      // Prioritizes trend (20) over average (25.5)
+      expect(extractAssetAveragePrice(assetWithTrendAndAvg, 'cardmarket')).toBe(20);
 
       const assetWithTrendOnly = mockAsset({
         pricing: mockPricing({ cardmarket: { trend: 18.0 } }),
@@ -78,6 +79,12 @@ describe('cardPriceHistory', () => {
         quote: { cardmarket: 14.2, tcgplayer: 15 },
       });
       expect(extractAssetAveragePrice(assetWithQuoteOnly, 'cardmarket')).toBe(14.2);
+
+      const assetWithAvgOnly = mockAsset({
+        pricing: mockPricing({ cardmarket: { average: 32.5 } }),
+        quote: { cardmarket: null, tcgplayer: null },
+      });
+      expect(extractAssetAveragePrice(assetWithAvgOnly, 'cardmarket')).toBe(32.5);
 
       const assetNoPrice = mockAsset({
         pricing: undefined,

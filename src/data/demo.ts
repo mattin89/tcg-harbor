@@ -3,6 +3,10 @@ import {
   allErrataAssets,
   op01eErrataAssets,
 } from './catalogErrata';
+import {
+  applyDonMappings,
+  donCounts,
+} from './catalogDonMappings';
 
 export type Market = 'cardmarket' | 'tcgplayer';
 export type Currency = 'EUR' | 'USD';
@@ -543,9 +547,11 @@ const baseCatalog = sourceBackedCatalog.some((a) => a.id === flameFlameFruitTrop
 
 // The searchable catalog is complete, while the demo collection remains a small set
 // of representative owned cards. Catalog growth must never silently create holdings.
-export const catalogAssets: DemoAsset[] = baseCatalog.some((a) => a.id === op01eErrataAssets[0].id)
+const baseWithErrata: DemoAsset[] = baseCatalog.some((a) => a.id === op01eErrataAssets[0].id)
   ? baseCatalog
   : [...baseCatalog, ...allErrataAssets];
+
+export const catalogAssets: DemoAsset[] = applyDonMappings(baseWithErrata);
 export const initialAssets: DemoAsset[] = sourceBackedCatalog
   .filter((asset) => representativeHoldingIds.has(asset.id))
   .map((asset) => ({
@@ -571,9 +577,10 @@ const patchedCatalogCounts: Record<string, number> = {
   englishPromoPrintings: marketSnapshot.provenance.catalogCounts.englishPromoPrintings + 1,
   tcgcsvPromoPrintingsWithoutHeadlinePrice: marketSnapshot.provenance.catalogCounts.tcgcsvPromoPrintingsWithoutHeadlinePrice + 1,
   tcgcsvPromoPrintingsWithoutPriceRows: marketSnapshot.provenance.catalogCounts.tcgcsvPromoPrintingsWithoutPriceRows + 1,
-  cardmarketMappedCardPrintings: marketSnapshot.provenance.catalogCounts.cardmarketMappedCardPrintings + 1 + allErrataAssets.length,
-  cardmarketPricedCardPrintings: marketSnapshot.provenance.catalogCounts.cardmarketPricedCardPrintings + allErrataAssets.length,
-  cardmarketTrendUnavailableCardPrintings: marketSnapshot.provenance.catalogCounts.cardmarketTrendUnavailableCardPrintings + 1,
+  cardmarketMappedCardPrintings: marketSnapshot.provenance.catalogCounts.cardmarketMappedCardPrintings + 1 + allErrataAssets.length + donCounts.mappedCount,
+  cardmarketPricedCardPrintings: marketSnapshot.provenance.catalogCounts.cardmarketPricedCardPrintings + allErrataAssets.length + donCounts.pricedCount,
+  cardmarketTrendUnavailableCardPrintings: marketSnapshot.provenance.catalogCounts.cardmarketTrendUnavailableCardPrintings + 1 + donCounts.trendUnavailableCount,
+  cardmarketUnmappedCardPrintings: marketSnapshot.provenance.catalogCounts.cardmarketUnmappedCardPrintings - donCounts.mappedCount,
 };
 
 export const marketDataMeta: MarketDataMeta = {

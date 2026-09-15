@@ -145,6 +145,9 @@ function latestAcquisition(asset: DemoAsset): AcquisitionLot | undefined {
 }
 
 export function cardmarketProductUrl(asset: DemoAsset): string {
+  if (asset.cardmarketProductId && Number.isFinite(asset.cardmarketProductId) && asset.cardmarketProductId > 0) {
+    return `https://www.cardmarket.com/en/OnePiece/Products/Show/${asset.cardmarketProductId}`;
+  }
   const query = asset.number ?? asset.name;
   return `https://www.cardmarket.com/en/OnePiece/Products/Search?searchString=${encodeURIComponent(query)}`;
 }

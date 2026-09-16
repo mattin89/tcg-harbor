@@ -4,6 +4,7 @@ import {
   buildMultiPointCurve,
   emptyUserCardPriceHistory,
   extractAssetAveragePrice,
+  extractAssetPriceFromHistory,
   readStoredCardPriceHistory,
   recordTodayCardPrices,
   writeStoredCardPriceHistory,
@@ -233,6 +234,46 @@ describe('cardPriceHistory', () => {
 
       // Index 0 to 3 are unrecorded, carry backward from first known valuation (65)
       expect(result.points.slice(0, 4)).toEqual([65, 65, 65, 65]);
+    });
+
+    it('prioritizes today recorded price from history over catalog quote', () => {
+      const assets = [
+        mockAsset({ id: 'holding-1', catalogId: 'card-1', quantity: 1, quote: { cardmarket: 57.29, tcgplayer: null } }),
+      ];
+
+      const history: UserCardPriceHistory = {
+        cardmarket: {
+          '2026-09-11': { 'holding-1': 42.13 },
+        },
+        tcgplayer: {},
+      };
+
+      const result = buildMultiPointCurve(assets, 'cardmarket', '1D', history, fixedToday);
+      expect(result.points).toHaveLength(2);
+      // Today (index 1) should be 42.13 from history, not 57.29 from catalog quote
+      expect(result.points[1]).toBe(42.13);
+    });
+
+    it('extracts asset price from history by asset.id and catalogId', () => {
+      const assetWithCatalog = mockAsset({ id: 'holding-123', catalogId: 'cat-456' });
+      const history: UserCardPriceHistory = {
+        cardmarket: {
+          '2026-09-10': { 'cat-456': 39.99 },
+        },
+        tcgplayer: {},
+      };
+
+      // Lookup without target date falls back to latest date
+      const price = extractAssetPriceFromHistory(assetWithCatalog, 'cardmarket', history);
+      expect(price).toBe(39.99);
+
+      // Lookup with target date that exists
+      const targetPrice = extractAssetPriceFromHistory(assetWithCatalog, 'cardmarket', history, '2026-09-10');
+      expect(targetPrice).toBe(39.99);
+
+      // Lookup with target date that does not exist returns null
+      const missingPrice = extractAssetPriceFromHistory(assetWithCatalog, 'cardmarket', history, '2026-09-11');
+      expect(missingPrice).toBeNull();
     });
   });
 

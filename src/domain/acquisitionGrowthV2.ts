@@ -1,5 +1,5 @@
 import type { DemoAsset, Market } from '../data/demo';
-import { extractAssetAveragePrice } from './cardPriceHistory';
+import { extractAssetAveragePrice, type UserCardPriceHistory } from './cardPriceHistory';
 
 export interface AcquisitionBasisSummary {
   /** Sum of acquisition-time market references that are known. */
@@ -64,13 +64,14 @@ export interface PortfolioGrowthSummary extends AcquisitionBasisSummary {
 export function summarizePortfolioGrowth(
   assets: readonly DemoAsset[],
   market: Market,
+  history?: UserCardPriceHistory,
 ): PortfolioGrowthSummary {
   const basis = summarizeAcquisitionBasis(assets, market);
   let currentKnownValue = 0;
   let currentPricedQuantity = 0;
 
   for (const asset of assets) {
-    const avgPrice = extractAssetAveragePrice(asset, market);
+    const avgPrice = extractAssetAveragePrice(asset, market, history);
     const unitValue = avgPrice > 0 ? avgPrice : asset.quote[market];
     if (unitValue === null || !Number.isFinite(unitValue) || unitValue <= 0) continue;
     currentKnownValue += unitValue * asset.quantity;

@@ -14,7 +14,8 @@
     "bootstrap:admin": "node scripts/bootstrap-platform-admin-v2.mjs",
     "sync:data": "node scripts/sync-onepiece-data-v10.mjs",
     "sync:scheduled": "node scripts/run-scheduled-sync-v11.mjs",
-    "sync:ingest": "node scripts/sync-onepiece-data-v10.mjs --ingest-existing",
+    "sync:ingest": "node scripts/sync-onepiece-data-v10.mjs --ingest-existing && node scripts/push-daily-card-prices-v1.mjs",
+    "sync:push-prices": "node scripts/push-daily-card-prices-v1.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

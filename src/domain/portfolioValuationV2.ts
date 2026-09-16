@@ -1,5 +1,6 @@
 import type { AssetKind, DemoAsset, Market } from '../data/demo';
 import { summarizePortfolioGrowth } from './acquisitionGrowthV2';
+import type { UserCardPriceHistory } from './cardPriceHistory';
 
 export interface DailyValuationCandidateV2 {
   readonly provider: Market;
@@ -44,9 +45,10 @@ export function resolvePortfolioValuationV2(
   dailySnapshots: readonly DailyValuationCandidateV2[],
   market: Market,
   kind: AssetKind | 'all',
+  history?: UserCardPriceHistory,
 ): ResolvedPortfolioValuationV2 {
   const filtered = assets.filter((asset) => kind === 'all' || asset.kind === kind);
-  const live = summarizePortfolioGrowth(filtered, market);
+  const live = summarizePortfolioGrowth(filtered, market, history);
   const itemCount = filtered.length;
   const totalQuantity = filtered.reduce((sum, asset) => sum + asset.quantity, 0);
   const latestSnapshot = [...dailySnapshots]

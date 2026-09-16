@@ -21,6 +21,7 @@ import { resolvePortfolioValuationV2 } from './domain/portfolioValuationV2';
 import {
   emptyUserCardPriceHistory,
   extractAssetAveragePrice,
+  extractAssetPriceFromHistory,
   formatCalendarDate,
   readStoredCardPriceHistory,
   recordTodayCardPrices,
@@ -142,6 +143,10 @@ function assetUsSourceDate(asset: DemoAsset): string {
 
 function latestAcquisition(asset: DemoAsset): AcquisitionLot | undefined {
   return asset.acquisitionLots?.at(-1);
+}
+
+function initialAcquisition(asset: DemoAsset): AcquisitionLot | undefined {
+  return asset.acquisitionLots?.[0];
 }
 
 export function cardmarketProductUrl(asset: DemoAsset): string {
@@ -599,6 +604,12 @@ function AssetDetailModal({
 }: AssetDetailModalProps) {
   if (!asset) return null;
   const cardmarketReference = resolveCardmarketArtworkReferenceV10(asset);
+  const liveCardmarketPrice = priceHistory ? extractAssetPriceFromHistory(asset, 'cardmarket', priceHistory) : null;
+  const liveTcgplayerPrice = priceHistory ? extractAssetPriceFromHistory(asset, 'tcgplayer', priceHistory) : null;
+  const displayCardmarketValue = liveCardmarketPrice != null ? formatMoney(liveCardmarketPrice, 'EUR') : cardmarketReference?.displayValue;
+  const displayTcgplayerValue = liveTcgplayerPrice != null ? formatMoney(liveTcgplayerPrice, 'USD') : formatMoney(asset.quote.tcgplayer, 'USD');
+  const cardmarketDateLabel = liveCardmarketPrice != null ? 'Daily market trend' : `${cardmarketReference?.label} · ${marketSourceDate('cardmarket')}`;
+  const tcgplayerDateLabel = liveTcgplayerPrice != null ? 'Daily market price' : `Daily source snapshot · ${assetUsSourceDate(asset)}`;
   const isEditable = Boolean(onUpdateQty && onSaveChanges && onRequestRemove);
 
   return (
@@ -644,8 +655,8 @@ function AssetDetailModal({
           <div className="detail-prices">
             <div>
               <span>{cardmarketReference?.state === 'exact-low-offer' ? 'Cardmarket lowest offer · EUR' : 'Cardmarket trend · EUR'}</span>
-              <strong>{cardmarketReference?.displayValue}</strong>
-              <small>{cardmarketReference?.label} · {marketSourceDate('cardmarket')}</small>
+              <strong>{displayCardmarketValue}</strong>
+              <small>{cardmarketDateLabel}</small>
               <a
                 href={cardmarketProductUrl(asset)}
                 target="_blank"
@@ -658,8 +669,8 @@ function AssetDetailModal({
             </div>
             <div>
               <span>{assetUsSourceLabel(asset)}</span>
-              <strong>{formatMoney(asset.quote.tcgplayer, 'USD')}</strong>
-              <small>Daily source snapshot · {assetUsSourceDate(asset)}</small>
+              <strong>{displayTcgplayerValue}</strong>
+              <small>{tcgplayerDateLabel}</small>
               <a
                 href={tcgplayerProductUrl(asset)}
                 target="_blank"
@@ -724,13 +735,21 @@ function AssetDetailModal({
               <dd>{asset.acquisitionLots?.length ?? 0}</dd>
             </div>
             <div>
-              <dt>Last captured value</dt>
+              <dt>Value when added</dt>
               <dd>
-                {latestAcquisition(asset)
-                  ? `${formatMoney(latestAcquisition(asset)?.quoteAtAdd.cardmarket ?? null, 'EUR')} / ${formatMoney(latestAcquisition(asset)?.quoteAtAdd.tcgplayer ?? null, 'USD')}`
+                {initialAcquisition(asset)
+                  ? `${formatMoney(initialAcquisition(asset)?.quoteAtAdd.cardmarket ?? null, 'EUR')} / ${formatMoney(initialAcquisition(asset)?.quoteAtAdd.tcgplayer ?? null, 'USD')}`
                   : 'Awaiting first account capture'}
               </dd>
             </div>
+            {Boolean(asset.acquisitionLots && asset.acquisitionLots.length > 1) && (
+              <div>
+                <dt>Latest captured value</dt>
+                <dd>
+                  {`${formatMoney(latestAcquisition(asset)?.quoteAtAdd.cardmarket ?? null, 'EUR')} / ${formatMoney(latestAcquisition(asset)?.quoteAtAdd.tcgplayer ?? null, 'USD')}`}
+                </dd>
+              </div>
+            )}
             <div>
               <dt>Cardmarket link</dt>
               <dd>
@@ -820,17 +839,17 @@ function DashboardPage({ assets, dailySnapshots, activity, activityLoading = fal
   const [selected, setSelected] = useState<DemoAsset | null>(null);
   const [gainRank, setGainRank] = useState<'percentage' | 'absolute'>('percentage');
   const filtered = assets.filter((asset) => kind === 'all' || asset.kind === kind);
-  const valuation = resolvePortfolioValuationV2(assets, dailySnapshots, market, kind);
+  const valuation = resolvePortfolioValuationV2(assets, dailySnapshots, market, kind, priceHistory);
   const current = useMemo(() => {
     let total = 0;
     for (const asset of filtered) {
       if (asset.quantity <= 0) continue;
-      const price = extractAssetAveragePrice(asset, market);
+      const price = extractAssetAveragePrice(asset, market, priceHistory);
       total += price * asset.quantity;
     }
     return Math.round(total * 100) / 100;
-  }, [filtered, market]);
-  const liveGrowth = useMemo(() => summarizePortfolioGrowth(filtered, market), [filtered, market]);
+  }, [filtered, market, priceHistory]);
+  const liveGrowth = useMemo(() => summarizePortfolioGrowth(filtered, market, priceHistory), [filtered, market, priceHistory]);
   const acquisitionValue = liveGrowth.knownValue;
   const absolute = liveGrowth.absoluteGrowth;
   const percent = liveGrowth.percentageGrowth;
@@ -908,18 +927,22 @@ function CollectionPage({ assets, setAssets, productionCollection, onCollectionM
     setSelected(asset);
     setNoteDraft(asset.note ?? '');
   };
+  const assetUnitPrice = (asset: DemoAsset) => {
+    const p = extractAssetAveragePrice(asset, market, priceHistory);
+    return p > 0 ? p : asset.quote[market];
+  };
   const visible = assets.filter((asset) => asset.kind === tab)
     .filter((asset) => !query || `${asset.name} ${asset.number} ${asset.set} ${asset.setCode}`.toLowerCase().includes(query.toLowerCase()))
     .filter((asset) => setFilter === 'all' || asset.setCode === setFilter)
     .filter((asset) => rarity === 'all' || asset.rarity === rarity)
-    .sort((a, b) => sort === 'value-desc' ? ((b.quote[market] ?? -1) * b.quantity) - ((a.quote[market] ?? -1) * a.quantity)
-      : sort === 'value-asc' ? ((a.quote[market] ?? Infinity) * a.quantity) - ((b.quote[market] ?? Infinity) * b.quantity)
+    .sort((a, b) => sort === 'value-desc' ? (((assetUnitPrice(b) ?? -1)) * b.quantity) - (((assetUnitPrice(a) ?? -1)) * a.quantity)
+      : sort === 'value-asc' ? (((assetUnitPrice(a) ?? Infinity)) * a.quantity) - (((assetUnitPrice(b) ?? Infinity)) * b.quantity)
       : sort === 'gain' ? (b.change[market]['1M'] ?? -999) - (a.change[market]['1M'] ?? -999)
       : sort === 'loss' ? (a.change[market]['1M'] ?? 999) - (b.change[market]['1M'] ?? 999)
       : sort === 'quantity' ? b.quantity - a.quantity : a.name.localeCompare(b.name));
   const uniqueSets = [...new Set(assets.filter((a) => a.kind === tab).map((a) => a.setCode))];
   const rarities = [...new Set(assets.filter((a) => a.kind === tab).map((a) => a.rarity))];
-  const collectionValuation = summarizePortfolioGrowth(assets, market);
+  const collectionValuation = summarizePortfolioGrowth(assets, market, priceHistory);
   const marketRegion = market === 'cardmarket' ? 'EU' : 'US';
   const collectionValueLabel = collectionValuation.totalQuantity === 0
     ? 'No holdings yet'
@@ -1010,8 +1033,8 @@ function CollectionPage({ assets, setAssets, productionCollection, onCollectionM
     <section className="collection-toolbar"><label className="search-field"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${tab === 'card' ? 'name, set or card number' : 'sealed products'}`} aria-label="Search collection" />{query && <button onClick={() => setQuery('')} aria-label="Clear search"><Icon name="close" size={15}/></button>}</label><Button variant="secondary" onClick={() => setFiltersOpen((open) => !open)} icon="filter">Filters{(setFilter !== 'all' || rarity !== 'all') && <span className="filter-count">{Number(setFilter !== 'all') + Number(rarity !== 'all')}</span>}</Button><label className="select-field"><span>Sort</span><select value={sort} onChange={(event) => setSort(event.target.value)}><option value="value-desc">Highest value</option><option value="value-asc">Lowest value</option><option value="gain">Largest gain</option><option value="loss">Largest loss</option><option value="name">Name</option><option value="quantity">Quantity</option></select></label><Segmented value={view} onChange={setView} label="Collection view" options={[{ value: 'grid', label: '', icon: 'grid' }, { value: 'table', label: '', icon: 'list' }]} /></section>
     {filtersOpen && <section className="filter-panel"><label>Set<select value={setFilter} onChange={(event) => setSetFilter(event.target.value)}><option value="all">All sets</option>{uniqueSets.map((set) => <option key={set}>{set}</option>)}</select></label><label>{tab === 'card' ? 'Rarity' : 'Product availability'}<select value={rarity} onChange={(event) => setRarity(event.target.value)}><option value="all">All</option>{rarities.map((value) => <option key={value}>{value}</option>)}</select></label><label>Condition<select><option>All conditions</option><option>Near Mint</option><option>Excellent</option></select></label><label>Language<select><option>All languages</option><option>English</option><option>French</option><option>Japanese</option></select></label><Button variant="ghost" onClick={() => { setSetFilter('all'); setRarity('all'); }}>Clear filters</Button></section>}
     <div className="result-meta"><span><strong>{visible.length}</strong> {tab === 'card' ? 'card entries' : 'sealed products'}</span><MarketDataBadge compact /></div>
-    {visible.length === 0 ? <EmptyState icon="search" title="No matching holdings" detail="Try removing a filter or search for another card." action={<Button variant="secondary" onClick={() => { setQuery(''); setSetFilter('all'); setRarity('all'); }}>Clear search</Button>} /> : view === 'grid' ? <div className="asset-grid">{visible.map((asset) => <button className="asset-card" key={asset.id} onClick={() => openAsset(asset)}><CardArt asset={asset} size="lg"/><div className="asset-card-body"><div className="asset-labels"><Chip tone="neutral">{asset.setCode}</Chip>{asset.variant !== 'Standard' && <Chip tone="gold">{asset.variant}</Chip>}</div><h3>{asset.name}</h3><p>{asset.number ?? asset.productType} · {asset.rarity}</p><div className="asset-price"><span><strong>{formatMoney(asset.quote[market], market)}</strong><small>Unit reference</small></span><Trend value={asset.change[market]['1M']} /></div><footer><span>Qty <strong>{asset.quantity}</strong></span><span>Total <strong>{formatMoney(asset.quote[market] === null ? null : asset.quote[market] * asset.quantity, market)}</strong></span></footer>{asset.quote[market] === null && <div className="missing-price"><Icon name="info"/>Market price unavailable</div>}</div></button>)}</div>
-      : <div className="asset-table-wrap"><table className="asset-table"><thead><tr><th>Item</th><th>Set / number</th><th>Details</th><th>Qty</th><th>Unit value</th><th>1M change</th><th>Total</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>{visible.map((asset) => <tr key={asset.id} onClick={() => openAsset(asset)}><td><span className="table-item"><CardArt asset={asset} size="xs"/><strong>{asset.name}</strong></span></td><td>{asset.setCode}<small>{asset.number ?? asset.productType}</small></td><td>{asset.variant}<small>{asset.condition} · {asset.language}</small></td><td>{asset.quantity}</td><td>{formatMoney(asset.quote[market], market)}</td><td><Trend value={asset.change[market]['1M']}/></td><td><strong>{formatMoney(asset.quote[market] === null ? null : asset.quote[market]! * asset.quantity, market)}</strong></td><td><Icon name="chevron"/></td></tr>)}</tbody></table></div>}
+    {visible.length === 0 ? <EmptyState icon="search" title="No matching holdings" detail="Try removing a filter or search for another card." action={<Button variant="secondary" onClick={() => { setQuery(''); setSetFilter('all'); setRarity('all'); }}>Clear search</Button>} /> : view === 'grid' ? <div className="asset-grid">{visible.map((asset) => <button className="asset-card" key={asset.id} onClick={() => openAsset(asset)}><CardArt asset={asset} size="lg"/><div className="asset-card-body"><div className="asset-labels"><Chip tone="neutral">{asset.setCode}</Chip>{asset.variant !== 'Standard' && <Chip tone="gold">{asset.variant}</Chip>}</div><h3>{asset.name}</h3><p>{asset.number ?? asset.productType} · {asset.rarity}</p><div className="asset-price"><span><strong>{formatMoney(assetUnitPrice(asset), market)}</strong><small>Unit reference</small></span><Trend value={asset.change[market]['1M']} /></div><footer><span>Qty <strong>{asset.quantity}</strong></span><span>Total <strong>{formatMoney(assetUnitPrice(asset) === null ? null : assetUnitPrice(asset)! * asset.quantity, market)}</strong></span></footer>{assetUnitPrice(asset) === null && <div className="missing-price"><Icon name="info"/>Market price unavailable</div>}</div></button>)}</div>
+      : <div className="asset-table-wrap"><table className="asset-table"><thead><tr><th>Item</th><th>Set / number</th><th>Details</th><th>Qty</th><th>Unit value</th><th>1M change</th><th>Total</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>{visible.map((asset) => <tr key={asset.id} onClick={() => openAsset(asset)}><td><span className="table-item"><CardArt asset={asset} size="xs"/><strong>{asset.name}</strong></span></td><td>{asset.setCode}<small>{asset.number ?? asset.productType}</small></td><td>{asset.variant}<small>{asset.condition} · {asset.language}</small></td><td>{asset.quantity}</td><td>{formatMoney(assetUnitPrice(asset), market)}</td><td><Trend value={asset.change[market]['1M']}/></td><td><strong>{formatMoney(assetUnitPrice(asset) === null ? null : assetUnitPrice(asset)! * asset.quantity, market)}</strong></td><td><Icon name="chevron"/></td></tr>)}</tbody></table></div>}
     <AssetDetailModal
       asset={selected}
       onClose={() => setSelected(null)}

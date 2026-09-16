@@ -5,7 +5,7 @@ export type MarketCardPriceHistory = Record<string, DailyCardPricesByDate>; // Y
 export type UserCardPriceHistory = Record<Market, MarketCardPriceHistory>;
 
 export const DEMO_CARD_PRICE_HISTORY_KEY_V1 = 'tcg-harbor-profile-card-prices-v1';
-export const HISTORY_RETENTION_DAYS = 35;
+export const HISTORY_RETENTION_DAYS = 30;
 
 export function emptyUserCardPriceHistory(): UserCardPriceHistory {
   return {
@@ -38,11 +38,53 @@ export function formatPointDateLabel(dateStr: string, todayStr: string, yesterda
 }
 
 /**
+ * Extracts a card price from the user's profile history if available.
+ * Checks targetDate first (if provided), then falls back to most recent recorded date.
+ */
+export function extractAssetPriceFromHistory(
+  asset: DemoAsset,
+  market: Market,
+  history?: UserCardPriceHistory,
+  targetDate?: string,
+): number | null {
+  if (!history || !history[market]) return null;
+  const marketMap = history[market];
+
+  if (targetDate) {
+    const dayPrices = marketMap[targetDate];
+    if (!dayPrices) return null;
+    const p = dayPrices[asset.id] ?? (asset.catalogId ? dayPrices[asset.catalogId] : undefined);
+    if (typeof p === 'number' && Number.isFinite(p) && p > 0) return p;
+    return null;
+  }
+
+  const dates = Object.keys(marketMap).sort();
+  for (let i = dates.length - 1; i >= 0; i--) {
+    const d = dates[i];
+    const dayPrices = marketMap[d];
+    if (!dayPrices) continue;
+    const p = dayPrices[asset.id] ?? (asset.catalogId ? dayPrices[asset.catalogId] : undefined);
+    if (typeof p === 'number' && Number.isFinite(p) && p > 0) return p;
+  }
+
+  return null;
+}
+
+/**
  * Extracts the primary market price for an asset.
  * For Cardmarket: uses trend or quote, falling back to average.
  * For TCGplayer: uses market price from usMarket or quote.
  */
-export function extractAssetAveragePrice(asset: DemoAsset, market: Market): number {
+export function extractAssetAveragePrice(
+  asset: DemoAsset,
+  market: Market,
+  history?: UserCardPriceHistory,
+): number {
+  if (history) {
+    const fromHistory = extractAssetPriceFromHistory(asset, market, history);
+    if (fromHistory !== null) return fromHistory;
+  }
+
   if (market === 'cardmarket') {
     const trend = asset.pricing?.cardmarket?.trend;
     if (typeof trend === 'number' && Number.isFinite(trend) && trend > 0) return trend;
@@ -61,7 +103,7 @@ export function extractAssetAveragePrice(asset: DemoAsset, market: Market): numb
 
 /**
  * Records today's average prices for each asset in the collection into the user's price history.
- * Prunes entries older than 35 days to keep the profile lightweight.
+ * Prunes entries older than 30 days to keep the profile lightweight.
  */
 export function recordTodayCardPrices(
   currentHistory: UserCardPriceHistory | undefined,
@@ -147,7 +189,8 @@ export function buildMultiPointCurve(
   let todayValue = 0;
   for (const asset of assets) {
     if (asset.quantity <= 0) continue;
-    const currentPrice = extractAssetAveragePrice(asset, market);
+    const priceFromTodayHistory = extractAssetPriceFromHistory(asset, market, history, todayStr);
+    const currentPrice = priceFromTodayHistory ?? extractAssetAveragePrice(asset, market);
     todayValue += currentPrice * asset.quantity;
   }
   todayValue = Math.round(todayValue * 100) / 100;
@@ -168,7 +211,7 @@ export function buildMultiPointCurve(
         let dayValue = 0;
         for (const asset of assets) {
           if (asset.quantity <= 0) continue;
-          const recordedPrice = recordedDayPrices[asset.id] ?? 0;
+          const recordedPrice = recordedDayPrices[asset.id] ?? (asset.catalogId ? recordedDayPrices[asset.catalogId] : undefined) ?? 0;
           dayValue += recordedPrice * asset.quantity;
         }
         rawValues.push(dayValue > 0 ? Math.round(dayValue * 100) / 100 : null);

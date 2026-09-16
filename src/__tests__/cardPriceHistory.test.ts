@@ -275,6 +275,46 @@ describe('cardPriceHistory', () => {
       const missingPrice = extractAssetPriceFromHistory(assetWithCatalog, 'cardmarket', history, '2026-09-11');
       expect(missingPrice).toBeNull();
     });
+
+    it('prioritizes catalogId price when both holding id and catalogId are present', () => {
+      const asset = mockAsset({ id: 'holding-123', catalogId: 'card-canonical-456' });
+      const history: UserCardPriceHistory = {
+        cardmarket: {
+          '2026-09-16': {
+            'holding-123': 57.29,
+            'card-canonical-456': 40.97,
+          },
+        },
+        tcgplayer: {},
+      };
+
+      const price = extractAssetPriceFromHistory(asset, 'cardmarket', history, '2026-09-16');
+      expect(price).toBe(40.97);
+    });
+
+    it('does not overwrite existing server-synced prices for today in recordTodayCardPrices', () => {
+      const asset = mockAsset({
+        id: 'holding-123',
+        catalogId: 'card-canonical-456',
+        quantity: 1,
+        quote: { cardmarket: 57.29, tcgplayer: null },
+      });
+
+      const existingHistory: UserCardPriceHistory = {
+        cardmarket: {
+          '2026-09-16': {
+            'card-canonical-456': 40.97,
+            'holding-123': 40.97,
+          },
+        },
+        tcgplayer: {},
+      };
+
+      const result = recordTodayCardPrices(existingHistory, [asset], 'cardmarket', '2026-09-16');
+      // Should preserve 40.97, not overwrite with 57.29 from quote
+      expect(result.cardmarket['2026-09-16']['holding-123']).toBe(40.97);
+      expect(result.cardmarket['2026-09-16']['card-canonical-456']).toBe(40.97);
+    });
   });
 
   describe('storage serialization', () => {

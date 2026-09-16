@@ -150,11 +150,48 @@ function initialAcquisition(asset: DemoAsset): AcquisitionLot | undefined {
 }
 
 export function cardmarketProductUrl(asset: DemoAsset): string {
-  if (asset.cardmarketProductId && Number.isFinite(asset.cardmarketProductId) && asset.cardmarketProductId > 0) {
-    return `https://www.cardmarket.com/en/OnePiece/Products/Show/${asset.cardmarketProductId}`;
+  const lang = typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('de') ? 'de' : 'en';
+
+  if (asset.kind === 'card' && asset.number && asset.number !== 'DON!!') {
+    let expansion = '';
+    const imgUrl = asset.cardmarketArtworkReference?.productImageUrl || asset.cardmarketRegularArtReference?.productImageUrl;
+    if (imgUrl) {
+      const match = imgUrl.match(/\/1621\/([^/]+)\//);
+      if (match) expansion = match[1];
+    }
+    if (!expansion && asset.setCode) {
+      expansion = asset.setCode.replace(/[^a-zA-Z0-9]/g, '');
+    }
+    if (!expansion) {
+      const prefixMatch = asset.number.match(/^([A-Za-z]+[-]?\d+)/);
+      if (prefixMatch) expansion = prefixMatch[1].replace(/[^a-zA-Z0-9]/g, '');
+    }
+
+    if (expansion) {
+      const baseName = asset.name.replace(/\s*\([^)]*\)\s*$/, '').trim();
+      const cleanName = baseName.replace(/[^a-zA-Z0-9]/g, '');
+      const cleanNumber = asset.number.trim();
+
+      let version = 'V1';
+      const variant = asset.variant || '';
+      const pMatch = variant.match(/P(\d+)/i);
+      const vMatch = variant.match(/V[.]?(\d+)/i);
+      if (pMatch) {
+        version = `V${parseInt(pMatch[1], 10) + 1}`;
+      } else if (vMatch) {
+        version = `V${vMatch[1]}`;
+      } else if (/alternate art/i.test(variant)) {
+        version = 'V2';
+      }
+
+      if (cleanName && cleanNumber) {
+        return `https://www.cardmarket.com/${lang}/OnePiece/Products/Singles/${expansion}/${cleanName}-${cleanNumber}-${version}`;
+      }
+    }
   }
+
   const query = asset.number ?? asset.name;
-  return `https://www.cardmarket.com/en/OnePiece/Products/Search?searchString=${encodeURIComponent(query)}`;
+  return `https://www.cardmarket.com/${lang}/OnePiece/Products/Search?searchString=${encodeURIComponent(query)}`;
 }
 
 export function tcgplayerProductUrl(asset: DemoAsset): string {
@@ -338,12 +375,18 @@ export default function App({ identity, guest }: AppProps = {}) {
     const todayStr = formatCalendarDate(new Date());
     const currentPrices = assets
       .filter((a) => a.quantity > 0)
-      .map((a) => `${a.id}:${extractAssetAveragePrice(a, market)}`)
+      .map((a) => `${a.id}:${extractAssetAveragePrice(a, market, cardPriceHistory)}`)
       .sort()
       .join(',');
     const signature = `${market}:${todayStr}:${currentPrices}`;
     if (lastRecordedKeyRef.current === signature) return;
     lastRecordedKeyRef.current = signature;
+
+    const todayMarketPrices = cardPriceHistory[market]?.[todayStr];
+    const hasTodayPrices = todayMarketPrices && Object.keys(todayMarketPrices).length > 0;
+    if (hasTodayPrices && identity) {
+      return;
+    }
 
     const updated = recordTodayCardPrices(cardPriceHistory, assets, market, todayStr);
     if (JSON.stringify(cardPriceHistory[market]?.[todayStr]) === JSON.stringify(updated[market]?.[todayStr])) {
@@ -467,9 +510,9 @@ export default function App({ identity, guest }: AppProps = {}) {
     : ['Portfolio overview', `Welcome back, ${profileName} — your collection moved today`];
 
   const page = path === '/cards'
-    ? <AddItemsPage key={`cards:${identity?.userId ?? (isGuest ? 'guest-v4' : 'demo')}`} assets={assets} setAssets={setDemoAssets} productionCollection={identity ? productionCollection : undefined} onCollectionMutationCommitted={identity ? productionActivity.refresh : undefined} market={market} navigate={navigate} notify={notify} browseOnly={isGuest} onRequestAuthentication={guest?.onRequestAuthentication} />
+    ? <AddItemsPage key={`cards:${identity?.userId ?? (isGuest ? 'guest-v4' : 'demo')}`} assets={assets} setAssets={setDemoAssets} productionCollection={identity ? productionCollection : undefined} onCollectionMutationCommitted={identity ? productionActivity.refresh : undefined} market={market} navigate={navigate} notify={notify} browseOnly={isGuest} onRequestAuthentication={guest?.onRequestAuthentication} priceHistory={cardPriceHistory} />
     : path.startsWith('/collection/add')
-    ? <AddItemsPage key={`add-items:${identity?.userId ?? 'demo'}`} assets={assets} setAssets={setDemoAssets} productionCollection={identity ? productionCollection : undefined} onCollectionMutationCommitted={identity ? productionActivity.refresh : undefined} market={market} navigate={navigate} notify={notify} />
+    ? <AddItemsPage key={`add-items:${identity?.userId ?? 'demo'}`} assets={assets} setAssets={setDemoAssets} productionCollection={identity ? productionCollection : undefined} onCollectionMutationCommitted={identity ? productionActivity.refresh : undefined} market={market} navigate={navigate} notify={notify} priceHistory={cardPriceHistory} />
     : path === '/collection'
       ? <CollectionPage key={`collection:${identity?.userId ?? 'demo'}`} assets={assets} setAssets={setDemoAssets} productionCollection={identity ? productionCollection : undefined} onCollectionMutationCommitted={identity ? productionActivity.refresh : undefined} market={market} navigate={navigate} notify={notify} priceHistory={cardPriceHistory} />
       : path === '/market-comparison'
@@ -657,29 +700,11 @@ function AssetDetailModal({
               <span>{cardmarketReference?.state === 'exact-low-offer' ? 'Cardmarket lowest offer · EUR' : 'Cardmarket trend · EUR'}</span>
               <strong>{displayCardmarketValue}</strong>
               <small>{cardmarketDateLabel}</small>
-              <a
-                href={cardmarketProductUrl(asset)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="market-external-link"
-              >
-                <span>View on Cardmarket</span>
-                <Icon name="external-link" size={11} />
-              </a>
             </div>
             <div>
               <span>{assetUsSourceLabel(asset)}</span>
               <strong>{displayTcgplayerValue}</strong>
               <small>{tcgplayerDateLabel}</small>
-              <a
-                href={tcgplayerProductUrl(asset)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="market-external-link"
-              >
-                <span>View on TCGplayer</span>
-                <Icon name="external-link" size={11} />
-              </a>
             </div>
           </div>
           <div className="market-links-bar">
@@ -750,34 +775,6 @@ function AssetDetailModal({
                 </dd>
               </div>
             )}
-            <div>
-              <dt>Cardmarket link</dt>
-              <dd>
-                <a
-                  href={cardmarketProductUrl(asset)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="market-field-link"
-                >
-                  <span>Open on Cardmarket</span>
-                  <Icon name="external-link" size={11} />
-                </a>
-              </dd>
-            </div>
-            <div>
-              <dt>TCGplayer link</dt>
-              <dd>
-                <a
-                  href={tcgplayerProductUrl(asset)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="market-field-link"
-                >
-                  <span>Open on TCGplayer</span>
-                  <Icon name="external-link" size={11} />
-                </a>
-              </dd>
-            </div>
           </dl>
           {isEditable ? (
             <>
@@ -1054,7 +1051,7 @@ function CollectionPage({ assets, setAssets, productionCollection, onCollectionM
   </div>;
 }
 
-function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMutationCommitted, market, navigate, notify, browseOnly = false, onRequestAuthentication }: { assets: DemoAsset[]; setAssets: (assets: DemoAsset[]) => void; productionCollection?: ProductionCollectionRuntimeV2; onCollectionMutationCommitted?: () => void | Promise<void>; market: Market; navigate: (path: string) => void; notify: (message: string) => void; browseOnly?: boolean; onRequestAuthentication?: () => void }) {
+function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMutationCommitted, market, navigate, notify, browseOnly = false, onRequestAuthentication, priceHistory }: { assets: DemoAsset[]; setAssets: (assets: DemoAsset[]) => void; productionCollection?: ProductionCollectionRuntimeV2; onCollectionMutationCommitted?: () => void | Promise<void>; market: Market; navigate: (path: string) => void; notify: (message: string) => void; browseOnly?: boolean; onRequestAuthentication?: () => void; priceHistory?: UserCardPriceHistory }) {
   const [tab, setTab] = useState<AssetKind>('card');
   const [query, setQuery] = useState('');
   const [catalogSet, setCatalogSet] = useState('all');
@@ -1208,17 +1205,40 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
     {selected.kind === 'card' && <section className="art-picker" aria-labelledby="art-picker-title">
       <header><span><strong id="art-picker-title">Choose the exact art</strong><small>{availableArts.length} sourced {availableArts.length === 1 ? 'printing' : 'printings'} for {selected.rulesCardId ?? selected.number}</small></span><Chip tone="blue">{selected.language} printing</Chip></header>
       <div>{availableArts.map((art) => {
+        const liveArtCm = priceHistory ? extractAssetPriceFromHistory(art, 'cardmarket', priceHistory) : null;
+        const liveArtTcp = priceHistory ? extractAssetPriceFromHistory(art, 'tcgplayer', priceHistory) : null;
         const cardmarketReference = resolveCardmarketArtworkReferenceV10(art);
         const displayedReference = market === 'cardmarket'
-          ? cardmarketReference.displayValue
-          : formatMoney(art.quote.tcgplayer, 'USD');
+          ? (liveArtCm != null ? formatMoney(liveArtCm, 'EUR') : cardmarketReference.displayValue)
+          : (liveArtTcp != null ? formatMoney(liveArtTcp, 'USD') : formatMoney(art.quote.tcgplayer, 'USD'));
         const displayedReferenceLabel = market === 'cardmarket'
-          ? cardmarketReference.label
-          : 'US market';
+          ? (liveArtCm != null ? 'Daily market trend' : cardmarketReference.label)
+          : (liveArtTcp != null ? 'Daily market price' : 'US market');
         return <button type="button" key={art.id} className={selected.id === art.id ? 'selected' : ''} aria-pressed={selected.id === art.id} title={market === 'cardmarket' ? cardmarketReference.detail : undefined} onClick={() => { setSelected(art); setValidation(''); }}><CardArt asset={art} size="xs"/><span><strong>{art.variant}</strong><small>{art.language} · {art.setCode}</small><em>{displayedReference} · {displayedReferenceLabel}</em></span>{selected.id === art.id && <i><Icon name="check"/></i>}</button>;
       })}</div>
     </section>}
-    <div className="reference-pair"><div><span>{selectedCardmarketReference?.state === 'exact-low-offer' ? 'Cardmarket lowest offer · EUR' : 'Cardmarket trend · EUR'}</span><strong>{selectedCardmarketReference?.displayValue}</strong><small><span className="live-pulse"/>{selectedCardmarketReference?.label} · {marketSourceDate('cardmarket')}</small><a href={cardmarketProductUrl(selected)} target="_blank" rel="noopener noreferrer" className="market-external-link"><span>View on Cardmarket</span><Icon name="external-link" size={11} /></a></div><div><span>{assetUsSourceLabel(selected)}</span><strong>{formatMoney(selected.quote.tcgplayer, 'USD')}</strong><small><span className="live-pulse"/>Daily source snapshot · {assetUsSourceDate(selected)}</small><a href={tcgplayerProductUrl(selected)} target="_blank" rel="noopener noreferrer" className="market-external-link"><span>View on TCGplayer</span><Icon name="external-link" size={11} /></a></div></div>
+    {(() => {
+      const liveSelectedCm = priceHistory && selected ? extractAssetPriceFromHistory(selected, 'cardmarket', priceHistory) : null;
+      const liveSelectedTcp = priceHistory && selected ? extractAssetPriceFromHistory(selected, 'tcgplayer', priceHistory) : null;
+      const displaySelectedCm = liveSelectedCm != null ? formatMoney(liveSelectedCm, 'EUR') : selectedCardmarketReference?.displayValue;
+      const displaySelectedTcp = liveSelectedTcp != null ? formatMoney(liveSelectedTcp, 'USD') : formatMoney(selected.quote.tcgplayer, 'USD');
+      const cmDateLabel = liveSelectedCm != null ? 'Daily market trend' : `${selectedCardmarketReference?.label} · ${marketSourceDate('cardmarket')}`;
+      const tcpDateLabel = liveSelectedTcp != null ? 'Daily market price' : `Daily source snapshot · ${assetUsSourceDate(selected)}`;
+      return (
+        <div className="reference-pair">
+          <div>
+            <span>{selectedCardmarketReference?.state === 'exact-low-offer' ? 'Cardmarket lowest offer · EUR' : 'Cardmarket trend · EUR'}</span>
+            <strong>{displaySelectedCm}</strong>
+            <small><span className="live-pulse"/>{cmDateLabel}</small>
+          </div>
+          <div>
+            <span>{assetUsSourceLabel(selected)}</span>
+            <strong>{displaySelectedTcp}</strong>
+            <small><span className="live-pulse"/>{tcpDateLabel}</small>
+          </div>
+        </div>
+      );
+    })()}
     <div className="market-links-bar">
       <span>Marketplace links:</span>
       <a href={cardmarketProductUrl(selected)} target="_blank" rel="noopener noreferrer" className="market-external-btn">

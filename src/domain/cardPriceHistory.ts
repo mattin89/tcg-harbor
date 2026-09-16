@@ -50,21 +50,24 @@ export function extractAssetPriceFromHistory(
   if (!history || !history[market]) return null;
   const marketMap = history[market];
 
-  if (targetDate) {
-    const dayPrices = marketMap[targetDate];
+  const pickFromDay = (dayPrices: DailyCardPricesByDate | undefined): number | null => {
     if (!dayPrices) return null;
-    const p = dayPrices[asset.id] ?? (asset.catalogId ? dayPrices[asset.catalogId] : undefined);
+    if (asset.catalogId && typeof dayPrices[asset.catalogId] === 'number' && Number.isFinite(dayPrices[asset.catalogId]) && dayPrices[asset.catalogId] > 0) {
+      return dayPrices[asset.catalogId];
+    }
+    const p = dayPrices[asset.id];
     if (typeof p === 'number' && Number.isFinite(p) && p > 0) return p;
     return null;
+  };
+
+  if (targetDate) {
+    return pickFromDay(marketMap[targetDate]);
   }
 
   const dates = Object.keys(marketMap).sort();
   for (let i = dates.length - 1; i >= 0; i--) {
-    const d = dates[i];
-    const dayPrices = marketMap[d];
-    if (!dayPrices) continue;
-    const p = dayPrices[asset.id] ?? (asset.catalogId ? dayPrices[asset.catalogId] : undefined);
-    if (typeof p === 'number' && Number.isFinite(p) && p > 0) return p;
+    const p = pickFromDay(marketMap[dates[i]]);
+    if (p !== null) return p;
   }
 
   return null;
@@ -121,7 +124,11 @@ export function recordTodayCardPrices(
 
   for (const asset of assets) {
     if (asset.quantity <= 0) continue;
-    const price = extractAssetAveragePrice(asset, market);
+    // Never overwrite an existing price if today already has a recorded price (e.g. from server sync)
+    if (typeof todayPrices[asset.id] === 'number' && todayPrices[asset.id] > 0) continue;
+    if (asset.catalogId && typeof todayPrices[asset.catalogId] === 'number' && todayPrices[asset.catalogId] > 0) continue;
+
+    const price = extractAssetAveragePrice(asset, market, currentHistory);
     if (price > 0) {
       todayPrices[asset.id] = price;
     }

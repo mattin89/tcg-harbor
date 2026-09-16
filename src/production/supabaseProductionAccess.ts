@@ -561,6 +561,24 @@ export class SupabaseProductionAccess {
     return asRows(data).map((row) => ({ ...mapApplication(row), applicant: null }));
   }
 
+  async listAllApplications(): Promise<PendingApplication[]> {
+    const { data, error } = await this.client.rpc("platform_admin_list_applications");
+    if (!error && data) {
+      return asRows(data).map((row) => ({
+        ...mapApplication(row),
+        applicant: row.applicant_username
+          ? { username: String(row.applicant_username), displayName: null }
+          : null,
+      }));
+    }
+    const fallback = await this.client
+      .from("store_applications")
+      .select("*")
+      .order("submitted_at", { ascending: false });
+    if (fallback.error) throw new ProductionAccessError("listAllApplications", fallback.error);
+    return asRows(fallback.data).map((row) => ({ ...mapApplication(row), applicant: null }));
+  }
+
   async reviewApplication(
     applicationId: string,
     decision: "approved" | "rejected",

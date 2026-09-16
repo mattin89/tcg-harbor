@@ -539,7 +539,7 @@ export default function App({ identity, guest }: AppProps = {}) {
                   ? <SettingsPageV5 market={market} setMarket={setMarket} navigate={navigate} notify={notify} signOut={signOut} identity={identity} />
                   : path === '/store-admin'
                     ? canOpenStorePortal
-                      ? identity?.storePortal ?? <StoreAdminPage notify={notify} requiresMemberApproval={storeRequiresMemberApproval} setRequiresMemberApproval={setStoreRequiresMemberApproval} pendingRequests={storeJoinRequests.filter(r => r.storeId === stores[0].id && r.status === 'pending')} onAcceptJoinRequest={(id) => setStoreJoinRequests(prev => prev.filter(r => r.id !== id))} onRejectJoinRequest={(id) => setStoreJoinRequests(prev => prev.filter(r => r.id !== id))} />
+                      ? identity ? (identity.storePortal ?? <StorePortalDenied navigate={navigate} />) : <StoreAdminPage notify={notify} requiresMemberApproval={storeRequiresMemberApproval} setRequiresMemberApproval={setStoreRequiresMemberApproval} pendingRequests={storeJoinRequests.filter(r => r.storeId === stores[0].id && r.status === 'pending')} onAcceptJoinRequest={(id) => setStoreJoinRequests(prev => prev.filter(r => r.id !== id))} onRejectJoinRequest={(id) => setStoreJoinRequests(prev => prev.filter(r => r.id !== id))} />
                       : <StorePortalDenied navigate={navigate} />
                     : path === '/scan'
                       ? <WorkingScannerPage navigate={navigate} notify={notify} />

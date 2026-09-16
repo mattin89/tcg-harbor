@@ -20,6 +20,7 @@ import type {
   PlatformAdminUpdateStoreDraft,
   StoreApplication,
   StoreApplicationDraft,
+  StoreApplicationStatus,
 } from "./types";
 
 function value(data: FormData, name: string): string {
@@ -799,14 +800,18 @@ function StoreEditModal({ store, onClose, onSave, busy, error }: StoreEditModalP
 }
 
 export function PlatformApprovalPanel({ access }: { access: ProductionAccessController }) {
-  const [activeTab, setActiveTab] = useState<"queue" | "approved">("queue");
+  const [activeTab, setActiveTab] = useState<"queue" | "history" | "approved">("queue");
   const [applications, setApplications] = useState<PendingApplication[]>([]);
+  const [allApplications, setAllApplications] = useState<PendingApplication[]>([]);
   const [approvedStores, setApprovedStores] = useState<PlatformAdminStore[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingAll, setLoadingAll] = useState(false);
   const [loadingStores, setLoadingStores] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState("");
+  const [historySearch, setHistorySearch] = useState("");
+  const [historyStatusFilter, setHistoryStatusFilter] = useState<"all" | StoreApplicationStatus>("all");
   const [editingStore, setEditingStore] = useState<PlatformAdminStore | null>(null);
   const [editBusy, setEditBusy] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -823,6 +828,17 @@ export function PlatformApprovalPanel({ access }: { access: ProductionAccessCont
     }
   };
 
+  const loadAllApplications = async () => {
+    setLoadingAll(true);
+    try {
+      setAllApplications(await access.listAllApplications());
+    } catch {
+      // safe fallback
+    } finally {
+      setLoadingAll(false);
+    }
+  };
+
   const loadApprovedStores = async () => {
     setLoadingStores(true);
     try {
@@ -836,6 +852,7 @@ export function PlatformApprovalPanel({ access }: { access: ProductionAccessCont
 
   useEffect(() => {
     void loadApplications();
+    void loadAllApplications();
     void loadApprovedStores();
   }, []);
 
@@ -846,6 +863,7 @@ export function PlatformApprovalPanel({ access }: { access: ProductionAccessCont
     try {
       await access.reviewApplication(application.id, decision, notes[application.id]);
       await loadApplications();
+      await loadAllApplications();
       await loadApprovedStores();
     } catch {
       // The controller exposes a safe message through access.error.
@@ -895,6 +913,20 @@ export function PlatformApprovalPanel({ access }: { access: ProductionAccessCont
     );
   });
 
+  const filteredHistoryApplications = allApplications.filter((app) => {
+    if (historyStatusFilter !== "all" && app.status !== historyStatusFilter) return false;
+    if (!historySearch.trim()) return true;
+    const q = historySearch.toLowerCase();
+    return (
+      app.storeName.toLowerCase().includes(q) ||
+      app.contactName.toLowerCase().includes(q) ||
+      app.contactEmail.toLowerCase().includes(q) ||
+      app.city.toLowerCase().includes(q) ||
+      app.addressLine1.toLowerCase().includes(q) ||
+      (app.applicant?.username && app.applicant.username.toLowerCase().includes(q))
+    );
+  });
+
   return (
     <section className="production-panel">
       <header className="production-panel-header">
@@ -906,8 +938,8 @@ export function PlatformApprovalPanel({ access }: { access: ProductionAccessCont
         <button
           className="production-secondary"
           type="button"
-          onClick={() => { void loadApplications(); void loadApprovedStores(); }}
-          disabled={loading || loadingStores}
+          onClick={() => { void loadApplications(); void loadAllApplications(); void loadApprovedStores(); }}
+          disabled={loading || loadingAll || loadingStores}
         >
           <Icon name="refresh" size={16} />Refresh
         </button>
@@ -923,6 +955,19 @@ export function PlatformApprovalPanel({ access }: { access: ProductionAccessCont
         >
           Pending applications
           {applications.length > 0 && <span className="production-tab-badge">{applications.length}</span>}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "history"}
+          className={`production-approval-tab ${activeTab === "history" ? "is-active" : ""}`}
+          onClick={() => {
+            setActiveTab("history");
+            void loadAllApplications();
+          }}
+        >
+          Application history
+          <span className="production-tab-badge is-neutral">{allApplications.length}</span>
         </button>
         <button
           type="button"
@@ -1008,6 +1053,133 @@ export function PlatformApprovalPanel({ access }: { access: ProductionAccessCont
             </div>
           )}
         </>
+      )}
+
+      {activeTab === "history" && (
+        <div className="production-history-section">
+          <div className="production-approved-toolbar">
+            <label className="production-search-field">
+              <Icon name="search" size={15} />
+              <input
+                value={historySearch}
+                onChange={(e) => setHistorySearch(e.target.value)}
+                placeholder="Search history by store name, email, city, or applicant…"
+              />
+              {historySearch && (
+                <button type="button" onClick={() => setHistorySearch("")} aria-label="Clear search">
+                  <Icon name="close" size={13} />
+                </button>
+              )}
+            </label>
+            <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
+              {(["all", "pending", "under_review", "approved", "rejected", "withdrawn"] as const).map((status) => (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => setHistoryStatusFilter(status)}
+                  className={`production-approval-tab ${historyStatusFilter === status ? "is-active" : ""}`}
+                  style={{ padding: "5px 12px", fontSize: "11px" }}
+                >
+                  {status === "all" ? "All" : status.replace("_", " ")}
+                </button>
+              ))}
+            </div>
+            <span className="production-count-pill">
+              {filteredHistoryApplications.length} of {allApplications.length} applications
+            </span>
+          </div>
+
+          {loadingAll ? (
+            <div className="production-loading-list" aria-busy="true"><span /><span /><span /></div>
+          ) : filteredHistoryApplications.length === 0 ? (
+            <div className="production-empty">
+              <Icon name="shield" size={27} />
+              <h3>No applications found</h3>
+              <p>{historySearch || historyStatusFilter !== "all" ? "Try changing your search or status filter." : "No store applications recorded yet."}</p>
+            </div>
+          ) : (
+            <div className="production-approval-list">
+              {filteredHistoryApplications.map((app) => (
+                <article key={app.id}>
+                  <header>
+                    <div>
+                      <h3>{app.storeName}</h3>
+                      <p>
+                        {app.contactName} · {app.contactEmail}
+                        {app.applicant?.username ? ` · @${app.applicant.username}` : ""}
+                      </p>
+                    </div>
+                    <span
+                      style={{
+                        padding: "5px 9px",
+                        borderRadius: "99px",
+                        fontSize: "10px",
+                        fontWeight: 750,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        color: app.status === "approved" ? "#4ade80" : app.status === "rejected" ? "#f87171" : app.status === "pending" ? "#f0b38a" : "#94a3b8",
+                        background: app.status === "approved" ? "rgba(74, 222, 128, 0.12)" : app.status === "rejected" ? "rgba(248, 113, 113, 0.12)" : app.status === "pending" ? "rgba(240, 163, 107, 0.12)" : "rgba(148, 163, 184, 0.12)",
+                      }}
+                    >
+                      {app.status.replace("_", " ")}
+                    </span>
+                  </header>
+                  <dl>
+                    <div>
+                      <dt>Address</dt>
+                      <dd>{app.addressLine1}{app.addressLine2 ? `, ${app.addressLine2}` : ""}<br />{app.postcode} {app.city}, {app.countryCode}</dd>
+                    </div>
+                    <div>
+                      <dt>Coordinates</dt>
+                      <dd>{app.latitude.toFixed(5)}, {app.longitude.toFixed(5)}</dd>
+                    </div>
+                    <div>
+                      <dt>Submitted</dt>
+                      <dd>{new Date(app.submittedAt).toLocaleString()}</dd>
+                    </div>
+                    <div>
+                      <dt>{app.reviewedAt ? "Reviewed" : "Website"}</dt>
+                      <dd>
+                        {app.reviewedAt ? new Date(app.reviewedAt).toLocaleString() : app.websiteUrl ? <a href={app.websiteUrl} target="_blank" rel="noreferrer">Open website</a> : "None"}
+                      </dd>
+                    </div>
+                  </dl>
+                  {app.applicantNote && <blockquote><strong>Applicant note:</strong> {app.applicantNote}</blockquote>}
+                  {app.reviewNote && (
+                    <blockquote style={{ borderLeftColor: app.status === "approved" ? "#4ade80" : "#f87171" }}>
+                      <strong>Review note:</strong> {app.reviewNote}
+                    </blockquote>
+                  )}
+                  {app.evidenceUrl && (
+                    <p style={{ fontSize: "11px", color: "#8da4a8", margin: "6px 0 0" }}>
+                      Evidence: <a href={app.evidenceUrl} target="_blank" rel="noreferrer">{app.evidenceUrl}</a>
+                    </p>
+                  )}
+                  {app.status === "pending" && (
+                    <footer>
+                      <button
+                        className="production-reject"
+                        type="button"
+                        disabled={busyId === app.id}
+                        onClick={() => void review(app, "rejected")}
+                      >
+                        Reject
+                      </button>
+                      <button
+                        className="production-primary"
+                        type="button"
+                        disabled={busyId === app.id}
+                        onClick={() => void review(app, "approved")}
+                      >
+                        <Icon name="check" size={16} />{busyId === app.id ? "Saving…" : "Approve store"}
+                      </button>
+                    </footer>
+                  )}
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {activeTab === "approved" && (

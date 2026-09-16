@@ -51,6 +51,7 @@ export interface ProductionAccessController {
   submitStoreApplication(draft: StoreApplicationDraft): Promise<void>;
   withdrawStoreApplication(applicationId: string): Promise<void>;
   listPendingApplications(): Promise<PendingApplication[]>;
+  listAllApplications(): Promise<PendingApplication[]>;
   beginReviewApplication(applicationId: string): Promise<void>;
   reviewApplication(applicationId: string, decision: "approved" | "rejected", note?: string): Promise<void>;
   listApprovedStores(): Promise<PlatformAdminStore[]>;
@@ -312,6 +313,15 @@ export function useProductionAccess(): ProductionAccessController {
       if (!service) return [];
       try {
         return await service.listPendingApplications();
+      } catch (nextError) {
+        setError(errorMessage(nextError));
+        throw nextError;
+      }
+    },
+    async listAllApplications() {
+      if (!service) return [];
+      try {
+        return await service.listAllApplications();
       } catch (nextError) {
         setError(errorMessage(nextError));
         throw nextError;

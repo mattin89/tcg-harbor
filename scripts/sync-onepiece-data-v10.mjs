@@ -286,6 +286,11 @@ const APPROVED_CATALOG_REMOVALS = new Map([
   ['sealed-cardmarket-875170', { reason: 'Empty Tin Pack packaging is not a sealed card-game product', permanent: true }],
   ['sealed-cardmarket-875172', { reason: 'Empty Tin Pack packaging is not a sealed card-game product', permanent: true }],
   ['sealed-cardmarket-875173', { reason: 'Empty Tin Pack packaging is not a sealed card-game product', permanent: true }],
+  ['card-optcg-3fc59250e4af08fa1339', { reason: 'OPTCG API renamed the EB-03 Nico Robin Gold DON!! image file; the stable ID derived from the new URL replaces this entry', permanent: true }],
+  ['card-optcg-4b4eef3a50343bdf4edc', { reason: 'OPTCG API renamed the EB-03 Nico Robin DON!! image file; the stable ID derived from the new URL replaces this entry', permanent: true }],
+  ['card-optcg-e113ac2e1544733badb7', { reason: 'OPTCG API renamed the EB-03 Uta DON!! image file; the stable ID derived from the new URL replaces this entry', permanent: true }],
+  ['card-optcg-147f49af129ece874702', { reason: 'ST30-017 TCGplayer-image-backed ID superseded by OPTCG-image-backed card-optcg-f6df1bf175052c9c0906 already in catalog', permanent: true }],
+  ['sealed-cardmarket-761165', { reason: 'Cardmarket delisted product 761165 (BCG Fest 23-24 Premium Card Collection) from its public non-singles product feed', permanent: true }],
 ]);
 // Exact Cardmarket product identity is append-only by default. Any exceptional
 // correction must be reviewed against the artwork, scoped to one stable asset,

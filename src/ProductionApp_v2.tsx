@@ -88,11 +88,17 @@ function ProductionIdentityBridge() {
     return <main className="production-loading-page" aria-busy="true"><h1>Opening your account</h1></main>;
   }
 
+  const existingPlayerStorePortal = identity.profile.accountKind === 'player'
+    && identity.managedStores.length === 0
+    && !identity.isPlatformAdministrator
+    ? <StoreApplicationPanel access={access} />
+    : undefined;
+
   const storePortal = identity.isPlatformAdministrator
     ? <PlatformApprovalPanel access={access} />
     : identity.managedStores.length > 0
       ? <StoreWorkspacePanel stores={identity.managedStores} access={access} />
-      : <StoreApplicationPanel access={access} />;
+      : existingPlayerStorePortal;
 
   return <App key={identity.profile.id} identity={{
     userId: identity.profile.id,
@@ -123,6 +129,6 @@ function ProductionIdentityBridge() {
     onSignOutEverywhere: identity.signOutEverywhere,
     cardPriceHistory: identity.profile.cardPriceHistory,
     onUpdateCardPriceHistory: access.updateCardPriceHistory,
-    storePortal,
+    storePortal: existingPlayerStorePortal ?? storePortal,
   }} />;
 }

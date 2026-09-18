@@ -116235,7 +116235,7 @@
       "imageState": "available",
       "usPriceSource": "OPTCG API",
       "quote": {
-        "cardmarket": 1595.09,
+        "cardmarket": 1363.2,
         "tcgplayer": 983.56
       },
       "change": {
@@ -116252,7 +116252,7 @@
       },
       "pricing": {
         "cardmarket": {
-          "trend": 1595.09,
+          "trend": 1363.2,
           "low": 850,
           "average": 1085.27,
           "average1Day": 1450,

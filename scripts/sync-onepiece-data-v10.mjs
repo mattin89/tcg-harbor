@@ -278,9 +278,6 @@ const APPROVED_CATALOG_REMOVALS = new Map([
   ['sealed-cardmarket-897417', { reason: 'Cardmarket confirms Illustration Box Vol.7 is a presale until 2026-07-31', expiresAt: '2026-07-31T00:00:00.000Z' }],
   ['sealed-cardmarket-897418', { reason: 'Cardmarket confirms Illustration Box Vol.8 is a presale until 2026-07-31', expiresAt: '2026-07-31T00:00:00.000Z' }],
   ['sealed-cardmarket-897461', { reason: 'Bandai and its UK distributor place Official Playmat Limited Edition Vol.5 at 2026-07-31', expiresAt: '2026-07-31T00:00:00.000Z' }],
-  ['sealed-cardmarket-869915', { reason: 'Cardmarket confirms the 3rd English Anniversary Set is a presale until 2026-08-28', expiresAt: '2026-08-28T00:00:00.000Z' }],
-  ['sealed-cardmarket-897457', { reason: 'Cardmarket confirms Best Selection Vol.6 is a presale until 2026-08-28', expiresAt: '2026-08-28T00:00:00.000Z' }],
-  ['sealed-cardmarket-875688', { reason: 'Unreleased Double Pack Set Vol.12 presale currently exposes Cardmarket placeholder art; re-enters automatically on its 2026-08-28 release date', expiresAt: '2026-08-28T00:00:00.000Z' }],
   ['sealed-cardmarket-897446', { reason: 'Cardmarket confirms the Vol.6 Yamato playmat set is a presale until 2026-12-31', expiresAt: '2026-12-31T00:00:00.000Z' }],
   ['sealed-cardmarket-897455', { reason: 'Cardmarket confirms Best Selection Vol.7 is a presale until 2026-12-31', expiresAt: '2026-12-31T00:00:00.000Z' }],
   ['sealed-cardmarket-897464', { reason: 'Cardmarket confirms the 29th Anniversary Edition is a presale until 2026-12-31', expiresAt: '2026-12-31T00:00:00.000Z' }],
@@ -497,6 +494,36 @@ const EXACT_SEALED_IMAGE_OVERRIDES_V10 = new Map([
     sourceName: 'TCGplayer corresponding contained English sleeved-booster image via TCGCSV',
     relationship: 'contained-unit',
   }],
+  [869915, {
+    sourceUrl: 'https://en.onepiece-cardgame.com/renewal/images/products/other/3rd_anniversary_set/img_item01.webp',
+    evidenceUrl: 'https://en.onepiece-cardgame.com/products/other/3rd_anniversary_set.php',
+    sourceName: 'Bandai official English product page',
+  }],
+  [875688, {
+    sourceUrl: 'https://en.onepiece-cardgame.com/onepiececg/bccard/en/product/2026/07/23/bX2KjHQowPgTjQkO/img_item01.webp',
+    evidenceUrl: 'https://en.onepiece-cardgame.com/products/dp12.html',
+    sourceName: 'Bandai official English product page',
+  }],
+  [897457, {
+    sourceUrl: 'https://en.onepiece-cardgame.com/renewal/images/products/other/cardcollection_bestselection_vol6/img_item01.webp',
+    evidenceUrl: 'https://en.onepiece-cardgame.com/products/other/cardcollection_bestselection_vol6.php',
+    sourceName: 'Bandai official English product page',
+  }],
+  [906853, {
+    sourceUrl: 'https://en.onepiece-cardgame.com/onepiececg/bccard/en/product/2026/08/27/sXAjGXYEi2tzZ9GI/img_item01.webp',
+    evidenceUrl: 'https://en.onepiece-cardgame.com/products/collection-flame.html',
+    sourceName: 'Bandai official English product page',
+  }],
+  [906854, {
+    sourceUrl: 'https://en.onepiece-cardgame.com/onepiececg/bccard/en/product/2026/08/27/HlHoncvUJEJMpyQ0/img_item01.webp',
+    evidenceUrl: 'https://en.onepiece-cardgame.com/products/playmat_flame-flame-fruit.html',
+    sourceName: 'Bandai official English product page',
+  }],
+  [909793, {
+    sourceUrl: 'https://en.onepiece-cardgame.com/onepiececg/bccard/en/news/2026/07/22/7THzWs4Nl6GSeJwr/batch_OP17_DashPack_pillow.webp',
+    evidenceUrl: 'https://en.onepiece-cardgame.com/news/02_398.html',
+    sourceName: 'Bandai official English campaign news announcement',
+  }],
 ]);
 const EXACT_SEALED_RELEASE_GATES_V10 = new Map([
   [897417, {
@@ -513,21 +540,6 @@ const EXACT_SEALED_RELEASE_GATES_V10 = new Map([
     releasedOn: '2026-07-31',
     evidenceUrl: 'https://en.onepiece-cardgame.com/products/other/playmat010.php',
     reason: 'Bandai lists delivery in July 2026 and its UK distributor gives 2026-07-31 as the release date.',
-  }],
-  [869915, {
-    releasedOn: '2026-08-28',
-    evidenceUrl: 'https://www.cardmarket.com/en/OnePiece/Products/Promo-Products/One-Piece-Card-Game-3rd-English-Anniversary-Set-English-Version',
-    reason: 'Cardmarket identifies this product as a presale.',
-  }],
-  [875688, {
-    releasedOn: '2026-08-28',
-    evidenceUrl: 'https://www.cardmarket.com/en/OnePiece/Products/Promo-Products/Double-Pack-Set-Vol12',
-    reason: 'Cardmarket identifies this product as a presale and currently serves a generic placeholder image.',
-  }],
-  [897457, {
-    releasedOn: '2026-08-28',
-    evidenceUrl: 'https://www.cardmarket.com/en/OnePiece/Products/Promo-Products/Premium-Card-Collection-Best-Selection-Vol6',
-    reason: 'Cardmarket identifies this product as a presale.',
   }],
   [897446, {
     releasedOn: '2026-12-31',

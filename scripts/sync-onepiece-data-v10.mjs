@@ -4210,6 +4210,21 @@ for (const flagged of flaggedCardmarketMappingChanges) {
         asset.quote.cardmarket = round(fallbackPrice.trend);
         asset.pricing = asset.pricing ?? {};
         asset.pricing.cardmarket = pricingDetails(fallbackPrice);
+        // For promo assets: the asset was built without a tcgplayerArtworkReference because its
+        // Cardmarket product temporarily dropped from the live price guide CSV. The promo integrity
+        // check at line 4743 requires that any promo with cardmarketProductId != null carries a
+        // matching tcgplayerArtworkReference. Restore both from the previous snapshot so the
+        // reference stays internally consistent with the fallback product ID.
+        if (!asset.tcgplayerArtworkReference) {
+          const previousAsset = previousAssetByIdV10.get(flagged.assetId);
+          if (
+            previousAsset?.tcgplayerArtworkReference?.cardmarketProductId === flagged.previousProductId
+            && previousAsset.tcgplayerArtworkReference.matchPolicy === PROMO_CROSS_MARKET_MAPPING_POLICY_V1.version
+          ) {
+            asset.tcgplayerArtworkReference = previousAsset.tcgplayerArtworkReference;
+            asset.cardmarketExpansionId = previousAsset.cardmarketExpansionId ?? asset.cardmarketExpansionId;
+          }
+        }
       }
     }
   }

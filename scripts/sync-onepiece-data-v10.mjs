@@ -216,17 +216,6 @@ const REVIEWED_CARDMARKET_ARTWORK_MAPPINGS_V10 = new Map([
     minimumCorrelation: 0.99,
     evidence: 'The complete two-art ST30-016 matrix is mutual unique-best. The standard art has 0.998101 correlation and was reviewed on 2026-07-23.',
   }],
-  ['ST30-017_p1', {
-    reviewId: 'ST30-017_p1:891049',
-    setCode: 'ST30',
-    number: 'ST30-017',
-    productId: 891049,
-    candidateProductIds: [891048, 891049],
-    sourceImageDigest: 'be09a10c3c8bb3f93b2fb7518fd73a9762bfa3716127ef7893971e1991669218',
-    productImageDigest: '587e1ae9a7072edc0c21da1a9f8d676629687094f7cfdc33e879522599573656',
-    minimumCorrelation: 0.99,
-    evidence: 'The complete two-art ST30-017 matrix is mutual unique-best. The alternate art has 0.991428 correlation and was reviewed on 2026-07-23.',
-  }],
   ['ST30-017', {
     reviewId: 'ST30-017:891048',
     setCode: 'ST30',
@@ -4210,6 +4199,12 @@ for (const flagged of flaggedCardmarketMappingChanges) {
         asset.quote.cardmarket = round(fallbackPrice.trend);
         asset.pricing = asset.pricing ?? {};
         asset.pricing.cardmarket = pricingDetails(fallbackPrice);
+        asset.change = asset.change ?? {};
+        asset.change.cardmarket = {
+          '1D': percentAgainst(round(fallbackPrice.trend), fallbackPrice.avg1 ?? null),
+          '1W': percentAgainst(round(fallbackPrice.trend), fallbackPrice.avg7 ?? null),
+          '1M': percentAgainst(round(fallbackPrice.trend), fallbackPrice.avg30 ?? null),
+        };
         // For promo assets: the asset was built without a tcgplayerArtworkReference because its
         // Cardmarket product temporarily dropped from the live price guide CSV. The promo integrity
         // check at line 4743 requires that any promo with cardmarketProductId != null carries a

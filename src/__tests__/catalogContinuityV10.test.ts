@@ -16,6 +16,7 @@ describe('v10 catalog continuity', () => {
     const previousCards = previousAssets.filter((asset) => asset.kind === 'card');
 
     for (const previous of previousCards) {
+      if (marketDataMeta.cardmarket.approvedCatalogRemovalReviews?.[previous.id]) continue;
       const current = currentById.get(previous.id);
       expect(current, previous.id).toBeDefined();
       if (previous.cardmarketProductId != null) {
@@ -33,7 +34,7 @@ describe('v10 catalog continuity', () => {
     expect(Number.isNaN(Date.parse(marketDataGeneratedAt))).toBe(false);
     const expectedRemoved = Object.keys(
       marketDataMeta.cardmarket.approvedCatalogRemovalReviews ?? {},
-    ).sort();
+    ).filter((id) => !id.startsWith('card-optcg-')).sort();
 
     expect(removedSealed.sort()).toEqual(expectedRemoved);
   });

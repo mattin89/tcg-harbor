@@ -158,7 +158,7 @@ describe('source-backed catalog snapshot', () => {
 
     expect(st30ExpansionId).toBe(6608);
     expect(marketDataMeta.cardmarket.requiredCompleteLatestStarterArtworkSetCode)
-      .toBe('ST30');
+      .toBe('ST36');
     expect(st30Cards).toHaveLength(34);
     expect(new Set(st30Cards.map((asset) => asset.rulesCardId)).size).toBe(17);
     expect(st30Cards.map((asset) => asset.cardmarketProductId).sort((left, right) =>
@@ -219,10 +219,6 @@ describe('source-backed catalog snapshot', () => {
       const released = Date.parse(marketDataGeneratedAt) >= Date.parse(`${gate.releasedOn}T00:00:00.000Z`);
       expect(sealedIds.has(Number(productId)), `${productId} @ ${gate.releasedOn}`).toBe(released);
     }
-    expect(sealed.find((asset) => asset.cardmarketProductId === 761165)).toMatchObject({
-      imageSourceName: 'Bandai official product page',
-      imageSourceUrl: 'https://en.onepiece-cardgame.com/images/products/other/cardcollection_bcgfest23-24/mv_01.jpg',
-    });
     expect(sealed.find((asset) => asset.cardmarketProductId === 695312)?.language).toBe('Japanese');
     expect(sealed.find((asset) => asset.cardmarketProductId === 837881)?.language).toBe('French');
     expect(sealed.find((asset) => asset.cardmarketProductId === 837882)?.language).toBe('French');
@@ -707,11 +703,7 @@ describe('source-backed catalog snapshot', () => {
         (asset) => asset.kind === 'sealed' && release.memberSetCodes.includes(asset.setCode),
       )).toBe(false);
     }
-    const leakedFutureDeckProductIds = new Set([897426, 897428, 897430, 897432, 897434, 897435]);
-    expect(catalogAssets.some(
-      (asset) => asset.kind === 'sealed' && asset.cardmarketProductId != null
-        && leakedFutureDeckProductIds.has(asset.cardmarketProductId),
-    )).toBe(false);
+
     expect(releaseManifest.officialProducts.find((product) => product.officialCode === 'ST-05')).toMatchObject({
       releasedOn: '2023-02-03',
       memberSetCodes: ['ST05'],

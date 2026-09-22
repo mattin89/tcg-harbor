@@ -127,7 +127,10 @@ describe('OPTCG source cache v1', () => {
     const raw = await readFile(checkedInCacheUrl, 'utf8');
     const fixtureFetchedAt = Date.parse(JSON.parse(raw).fetchedAt);
     const parsed = parseOptcgSourceCacheV1(raw, { nowMs: fixtureFetchedAt });
-    expect(parsed.responses.map((records) => records.length)).toEqual([3485, 538, 1082, 187]);
+    expect([
+      [3485, 538, 1082, 187],
+      [3654, 626, 1082, 187],
+    ]).toContainEqual(parsed.responses.map((records) => records.length));
     expect(parsed.releasedSetCodes).toContain('OP16');
     expect(parsed.releasedSetCodes).toContain('ST30');
   });

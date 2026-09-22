@@ -25,6 +25,7 @@ import type {
   StoreApplication,
   StoreApplicationDraft,
   StoreApplicationStatus,
+  StoreProfileDraft,
 } from "./types";
 import { storeSignupMetadataV12 } from "./storeSignupV12";
 
@@ -112,11 +113,24 @@ function mapManagedStores(value: unknown): ManagedStore[] {
       id: text(store, "id"),
       slug: text(store, "slug"),
       name: text(store, "name"),
+      description: optionalText(store, "description"),
+      addressLine1: text(store, "address_line_1") || undefined,
+      addressLine2: optionalText(store, "address_line_2"),
       city: text(store, "city"),
+      region: optionalText(store, "region"),
       postcode: text(store, "postcode"),
       countryCode: text(store, "country_code"),
+      latitude: store.latitude !== undefined && store.latitude !== null ? number(store, "latitude") : undefined,
+      longitude: store.longitude !== undefined && store.longitude !== null ? number(store, "longitude") : undefined,
+      timezone: optionalText(store, "timezone") ?? undefined,
+      openingHours: store.opening_hours && typeof store.opening_hours === "object" ? store.opening_hours as Record<string, unknown> : {},
+      contactEmail: optionalText(store, "contact_email"),
+      phone: optionalText(store, "phone"),
+      websiteUrl: optionalText(store, "website_url"),
+      imageUrl: optionalText(store, "image_url"),
       isVerified: Boolean(store.is_verified),
       isActive: Boolean(store.is_active),
+      requiresMemberApproval: Boolean(store.requires_member_approval),
       community: text(community, "id") ? {
         id: text(community, "id"),
         name: text(community, "name"),
@@ -462,7 +476,7 @@ export class SupabaseProductionAccess {
       this.client.from("store_applications").select("*").eq("applicant_user_id", userId).order("submitted_at", { ascending: false }).limit(1).maybeSingle(),
       this.client
         .from("store_administrators")
-        .select("store_id,stores!inner(id,slug,name,city,postcode,country_code,is_verified,is_active,communities(id,name,is_active))")
+        .select("store_id,stores!inner(id,slug,name,description,address_line_1,address_line_2,city,region,postcode,country_code,latitude,longitude,timezone,opening_hours,contact_email,phone,website_url,image_url,is_verified,is_active,requires_member_approval,communities(id,name,is_active))")
         .eq("user_id", userId)
         .is("revoked_at", null),
       this.client
@@ -633,6 +647,33 @@ export class SupabaseProductionAccess {
       p_store_id: storeId,
     });
     if (error) throw new ProductionAccessError("platformAdminDeleteStore", error);
+  }
+
+  async updateStoreProfile(storeId: string, draft: StoreProfileDraft): Promise<void> {
+    const payload: Record<string, unknown> = {
+      name: draft.name.trim(),
+      description: draft.description?.trim() || null,
+      address_line_1: draft.addressLine1.trim(),
+      address_line_2: draft.addressLine2?.trim() || null,
+      city: draft.city.trim(),
+      region: draft.region?.trim() || null,
+      postcode: draft.postcode.trim(),
+      country_code: draft.countryCode.trim().toUpperCase(),
+      contact_email: draft.contactEmail?.trim() || null,
+      phone: draft.phone?.trim() || null,
+      website_url: draft.websiteUrl?.trim() || null,
+      image_url: draft.imageUrl?.trim() || null,
+    };
+    if (draft.latitude != null) payload.latitude = draft.latitude;
+    if (draft.longitude != null) payload.longitude = draft.longitude;
+    if (draft.timezone != null) payload.timezone = draft.timezone;
+    if (draft.openingHours != null) payload.opening_hours = draft.openingHours;
+
+    const { error } = await this.client
+      .from("stores")
+      .update(payload)
+      .eq("id", storeId);
+    if (error) throw new ProductionAccessError("updateStoreProfile", error);
   }
 
   async listCommunityChannels(communityId: string): Promise<CommunityChannel[]> {

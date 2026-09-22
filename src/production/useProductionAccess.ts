@@ -22,6 +22,7 @@ import type {
   StoreJoinResult,
   StoreQrInvite,
   StoreApplicationDraft,
+  StoreProfileDraft,
 } from "./types";
 
 export type ProductionAccessPhase =
@@ -57,6 +58,7 @@ export interface ProductionAccessController {
   listApprovedStores(): Promise<PlatformAdminStore[]>;
   updateApprovedStore(draft: PlatformAdminUpdateStoreDraft): Promise<void>;
   deleteApprovedStore(storeId: string): Promise<void>;
+  updateStoreProfile(storeId: string, draft: StoreProfileDraft): Promise<void>;
   listCommunityChannels(communityId: string): Promise<CommunityChannel[]>;
   createCommunityChannel(draft: CommunityChannelDraft): Promise<CommunityChannel>;
   updateCommunityChannel(channelId: string, draft: Omit<CommunityChannelDraft, "communityId">): Promise<CommunityChannel>;
@@ -351,6 +353,10 @@ export function useProductionAccess(): ProductionAccessController {
     async deleteApprovedStore(storeId) {
       if (!service) throw new Error("Production Supabase is not configured.");
       await run(() => service.platformAdminDeleteStore(storeId), { refresh: true });
+    },
+    async updateStoreProfile(storeId, draft) {
+      if (!service) throw new Error("Production Supabase is not configured.");
+      await run(() => service.updateStoreProfile(storeId, draft), { refresh: true });
     },
     async listCommunityChannels(communityId) {
       if (!service) return [];

@@ -28,10 +28,10 @@ export interface DonCardmarketMapping {
 
 export const donCounts = {
   totalDons: 187,
-  mappedCount: 174,
-  pricedCount: 171,
+  mappedCount: 177,
+  pricedCount: 174,
   trendUnavailableCount: 3,
-  unmappedCount: 13,
+  unmappedCount: 10,
 } as const;
 
 export const donMappings: Record<string, DonCardmarketMapping> = {
@@ -560,6 +560,27 @@ export const donMappings: Record<string, DonCardmarketMapping> = {
       "cardmarket": 47.35
     }
   },
+  "card-optcg-e0cd0520dc6fbf080a1f": {
+    "cardmarketProductId": 873735,
+    "cardmarketExpansionId": 6449,
+    "cardmarketPriceState": "available",
+    "cardmarketPriceReason": "An exact Cardmarket product is verified for this artwork and its daily trend is available.",
+    "cardmarketMappingEvidence": "EB-03 Gold DON (Nico Robin)",
+    "cardmarketProductName": "Don!! (Robin EB03)",
+    "pricing": {
+      "cardmarket": {
+        "trend": 47.35,
+        "low": 45,
+        "average": 44.41,
+        "average1Day": 48,
+        "average7Days": 48.59,
+        "average30Days": 44.94
+      }
+    },
+    "quote": {
+      "cardmarket": 47.35
+    }
+  },
   "card-optcg-44c1b5b0bf19cbf21a79": {
     "cardmarketProductId": 799521,
     "cardmarketExpansionId": 5805,
@@ -666,6 +687,27 @@ export const donMappings: Record<string, DonCardmarketMapping> = {
     }
   },
   "card-optcg-4b4eef3a50343bdf4edc": {
+    "cardmarketProductId": 873734,
+    "cardmarketExpansionId": 6449,
+    "cardmarketPriceState": "available",
+    "cardmarketPriceReason": "An exact Cardmarket product is verified for this artwork and its daily trend is available.",
+    "cardmarketMappingEvidence": "EB-03 Normal DON (Nico Robin)",
+    "cardmarketProductName": "Don!! (Robin EB03)",
+    "pricing": {
+      "cardmarket": {
+        "trend": 2.18,
+        "low": 0.75,
+        "average": 1.97,
+        "average1Day": 1.15,
+        "average7Days": 2.22,
+        "average30Days": 2.14
+      }
+    },
+    "quote": {
+      "cardmarket": 2.18
+    }
+  },
+  "card-optcg-dbf8d4151e83ed0f4e7b": {
     "cardmarketProductId": 873734,
     "cardmarketExpansionId": 6449,
     "cardmarketPriceState": "available",
@@ -3333,6 +3375,27 @@ export const donMappings: Record<string, DonCardmarketMapping> = {
     }
   },
   "card-optcg-e113ac2e1544733badb7": {
+    "cardmarketProductId": 873736,
+    "cardmarketExpansionId": 6449,
+    "cardmarketPriceState": "available",
+    "cardmarketPriceReason": "An exact Cardmarket product is verified for this artwork and its daily trend is available.",
+    "cardmarketMappingEvidence": "EB-03 Normal DON (Uta)",
+    "cardmarketProductName": "Don!! (Uta EB03)",
+    "pricing": {
+      "cardmarket": {
+        "trend": 1.74,
+        "low": 0.9,
+        "average": 1.7,
+        "average1Day": 1.13,
+        "average7Days": 1.45,
+        "average30Days": 1.64
+      }
+    },
+    "quote": {
+      "cardmarket": 1.74
+    }
+  },
+  "card-optcg-c48552959526778cfa45": {
     "cardmarketProductId": 873736,
     "cardmarketExpansionId": 6449,
     "cardmarketPriceState": "available",

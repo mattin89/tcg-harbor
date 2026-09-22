@@ -83,11 +83,6 @@ export function extractAssetAveragePrice(
   market: Market,
   history?: UserCardPriceHistory,
 ): number {
-  if (history) {
-    const fromHistory = extractAssetPriceFromHistory(asset, market, history);
-    if (fromHistory !== null) return fromHistory;
-  }
-
   if (market === 'cardmarket') {
     const trend = asset.pricing?.cardmarket?.trend;
     if (typeof trend === 'number' && Number.isFinite(trend) && trend > 0) return trend;
@@ -95,12 +90,18 @@ export function extractAssetAveragePrice(
     if (typeof avg === 'number' && Number.isFinite(avg) && avg > 0) return avg;
     const quote = asset.quote?.cardmarket;
     if (typeof quote === 'number' && Number.isFinite(quote) && quote > 0) return quote;
-    return 0;
+  } else {
+    const usPrice = asset.pricing?.usMarket?.market;
+    if (typeof usPrice === 'number' && Number.isFinite(usPrice) && usPrice > 0) return usPrice;
+    const quote = asset.quote?.tcgplayer;
+    if (typeof quote === 'number' && Number.isFinite(quote) && quote > 0) return quote;
   }
-  const usPrice = asset.pricing?.usMarket?.market;
-  if (typeof usPrice === 'number' && Number.isFinite(usPrice) && usPrice > 0) return usPrice;
-  const quote = asset.quote?.tcgplayer;
-  if (typeof quote === 'number' && Number.isFinite(quote) && quote > 0) return quote;
+
+  if (history) {
+    const fromHistory = extractAssetPriceFromHistory(asset, market, history);
+    if (fromHistory !== null) return fromHistory;
+  }
+
   return 0;
 }
 
@@ -124,11 +125,10 @@ export function recordTodayCardPrices(
 
   for (const asset of assets) {
     if (asset.quantity <= 0) continue;
-    // Never overwrite an existing price if today already has a recorded price (e.g. from server sync)
-    if (typeof todayPrices[asset.id] === 'number' && todayPrices[asset.id] > 0) continue;
+    // Never overwrite when a server-synced catalog price already exists for today
     if (asset.catalogId && typeof todayPrices[asset.catalogId] === 'number' && todayPrices[asset.catalogId] > 0) continue;
 
-    const price = extractAssetAveragePrice(asset, market, currentHistory);
+    const price = extractAssetAveragePrice(asset, market);
     if (price > 0) {
       todayPrices[asset.id] = price;
     }

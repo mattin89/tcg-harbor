@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 import { SupabaseProductionAccess } from "../production/supabaseProductionAccess";
-import type { PlatformAdminUpdateStoreDraft } from "../production/types";
+import type { PlatformAdminUpdateStoreDraft, StoreProfileDraft } from "../production/types";
 import { fitLocations, locateStores, type StoreMapStore } from "../components/StoreMap";
 
 vi.mock("maplibre-gl", () => ({
@@ -237,6 +237,84 @@ describe("platformAdminStores", () => {
     await expect(access.platformAdminDeleteStore("store-missing")).rejects.toThrow(
       "Store not found or already deleted"
     );
+  });
+
+  describe("updateStoreProfile", () => {
+    it("updates store profile columns with normalized fields and coordinates", async () => {
+      const eq = vi.fn().mockResolvedValue({ error: null });
+      const update = vi.fn().mockReturnValue({ eq });
+      const from = vi.fn().mockReturnValue({ update });
+      const client = { from } as unknown as SupabaseClient;
+      const access = new SupabaseProductionAccess(client);
+
+      const draft: StoreProfileDraft = {
+        name: "  Dresden TCG Haven  ",
+        description: "  Local tournament hub and singles trader  ",
+        addressLine1: "  Prager Straße 10  ",
+        addressLine2: "  Floor 2  ",
+        city: "  Dresden  ",
+        region: "  Saxony  ",
+        postcode: "  01069  ",
+        countryCode: "  de  ",
+        latitude: 51.0456,
+        longitude: 13.7389,
+        timezone: "Europe/Berlin",
+        openingHours: {
+          monday: "10:00 - 19:00",
+          sunday: "Closed",
+        },
+        contactEmail: "  contact@haven.de  ",
+        phone: "  +49 351 123456  ",
+        websiteUrl: "  https://haven.de  ",
+        imageUrl: "  https://haven.de/logo.png  ",
+      };
+
+      await access.updateStoreProfile("store-123", draft);
+
+      expect(from).toHaveBeenCalledWith("stores");
+      expect(update).toHaveBeenCalledWith({
+        name: "Dresden TCG Haven",
+        description: "Local tournament hub and singles trader",
+        address_line_1: "Prager Straße 10",
+        address_line_2: "Floor 2",
+        city: "Dresden",
+        region: "Saxony",
+        postcode: "01069",
+        country_code: "DE",
+        latitude: 51.0456,
+        longitude: 13.7389,
+        timezone: "Europe/Berlin",
+        opening_hours: {
+          monday: "10:00 - 19:00",
+          sunday: "Closed",
+        },
+        contact_email: "contact@haven.de",
+        phone: "+49 351 123456",
+        website_url: "https://haven.de",
+        image_url: "https://haven.de/logo.png",
+      });
+      expect(eq).toHaveBeenCalledWith("id", "store-123");
+    });
+
+    it("throws ProductionAccessError when store profile update fails", async () => {
+      const eq = vi.fn().mockResolvedValue({
+        error: { message: "new row violates row-level security policy for table stores" },
+      });
+      const update = vi.fn().mockReturnValue({ eq });
+      const from = vi.fn().mockReturnValue({ update });
+      const client = { from } as unknown as SupabaseClient;
+      const access = new SupabaseProductionAccess(client);
+
+      await expect(
+        access.updateStoreProfile("store-unauthorized", {
+          name: "Unauthorized Store",
+          addressLine1: "Unknown St",
+          city: "Dresden",
+          postcode: "01069",
+          countryCode: "DE",
+        })
+      ).rejects.toThrow("new row violates row-level security policy");
+    });
   });
 
   describe("StoreMap camera and street zoom", () => {

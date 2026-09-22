@@ -20,7 +20,9 @@ describe('v10 catalog continuity', () => {
       const current = currentById.get(previous.id);
       expect(current, previous.id).toBeDefined();
       if (previous.cardmarketProductId != null) {
-        expect(current?.cardmarketProductId, previous.id).toBe(previous.cardmarketProductId);
+        const approvedChange = (marketDataMeta.cardmarket?.exactMappingContinuityApprovals as Record<string, { previousProductId: number; nextProductId: number }>)?.[previous.id];
+        const expectedProductId = approvedChange ? approvedChange.nextProductId : previous.cardmarketProductId;
+        expect(current?.cardmarketProductId, previous.id).toBe(expectedProductId);
       }
     }
   });

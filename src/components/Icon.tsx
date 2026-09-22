@@ -1,6 +1,6 @@
 import type { SVGProps } from 'react';
 
-type IconName = 'dashboard' | 'collection' | 'plus' | 'store' | 'users' | 'message' | 'settings' | 'search' | 'bell' | 'chevron' | 'arrow-up' | 'arrow-down' | 'cards' | 'box' | 'chart' | 'clock' | 'grid' | 'list' | 'filter' | 'close' | 'edit' | 'trash' | 'map' | 'locate' | 'scan' | 'qr' | 'send' | 'trade' | 'check' | 'more' | 'logout' | 'shield' | 'camera' | 'upload' | 'lock' | 'sparkle' | 'menu' | 'download' | 'copy' | 'refresh' | 'info' | 'external-link';
+type IconName = 'dashboard' | 'collection' | 'plus' | 'store' | 'users' | 'message' | 'settings' | 'search' | 'bell' | 'chevron' | 'arrow-up' | 'arrow-down' | 'cards' | 'box' | 'chart' | 'clock' | 'grid' | 'list' | 'filter' | 'close' | 'edit' | 'trash' | 'map' | 'locate' | 'scan' | 'qr' | 'send' | 'trade' | 'check' | 'more' | 'logout' | 'shield' | 'camera' | 'upload' | 'lock' | 'sparkle' | 'menu' | 'download' | 'copy' | 'refresh' | 'info' | 'external-link' | 'mail' | 'phone' | 'globe';
 
 const paths: Record<IconName, React.ReactNode> = {
   dashboard: <><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="4" rx="2"/><rect x="14" y="11" width="7" height="10" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/></>,
@@ -45,6 +45,9 @@ const paths: Record<IconName, React.ReactNode> = {
   refresh: <><path d="M20 11a8 8 0 1 0-2 5.3"/><path d="M20 4v7h-7"/></>,
   info: <><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></>,
   'external-link': <><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></>,
+  mail: <><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></>,
+  phone: <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>,
+  globe: <><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></>,
 };
 
 export function Icon({ name, size = 20, ...props }: { name: IconName; size?: number } & SVGProps<SVGSVGElement>) {

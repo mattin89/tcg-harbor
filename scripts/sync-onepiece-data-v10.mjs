@@ -216,6 +216,17 @@ const REVIEWED_CARDMARKET_ARTWORK_MAPPINGS_V10 = new Map([
     minimumCorrelation: 0.99,
     evidence: 'The complete two-art ST30-016 matrix is mutual unique-best. The standard art has 0.998101 correlation and was reviewed on 2026-07-23.',
   }],
+  ['ST30-017_p1', {
+    reviewId: 'ST30-017_p1:891049',
+    setCode: 'ST30',
+    number: 'ST30-017',
+    productId: 891049,
+    candidateProductIds: [891048, 891049],
+    sourceImageDigest: '898af88e5f3373c792e7733919a2375bf0b4725f106146f7c69669232e66c98a',
+    productImageDigest: '587e1ae9a7072edc0c21da1a9f8d676629687094f7cfdc33e879522599573656',
+    minimumCorrelation: 0.99,
+    evidence: 'The complete two-art ST30-017 matrix is mutual unique-best. The alternate art has 0.998226 correlation and was reviewed on 2026-09-22.',
+  }],
   ['ST30-017', {
     reviewId: 'ST30-017:891048',
     setCode: 'ST30',

@@ -2,12 +2,17 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { DemoAsset } from '../data/demo';
 import {
   applyCatalogOverrides,
+  approveAllVerifiedItems,
+  approveCatalogAsset,
   clearAllAdminCatalogOverrides,
   diagnoseCatalogItem,
   exportCatalogOverridesJson,
+  getAdminApprovedAssetIds,
   getAdminCatalogOverrides,
   importCatalogOverridesJson,
+  isCatalogAssetApproved,
   resetAdminCatalogOverride,
+  revokeCatalogAssetApproval,
   saveAdminCatalogOverride,
   type AdminCatalogOverride,
 } from '../services/adminCatalogStore';
@@ -154,4 +159,43 @@ describe('adminCatalogStore', () => {
     expect(result.imported).toBe(1);
     expect(getAdminCatalogOverrides()['card-1']?.name).toBe('Exported Test Card');
   });
+
+  it('manages card approval lifecycle and bulk approves verified items', () => {
+    // Initially no cards approved
+    expect(getAdminApprovedAssetIds().size).toBe(0);
+    expect(isCatalogAssetApproved(mockBaseAsset)).toBe(false);
+
+    // Approve individual asset
+    approveCatalogAsset(mockBaseAsset.id);
+    expect(getAdminApprovedAssetIds().has(mockBaseAsset.id)).toBe(true);
+    expect(isCatalogAssetApproved(mockBaseAsset)).toBe(true);
+
+    // Revoke individual approval
+    revokeCatalogAssetApproval(mockBaseAsset.id);
+    expect(getAdminApprovedAssetIds().has(mockBaseAsset.id)).toBe(false);
+    expect(isCatalogAssetApproved(mockBaseAsset)).toBe(false);
+
+    // Bulk approve all verified cards: mockBaseAsset is healthy, mockErrorAsset has issues
+    const { approvedCount, totalVerified } = approveAllVerifiedItems([mockBaseAsset, mockErrorAsset]);
+    expect(totalVerified).toBe(1);
+    expect(approvedCount).toBe(1);
+    expect(getAdminApprovedAssetIds().has(mockBaseAsset.id)).toBe(true);
+    expect(getAdminApprovedAssetIds().has(mockErrorAsset.id)).toBe(false);
+
+    // Applying overrides propagates isApproved
+    const applied = applyCatalogOverrides([mockBaseAsset, mockErrorAsset]);
+    expect(applied[0].isApproved).toBe(true);
+    expect(applied[0].approvedAt).toBeDefined();
+    expect(applied[1].isApproved).toBe(false);
+
+    // Exporting and re-importing preserves approved IDs
+    const exported = exportCatalogOverridesJson();
+    clearAllAdminCatalogOverrides();
+    expect(getAdminApprovedAssetIds().size).toBe(0);
+
+    const importRes = importCatalogOverridesJson(exported);
+    expect(importRes.error).toBeNull();
+    expect(getAdminApprovedAssetIds().has(mockBaseAsset.id)).toBe(true);
+  });
 });
+

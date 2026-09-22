@@ -3,19 +3,23 @@ import { catalogAssets, marketDataMeta, type DemoAsset } from '../../data/demo';
 import { Icon } from '../Icon';
 import {
   applyCatalogOverrides,
+  approveAllVerifiedItems,
+  approveCatalogAsset,
   clearAllAdminCatalogOverrides,
   diagnoseCatalogItem,
   exportCatalogOverridesJson,
+  getAdminApprovedAssetIds,
   getAdminCatalogOverrides,
   importCatalogOverridesJson,
   resetAdminCatalogOverride,
+  revokeCatalogAssetApproval,
   saveAdminCatalogOverride,
   type AdminCatalogOverride,
   type CatalogItemIssue,
 } from '../../services/adminCatalogStore';
 import type { ProductionAccessController } from '../../production';
 
-type TabMode = 'all' | 'cards' | 'sealed' | 'flagged' | 'overrides';
+type TabMode = 'all' | 'cards' | 'sealed' | 'approved' | 'flagged' | 'overrides';
 
 interface PlatformInventoryPanelProps {
   access?: ProductionAccessController;
@@ -23,6 +27,7 @@ interface PlatformInventoryPanelProps {
 
 export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPanelProps) {
   const [overrides, setOverrides] = useState<Record<string, AdminCatalogOverride>>(() => getAdminCatalogOverrides());
+  const [approvedIds, setApprovedIds] = useState<Set<string>>(() => getAdminApprovedAssetIds());
   const [activeTab, setActiveTab] = useState<TabMode>('all');
   const [issueFilter, setIssueFilter] = useState<'all' | CatalogItemIssue>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -37,7 +42,10 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
 
   // Sync state if storage changes
   useEffect(() => {
-    const handleUpdate = () => setOverrides(getAdminCatalogOverrides());
+    const handleUpdate = () => {
+      setOverrides(getAdminCatalogOverrides());
+      setApprovedIds(getAdminApprovedAssetIds());
+    };
     window.addEventListener('tcg-harbor:catalog-updated', handleUpdate);
     return () => window.removeEventListener('tcg-harbor:catalog-updated', handleUpdate);
   }, []);
@@ -61,9 +69,20 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
     return ids;
   }, []);
 
+  // On initial mount, ensure all verified cards without issues are approved
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const raw = window.localStorage.getItem('tcg-harbor-admin-approved-assets-v1');
+      if (raw === null) {
+        approveAllVerifiedItems(catalogAssets, flaggedAssetIds);
+        setApprovedIds(getAdminApprovedAssetIds());
+      }
+    }
+  }, [flaggedAssetIds]);
+
   const activeCatalog = useMemo(() => {
-    return applyCatalogOverrides(catalogAssets, overrides);
-  }, [overrides]);
+    return applyCatalogOverrides(catalogAssets, overrides, approvedIds);
+  }, [overrides, approvedIds]);
 
   const diagnosticsMap = useMemo(() => {
     const map = new Map<string, ReturnType<typeof diagnoseCatalogItem>>();
@@ -77,16 +96,26 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
     let cards = 0;
     let sealed = 0;
     let flagged = 0;
+    let approved = 0;
+    let verified = 0;
     for (const asset of activeCatalog) {
       if (asset.kind === 'card') cards++;
       if (asset.kind === 'sealed') sealed++;
-      if (diagnosticsMap.get(asset.id)?.isFlaggedOrError) flagged++;
+      const hasIssue = diagnosticsMap.get(asset.id)?.isFlaggedOrError;
+      if (hasIssue) {
+        flagged++;
+      } else {
+        verified++;
+        if (asset.isApproved) approved++;
+      }
     }
     return {
       total: activeCatalog.length,
       cards,
       sealed,
       flagged,
+      approved,
+      verified,
       overrides: Object.keys(overrides).length,
     };
   }, [activeCatalog, diagnosticsMap, overrides]);
@@ -98,6 +127,7 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
       // Tab filter
       if (activeTab === 'cards' && asset.kind !== 'card') return false;
       if (activeTab === 'sealed' && asset.kind !== 'sealed') return false;
+      if (activeTab === 'approved' && !asset.isApproved) return false;
       if (activeTab === 'overrides' && !overrides[asset.id]) return false;
       if (activeTab === 'flagged') {
         const diag = diagnosticsMap.get(asset.id);
@@ -130,6 +160,23 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
     return filteredAssets.slice(start, start + pageSize);
   }, [filteredAssets, page, pageSize]);
 
+  const handleApproveAllVerified = () => {
+    const res = approveAllVerifiedItems(activeCatalog, flaggedAssetIds);
+    setApprovedIds(getAdminApprovedAssetIds());
+    setToastMessage(`Approved ${res.totalVerified.toLocaleString()} verified cards in catalog.`);
+  };
+
+  const handleToggleApprove = (id: string, approve: boolean) => {
+    if (approve) {
+      approveCatalogAsset(id);
+      setToastMessage('Approved card in platform catalog.');
+    } else {
+      revokeCatalogAssetApproval(id);
+      setToastMessage('Revoked card approval.');
+    }
+    setApprovedIds(getAdminApprovedAssetIds());
+  };
+
   const handleExportJson = () => {
     const json = exportCatalogOverridesJson();
     const blob = new Blob([json], { type: 'application/json' });
@@ -151,17 +198,19 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
       setImportModalOpen(false);
       setImportText('');
       setOverrides(getAdminCatalogOverrides());
+      setApprovedIds(getAdminApprovedAssetIds());
       setToastMessage(`Successfully imported ${res.imported} catalog override(s).`);
     }
   };
 
   const handleClearAllOverrides = () => {
-    if (!window.confirm('Reset all catalog overrides back to clean upstream baseline? This cannot be undone.')) {
+    if (!window.confirm('Reset all catalog overrides and custom approvals back to clean upstream baseline? This cannot be undone.')) {
       return;
     }
     clearAllAdminCatalogOverrides();
     setOverrides({});
-    setToastMessage('Cleared all catalog overrides.');
+    setApprovedIds(new Set());
+    setToastMessage('Cleared all catalog overrides and approval states.');
   };
 
   return (
@@ -176,6 +225,15 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
           </p>
         </div>
         <div className="production-header-actions">
+          <button
+            type="button"
+            className="production-primary"
+            onClick={handleApproveAllVerified}
+            title="Approve all healthy cards that pass data verification"
+          >
+            <Icon name="check" size={15} />
+            <span>Approve All Verified ({counts.verified})</span>
+          </button>
           <button type="button" className="production-secondary" onClick={handleExportJson}>
             <Icon name="download" size={15} />
             <span>Export JSON</span>
@@ -228,6 +286,14 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
         </button>
         <button
           type="button"
+          className={`production-metric-tile is-approved-tile ${activeTab === 'approved' ? 'is-selected' : ''}`}
+          onClick={() => setActiveTab('approved')}
+        >
+          <span className="production-metric-number">{counts.approved.toLocaleString()}</span>
+          <span className="production-metric-label">Approved verified cards</span>
+        </button>
+        <button
+          type="button"
           className={`production-metric-tile is-flagged ${activeTab === 'flagged' ? 'is-selected' : ''}`}
           onClick={() => { setActiveTab('flagged'); setIssueFilter('all'); }}
         >
@@ -267,6 +333,14 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
             onClick={() => setActiveTab('sealed')}
           >
             Sealed ({counts.sealed})
+          </button>
+          <button
+            type="button"
+            className={`production-inventory-tab is-approved-tab ${activeTab === 'approved' ? 'is-active' : ''}`}
+            onClick={() => setActiveTab('approved')}
+          >
+            <Icon name="check" size={14} />
+            Approved ({counts.approved})
           </button>
           <button
             type="button"
@@ -436,14 +510,30 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
                             {issue === 'continuity-flagged' && 'Continuity Discrepancy'}
                           </span>
                         ))}
-                        {!isOverridden && (!diag || !diag.isFlaggedOrError) && (
+                        {asset.isApproved && (
+                          <span className="diag-tag is-approved" title="Card verified and approved for catalog trading">
+                            <Icon name="check" size={12} /> Approved
+                          </span>
+                        )}
+                        {!asset.isApproved && !isOverridden && (!diag || !diag.isFlaggedOrError) && (
                           <span className="diag-tag is-healthy">
                             <Icon name="check" size={12} /> Verified
                           </span>
                         )}
                       </td>
 
-                      <td className="cell-actions">
+                      <td className="cell-actions" style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                        {(!diag || !diag.isFlaggedOrError) && (
+                          <button
+                            type="button"
+                            className={`production-secondary btn-approve ${asset.isApproved ? 'is-approved' : ''}`}
+                            onClick={() => handleToggleApprove(asset.id, !asset.isApproved)}
+                            title={asset.isApproved ? 'Click to revoke approval' : 'Approve verified card'}
+                          >
+                            <Icon name="check" size={13} />
+                            <span>{asset.isApproved ? 'Approved' : 'Approve'}</span>
+                          </button>
+                        )}
                         <button
                           type="button"
                           className="production-primary btn-edit"
@@ -615,6 +705,7 @@ function InventoryEditModal({ asset, existingOverride, onClose, onSave, onReset 
   );
 
   const [errorResolved, setErrorResolved] = useState(true);
+  const [isApproved, setIsApproved] = useState(existingOverride?.isApproved ?? asset.isApproved ?? false);
   const [adminNote, setAdminNote] = useState(existingOverride?.adminNote ?? '');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -641,6 +732,8 @@ function InventoryEditModal({ asset, existingOverride, onClose, onSave, onReset 
       tcgplayerProductId: tcgplayerProductId ? Number(tcgplayerProductId) : null,
       tcgplayerMarketPrice: tcgplayerMarketPrice ? Number(tcgplayerMarketPrice) : null,
       errorResolved,
+      isApproved,
+      approvedAt: isApproved ? (existingOverride?.approvedAt || asset.approvedAt || new Date().toISOString()) : undefined,
       adminNote: adminNote.trim() || undefined,
       updatedAt: new Date().toISOString(),
     };
@@ -846,6 +939,17 @@ function InventoryEditModal({ asset, existingOverride, onClose, onSave, onReset 
                 <span>
                   <strong>Mark Diagnostic Errors as Resolved</strong>
                   <small>Promotes item out of error lists and marks price & image states as available</small>
+                </span>
+              </label>
+              <label className="production-checkbox-field" style={{ gridColumn: 'span 2' }}>
+                <input
+                  type="checkbox"
+                  checked={isApproved}
+                  onChange={(e) => setIsApproved(e.target.checked)}
+                />
+                <span>
+                  <strong>Catalog Entry Approved</strong>
+                  <small>Explicitly mark this card as approved for marketplace trading and collection discovery</small>
                 </span>
               </label>
               <label className="production-field" style={{ gridColumn: 'span 2' }}>

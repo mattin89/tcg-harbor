@@ -112,7 +112,7 @@ describe('Cardmarket per-art snapshot v10', () => {
     );
 
     expect(marketDataMeta.cardmarketCoverage.artworkReferencePolicy.reviewedDigestMappings)
-      .toBe(5);
+      .toBe(6);
     expect(reviewed.map(
       (asset) => asset.cardmarketArtworkReference?.reviewedMappingId,
     ).sort()).toEqual([
@@ -121,6 +121,7 @@ describe('Cardmarket per-art snapshot v10', () => {
       'ST30-016:891046',
       'ST30-016_p1:891047',
       'ST30-017:891048',
+      'ST30-017_p1:891049',
     ]);
     expect(reviewed.every(
       (asset) => asset.setCode === 'ST30'

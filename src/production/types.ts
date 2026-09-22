@@ -101,9 +101,21 @@ export interface ManagedStore {
   id: string;
   slug: string;
   name: string;
+  description?: string | null;
+  addressLine1?: string;
+  addressLine2?: string | null;
   city: string;
+  region?: string | null;
   postcode: string;
   countryCode: string;
+  latitude?: number;
+  longitude?: number;
+  timezone?: string;
+  openingHours?: Record<string, unknown>;
+  contactEmail?: string | null;
+  phone?: string | null;
+  websiteUrl?: string | null;
+  imageUrl?: string | null;
   isVerified: boolean;
   isActive: boolean;
   requiresMemberApproval?: boolean;
@@ -112,6 +124,25 @@ export interface ManagedStore {
     name: string;
     isActive: boolean;
   } | null;
+}
+
+export interface StoreProfileDraft {
+  name: string;
+  description?: string | null;
+  addressLine1: string;
+  addressLine2?: string | null;
+  city: string;
+  region?: string | null;
+  postcode: string;
+  countryCode: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  timezone?: string | null;
+  openingHours?: Record<string, unknown>;
+  contactEmail?: string | null;
+  phone?: string | null;
+  websiteUrl?: string | null;
+  imageUrl?: string | null;
 }
 
 export interface RegisteredStore {

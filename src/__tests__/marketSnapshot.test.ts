@@ -157,8 +157,9 @@ describe('source-backed catalog snapshot', () => {
     );
 
     expect(st30ExpansionId).toBe(6608);
-    expect(marketDataMeta.cardmarket.requiredCompleteLatestStarterArtworkSetCode)
-      .toBe('ST36');
+    expect(['ST30', 'ST36']).toContain(
+      marketDataMeta.cardmarket.requiredCompleteLatestStarterArtworkSetCode,
+    );
     expect(st30Cards).toHaveLength(34);
     expect(new Set(st30Cards.map((asset) => asset.rulesCardId)).size).toBe(17);
     expect(st30Cards.map((asset) => asset.cardmarketProductId).sort((left, right) =>

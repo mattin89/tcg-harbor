@@ -152,6 +152,11 @@ function initialAcquisition(asset: DemoAsset): AcquisitionLot | undefined {
 export function cardmarketProductUrl(asset: DemoAsset): string {
   const lang = typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('de') ? 'de' : 'en';
 
+  // Prefer the exact product ID URL when we have a confirmed numeric ID
+  if (asset.cardmarketProductId && Number.isFinite(asset.cardmarketProductId) && asset.cardmarketProductId > 0) {
+    return `https://www.cardmarket.com/${lang}/OnePiece/Products/Search?idProduct=${asset.cardmarketProductId}`;
+  }
+
   if (asset.kind === 'card' && asset.number && asset.number !== 'DON!!') {
     let expansion = '';
     const imgUrl = asset.cardmarketArtworkReference?.productImageUrl || asset.cardmarketRegularArtReference?.productImageUrl;
@@ -382,11 +387,6 @@ export default function App({ identity, guest }: AppProps = {}) {
     if (lastRecordedKeyRef.current === signature) return;
     lastRecordedKeyRef.current = signature;
 
-    const todayMarketPrices = cardPriceHistory[market]?.[todayStr];
-    const hasTodayPrices = todayMarketPrices && Object.keys(todayMarketPrices).length > 0;
-    if (hasTodayPrices && identity) {
-      return;
-    }
 
     const updated = recordTodayCardPrices(cardPriceHistory, assets, market, todayStr);
     if (JSON.stringify(cardPriceHistory[market]?.[todayStr]) === JSON.stringify(updated[market]?.[todayStr])) {
@@ -556,7 +556,7 @@ export default function App({ identity, guest }: AppProps = {}) {
       <div className="sidebar-grow" />
       {isGuest ? <section className="guest-auth-card"><Icon name="lock"/><div><strong>Browsing as a guest</strong><small>Sign in to save cards or join a store community.</small></div><Button type="button" size="sm" onClick={guest?.onRequestAuthentication}>Sign in / Create account</Button></section> : <>
         {canOpenStorePortal && <button className={`side-utility ${path === '/store-admin' ? 'active' : ''}`} aria-current={path === '/store-admin' ? 'page' : undefined} onClick={() => navigate('/store-admin')}><Icon name="shield" /><span>{isPlatformAdministrator ? 'Store approvals' : isApprovedStoreAdministrator ? 'Store admin' : identity ? 'Register store' : 'Store admin'}</span></button>}
-        {isPlatformAdministrator && <button className={`side-utility ${path === '/inventory' ? 'active' : ''}`} aria-current={path === '/inventory' ? 'page' : undefined} onClick={() => navigate('/inventory')}><Icon name="box" /><span>Catalog inventory</span></button>}
+        {(!identity || isPlatformAdministrator) && <button className={`side-utility ${path === '/inventory' ? 'active' : ''}`} aria-current={path === '/inventory' ? 'page' : undefined} onClick={() => navigate('/inventory')}><Icon name="box" /><span>Catalog inventory</span></button>}
         <button className={`profile-card ${path === '/settings' ? 'active' : ''}`} aria-current={path === '/settings' ? 'page' : undefined} onClick={() => navigate('/settings')}><Avatar initials={profileInitials} size="md" /><span><strong>{profileName}</strong><small>{accountLabel}</small></span><Icon name="more" size={18} /></button>
       </>}
       <p className="unofficial">Unofficial collector/community {isGuest ? 'public preview' : identity ? 'platform' : 'demo'}<br />Not affiliated with any publisher or marketplace.</p>
@@ -647,13 +647,29 @@ function AssetDetailModal({
 }: AssetDetailModalProps) {
   if (!asset) return null;
   const cardmarketReference = resolveCardmarketArtworkReferenceV10(asset);
-  const liveCardmarketPrice = priceHistory ? extractAssetPriceFromHistory(asset, 'cardmarket', priceHistory) : null;
-  const liveTcgplayerPrice = priceHistory ? extractAssetPriceFromHistory(asset, 'tcgplayer', priceHistory) : null;
-  const displayCardmarketValue = liveCardmarketPrice != null ? formatMoney(liveCardmarketPrice, 'EUR') : cardmarketReference?.displayValue;
-  const displayTcgplayerValue = liveTcgplayerPrice != null ? formatMoney(liveTcgplayerPrice, 'USD') : formatMoney(asset.quote.tcgplayer, 'USD');
-  const cardmarketDateLabel = liveCardmarketPrice != null ? 'Daily market trend' : `${cardmarketReference?.label} · ${marketSourceDate('cardmarket')}`;
-  const tcgplayerDateLabel = liveTcgplayerPrice != null ? 'Daily market price' : `Daily source snapshot · ${assetUsSourceDate(asset)}`;
+  const currentCardmarketPrice = extractAssetAveragePrice(asset, 'cardmarket', priceHistory);
+  const currentTcgplayerPrice = extractAssetAveragePrice(asset, 'tcgplayer', priceHistory);
+  const displayCardmarketValue = currentCardmarketPrice > 0 ? formatMoney(currentCardmarketPrice, 'EUR') : cardmarketReference?.displayValue;
+  const displayTcgplayerValue = currentTcgplayerPrice > 0 ? formatMoney(currentTcgplayerPrice, 'USD') : formatMoney(asset.quote.tcgplayer, 'USD');
+  const hasLivePrice = priceHistory ? extractAssetPriceFromHistory(asset, 'cardmarket', priceHistory) !== null : false;
+  const cardmarketDateLabel = (hasLivePrice || asset.pricing?.cardmarket?.trend != null) ? 'Daily market trend' : `${cardmarketReference?.label} · ${marketSourceDate('cardmarket')}`;
+  const tcgplayerDateLabel = currentTcgplayerPrice > 0 ? 'Daily market price' : `Daily source snapshot · ${assetUsSourceDate(asset)}`;
   const isEditable = Boolean(onUpdateQty && onSaveChanges && onRequestRemove);
+
+  const isCmActive = market === 'cardmarket';
+  const primaryPrice = isCmActive ? displayCardmarketValue : displayTcgplayerValue;
+  const primaryLabel = isCmActive
+    ? (cardmarketReference?.state === 'exact-low-offer' ? 'Cardmarket lowest offer · EUR' : 'Cardmarket trend · EUR')
+    : assetUsSourceLabel(asset);
+  const primaryDateLabel = isCmActive ? cardmarketDateLabel : tcgplayerDateLabel;
+
+  const secondaryPrice = isCmActive ? displayTcgplayerValue : displayCardmarketValue;
+  const secondaryLabel = isCmActive
+    ? assetUsSourceLabel(asset)
+    : (cardmarketReference?.state === 'exact-low-offer' ? 'Cardmarket lowest offer · EUR' : 'Cardmarket trend · EUR');
+  const secondaryDateLabel = isCmActive ? tcgplayerDateLabel : cardmarketDateLabel;
+
+  const activeUnitPrice = (isCmActive ? currentCardmarketPrice : currentTcgplayerPrice) || (asset.quote[market] ?? 0);
 
   return (
     <Modal
@@ -696,17 +712,32 @@ function AssetDetailModal({
             </p>
           )}
           <div className="detail-prices">
-            <div>
-              <span>{cardmarketReference?.state === 'exact-low-offer' ? 'Cardmarket lowest offer · EUR' : 'Cardmarket trend · EUR'}</span>
-              <strong>{displayCardmarketValue}</strong>
-              <small>{cardmarketDateLabel}</small>
+            <div className="detail-price-box active-market-box">
+              <span className="price-source-heading">
+                <span>{primaryLabel}</span>
+                <span className="active-market-tag">Active market</span>
+              </span>
+              <strong>{primaryPrice}</strong>
+              <small>{primaryDateLabel}</small>
             </div>
-            <div>
-              <span>{assetUsSourceLabel(asset)}</span>
-              <strong>{displayTcgplayerValue}</strong>
-              <small>{tcgplayerDateLabel}</small>
+            <div className="detail-price-box secondary-market-box">
+              <span className="price-source-heading">
+                <span>{secondaryLabel}</span>
+                <span className="secondary-market-tag">Cross-market</span>
+              </span>
+              <strong>{secondaryPrice}</strong>
+              <small>{secondaryDateLabel}</small>
             </div>
           </div>
+          {asset.cardmarketPriceState && asset.cardmarketPriceState !== 'available' && (
+            <p className="reference-note">
+              <Icon name="info" />
+              {asset.cardmarketPriceReason ?? 'Cardmarket price unavailable for this printing.'}
+              {asset.sourceUpdatedAt?.cardmarket && (
+                <> Since {new Date(asset.sourceUpdatedAt.cardmarket).toLocaleDateString()}.</>
+              )}
+            </p>
+          )}
           <div className="market-links-bar">
             <span>Marketplace links:</span>
             <a
@@ -752,8 +783,12 @@ function AssetDetailModal({
               <dd>{asset.purchasePrice ? formatMoney(asset.purchasePrice, asset.purchaseCurrency ?? currencyFor(market)) : 'Not recorded'}</dd>
             </div>
             <div>
+              <dt>Unit market reference</dt>
+              <dd>{formatMoney(activeUnitPrice > 0 ? activeUnitPrice : null, market)}</dd>
+            </div>
+            <div>
               <dt>Portfolio contribution</dt>
-              <dd>{formatMoney(asset.quote[market] === null ? null : asset.quote[market] * asset.quantity, market)}</dd>
+              <dd>{formatMoney(activeUnitPrice > 0 ? activeUnitPrice * asset.quantity : null, market)}</dd>
             </div>
             <div>
               <dt>Acquisition captures</dt>
@@ -1218,36 +1253,55 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
     {selected.kind === 'card' && <section className="art-picker" aria-labelledby="art-picker-title">
       <header><span><strong id="art-picker-title">Choose the exact art</strong><small>{availableArts.length} sourced {availableArts.length === 1 ? 'printing' : 'printings'} for {selected.rulesCardId ?? selected.number}</small></span><Chip tone="blue">{selected.language} printing</Chip></header>
       <div>{availableArts.map((art) => {
-        const liveArtCm = priceHistory ? extractAssetPriceFromHistory(art, 'cardmarket', priceHistory) : null;
-        const liveArtTcp = priceHistory ? extractAssetPriceFromHistory(art, 'tcgplayer', priceHistory) : null;
+        const artCmPrice = extractAssetAveragePrice(art, 'cardmarket', priceHistory);
+        const artTcpPrice = extractAssetAveragePrice(art, 'tcgplayer', priceHistory);
         const cardmarketReference = resolveCardmarketArtworkReferenceV10(art);
         const displayedReference = market === 'cardmarket'
-          ? (liveArtCm != null ? formatMoney(liveArtCm, 'EUR') : cardmarketReference.displayValue)
-          : (liveArtTcp != null ? formatMoney(liveArtTcp, 'USD') : formatMoney(art.quote.tcgplayer, 'USD'));
+          ? (artCmPrice > 0 ? formatMoney(artCmPrice, 'EUR') : cardmarketReference.displayValue)
+          : (artTcpPrice > 0 ? formatMoney(artTcpPrice, 'USD') : formatMoney(art.quote.tcgplayer, 'USD'));
         const displayedReferenceLabel = market === 'cardmarket'
-          ? (liveArtCm != null ? 'Daily market trend' : cardmarketReference.label)
-          : (liveArtTcp != null ? 'Daily market price' : 'US market');
+          ? (artCmPrice > 0 ? 'Daily market trend' : cardmarketReference.label)
+          : (artTcpPrice > 0 ? 'Daily market price' : 'US market');
         return <button type="button" key={art.id} className={selected.id === art.id ? 'selected' : ''} aria-pressed={selected.id === art.id} title={market === 'cardmarket' ? cardmarketReference.detail : undefined} onClick={() => { setSelected(art); setValidation(''); }}><CardArt asset={art} size="xs"/><span><strong>{art.variant}</strong><small>{art.language} · {art.setCode}</small><em>{displayedReference} · {displayedReferenceLabel}</em></span>{selected.id === art.id && <i><Icon name="check"/></i>}</button>;
       })}</div>
     </section>}
     {(() => {
-      const liveSelectedCm = priceHistory && selected ? extractAssetPriceFromHistory(selected, 'cardmarket', priceHistory) : null;
-      const liveSelectedTcp = priceHistory && selected ? extractAssetPriceFromHistory(selected, 'tcgplayer', priceHistory) : null;
-      const displaySelectedCm = liveSelectedCm != null ? formatMoney(liveSelectedCm, 'EUR') : selectedCardmarketReference?.displayValue;
-      const displaySelectedTcp = liveSelectedTcp != null ? formatMoney(liveSelectedTcp, 'USD') : formatMoney(selected.quote.tcgplayer, 'USD');
-      const cmDateLabel = liveSelectedCm != null ? 'Daily market trend' : `${selectedCardmarketReference?.label} · ${marketSourceDate('cardmarket')}`;
-      const tcpDateLabel = liveSelectedTcp != null ? 'Daily market price' : `Daily source snapshot · ${assetUsSourceDate(selected)}`;
+      const selectedCmPrice = selected ? extractAssetAveragePrice(selected, 'cardmarket', priceHistory) : 0;
+      const selectedTcpPrice = selected ? extractAssetAveragePrice(selected, 'tcgplayer', priceHistory) : 0;
+      const displaySelectedCm = selectedCmPrice > 0 ? formatMoney(selectedCmPrice, 'EUR') : selectedCardmarketReference?.displayValue;
+      const displaySelectedTcp = selectedTcpPrice > 0 ? formatMoney(selectedTcpPrice, 'USD') : formatMoney(selected.quote.tcgplayer, 'USD');
+      const cmDateLabel = selectedCmPrice > 0 ? 'Daily market trend' : `${selectedCardmarketReference?.label} · ${marketSourceDate('cardmarket')}`;
+      const tcpDateLabel = selectedTcpPrice > 0 ? 'Daily market price' : `Daily source snapshot · ${assetUsSourceDate(selected)}`;
+      const isCm = market === 'cardmarket';
+      const primaryRefPrice = isCm ? displaySelectedCm : displaySelectedTcp;
+      const primaryRefLabel = isCm
+        ? (selectedCardmarketReference?.state === 'exact-low-offer' ? 'Cardmarket lowest offer · EUR' : 'Cardmarket trend · EUR')
+        : assetUsSourceLabel(selected);
+      const primaryRefDate = isCm ? cmDateLabel : tcpDateLabel;
+
+      const secondaryRefPrice = isCm ? displaySelectedTcp : displaySelectedCm;
+      const secondaryRefLabel = isCm
+        ? assetUsSourceLabel(selected)
+        : (selectedCardmarketReference?.state === 'exact-low-offer' ? 'Cardmarket lowest offer · EUR' : 'Cardmarket trend · EUR');
+      const secondaryRefDate = isCm ? tcpDateLabel : cmDateLabel;
+
       return (
         <div className="reference-pair">
-          <div>
-            <span>{selectedCardmarketReference?.state === 'exact-low-offer' ? 'Cardmarket lowest offer · EUR' : 'Cardmarket trend · EUR'}</span>
-            <strong>{displaySelectedCm}</strong>
-            <small><span className="live-pulse"/>{cmDateLabel}</small>
+          <div className="active-market-box">
+            <span className="price-source-heading">
+              <span>{primaryRefLabel}</span>
+              <span className="active-market-tag">Active market</span>
+            </span>
+            <strong>{primaryRefPrice}</strong>
+            <small><span className="live-pulse"/>{primaryRefDate}</small>
           </div>
-          <div>
-            <span>{assetUsSourceLabel(selected)}</span>
-            <strong>{displaySelectedTcp}</strong>
-            <small><span className="live-pulse"/>{tcpDateLabel}</small>
+          <div className="secondary-market-box">
+            <span className="price-source-heading">
+              <span>{secondaryRefLabel}</span>
+              <span className="secondary-market-tag">Cross-market</span>
+            </span>
+            <strong>{secondaryRefPrice}</strong>
+            <small><span className="live-pulse"/>{secondaryRefDate}</small>
           </div>
         </div>
       );
@@ -1270,7 +1324,7 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
     {!browseOnly && <section className="add-progress"><div className="active"><span>1</span><strong>Find item</strong></div><i /><div className={selected ? 'active' : ''}><span>2</span><strong>Add details</strong></div><i /><div><span>3</span><strong>Review</strong></div></section>}
     <div className="add-layout">
       <section className="add-catalog panel">
-        <div className="panel-header"><div><p className="eyebrow">One Piece Card Game</p><h2>Search the complete catalog</h2></div><MarketDataBadge compact /></div>
+        <div className="panel-header"><div><p className="eyebrow">One Piece Card Game</p><h2>Search the complete catalog</h2></div><div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><MarketDataBadge compact />{!browseOnly && <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/inventory')}><Icon name="box" size={14} /><span>Inventory</span></Button>}</div></div>
         <Segmented value={tab} onChange={(value) => { setTab(value); setSelected(null); setQuery(''); setCatalogSet('all'); setCondition(value === 'sealed' ? 'Factory sealed' : 'Near Mint'); }} label="Catalog type" options={[{ value: 'card', label: 'Individual card', icon: 'cards' }, { value: 'sealed', label: 'Sealed product', icon: 'box' }]} />
         <div className="catalog-search-row"><label className="search-field catalog-search"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tab === 'card' ? 'Search card name, number, set code or art' : 'Search product, set or type'} aria-label="Search catalog" /></label><label className="select-field catalog-set-filter"><span>Set</span><select value={catalogSet} onChange={(event) => { setCatalogSet(event.target.value); setSelected(null); }}><option value="all">All current sets</option>{catalogSets.map((setCode) => <option key={setCode} value={setCode}>{setCode}</option>)}</select></label></div>
         <p className="catalog-hint">{tab === 'card' ? `${cardGroups.length.toLocaleString()} card numbers with every sourced art · try “Nami” or “OP01-016”` : `${allResults.length.toLocaleString()} released, source-backed sealed products · try “Booster Box”`}</p>
@@ -1286,7 +1340,19 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
             return <button type="button" key={asset.id} className={isSelected ? 'selected' : ''} onClick={() => { setSelected(asset); setCondition(asset.kind === 'sealed' ? 'Factory sealed' : 'Near Mint'); setValidation(''); }}>
               <CardArt asset={asset} size="sm"/>
               <span><strong>{asset.name}</strong><small>{asset.setCode} · {asset.number ?? asset.productType}</small><em>{tab === 'card' ? `${artCount} ${artCount === 1 ? 'art' : 'arts'} available` : `${asset.productType} · ${asset.language}`}</em></span>
-              <span className="catalog-price" title={market === 'cardmarket' ? cardmarketReference.detail : undefined}><strong>{market === 'cardmarket' ? cardmarketReference.displayValue : formatMoney(asset.quote.tcgplayer, market)}</strong><small>{market === 'cardmarket' ? cardmarketReference.label : 'US market'}</small></span>
+              <span className="catalog-price" title={market === 'cardmarket' ? cardmarketReference.detail : undefined}><strong>{market === 'cardmarket' ? cardmarketReference.displayValue : (() => {
+                if (tab === 'card' && groupArts.length > 1) {
+                  const tcgPrices = groupArts
+                    .map((art) => extractAssetAveragePrice(art, 'tcgplayer', priceHistory) || (art.quote.tcgplayer ?? 0))
+                    .filter((p) => p > 0);
+                  if (tcgPrices.length === 0) return 'Price unavailable';
+                  const minTcg = Math.min(...tcgPrices);
+                  const maxTcg = Math.max(...tcgPrices);
+                  return minTcg === maxTcg ? formatMoney(minTcg, 'USD') : `${formatMoney(minTcg, 'USD')} – ${formatMoney(maxTcg, 'USD')}`;
+                }
+                const singlePrice = extractAssetAveragePrice(asset, 'tcgplayer', priceHistory) || (asset.quote.tcgplayer ?? 0);
+                return singlePrice > 0 ? formatMoney(singlePrice, 'USD') : 'Price unavailable';
+              })()}</strong><small>{market === 'cardmarket' ? cardmarketReference.label : (tab === 'card' && groupArts.length > 1 ? `${artCount} arts · US market` : 'US market')}</small></span>
               <i>{isSelected ? <Icon name="check"/> : <Icon name="chevron"/>}</i>
             </button>;
           })}

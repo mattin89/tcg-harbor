@@ -171,6 +171,12 @@ export interface MarketDataMeta {
       reason: string;
       expiresAt: string;
     }>;
+    exactMappingContinuityApprovals?: Record<string, {
+      previousProductId: number;
+      nextProductId: number;
+      reason: string;
+      expiresAt: string;
+    }>;
   };
   tcgcsv: {
     source: string;
@@ -377,6 +383,8 @@ export interface DemoAsset {
   quote: { cardmarket: number | null; tcgplayer: number | null };
   change: Record<Market, Record<Period, number | null>>;
   acquisitionLots?: AcquisitionLot[];
+  isApproved?: boolean;
+  approvedAt?: string;
 }
 
 export interface Store {
@@ -551,7 +559,26 @@ const baseWithErrata: DemoAsset[] = baseCatalog.some((a) => a.id === op01eErrata
   ? baseCatalog
   : [...baseCatalog, ...allErrataAssets];
 
-export const catalogAssets: DemoAsset[] = applyDonMappings(baseWithErrata);
+function applyDefaultVerifiedApprovals(assets: DemoAsset[]): DemoAsset[] {
+  const verifiedApprovalTimestamp = '2026-09-21T00:00:00.000Z';
+  return assets.map((asset) => {
+    const hasUnmapped = asset.cardmarketPriceState === 'unmapped' || asset.cardmarketPriceState === 'ambiguous-artwork' || asset.cardmarketPriceState === 'trend-unavailable';
+    const hasMissingImage = asset.imageState === 'unavailable' || !asset.imageUrl;
+    const hasNoPrice = asset.tcgplayerPriceState === 'unavailable' && asset.quote.tcgplayer === null;
+    const isVerified = !hasUnmapped && !hasMissingImage && !hasNoPrice;
+
+    if (isVerified) {
+      return {
+        ...asset,
+        isApproved: asset.isApproved ?? true,
+        approvedAt: asset.approvedAt ?? verifiedApprovalTimestamp,
+      };
+    }
+    return asset;
+  });
+}
+
+export const catalogAssets: DemoAsset[] = applyDefaultVerifiedApprovals(applyDonMappings(baseWithErrata));
 export const initialAssets: DemoAsset[] = sourceBackedCatalog
   .filter((asset) => representativeHoldingIds.has(asset.id))
   .map((asset) => ({

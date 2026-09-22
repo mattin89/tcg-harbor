@@ -421,6 +421,11 @@ input:disabled { background: #efefeb; color: var(--subtle); }
 .detail-prices { display: grid; grid-template-columns: repeat(2,1fr); gap: 9px; margin-top: 16px; }
 .detail-prices > div { padding: 11px; border: 1px solid var(--line); border-radius: 10px; display: grid; gap: 3px; background: #faf8f3; }
 .detail-prices span { color: var(--muted); font-size: 7px; }.detail-prices strong { font-size: 15px; }.detail-prices small { color: var(--subtle); font-size: 7px; }
+.detail-prices .active-market-box,
+.reference-pair .active-market-box { background: #fdfbf7; border-color: #d5ab5f; box-shadow: 0 1px 4px rgba(213, 171, 95, 0.15); }
+.price-source-heading { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.active-market-tag { font-size: 6.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 1px 5px; border-radius: 4px; background: #f5eedc; color: #8c6820; border: 1px solid #e5c986; }
+.secondary-market-tag { font-size: 6.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; padding: 1px 5px; border-radius: 4px; background: #ecebe6; color: #6a6864; }
 .market-external-link { margin-top: 8px; padding-top: 6px; border-top: 1px dashed #e4e1d9; display: inline-flex; align-items: center; justify-content: space-between; font-size: 8px; font-weight: 700; color: #23547a; text-decoration: none; transition: color .15s; }
 .market-external-link:hover { color: var(--coral, #e76f51); text-decoration: underline; }
 .market-external-link svg { color: inherit; opacity: .8; }

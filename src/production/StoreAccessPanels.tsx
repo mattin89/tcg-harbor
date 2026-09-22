@@ -21,6 +21,7 @@ import type {
   StoreApplication,
   StoreApplicationDraft,
   StoreApplicationStatus,
+  StoreProfileDraft,
 } from "./types";
 
 function value(data: FormData, name: string): string {
@@ -476,6 +477,295 @@ function ApplicationStatus({
   );
 }
 
+export function StoreProfileManager({
+  store,
+  access,
+}: {
+  store: ManagedStore;
+  access: ProductionAccessController;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  const [name, setName] = useState(store.name);
+  const [description, setDescription] = useState(store.description ?? "");
+  const [imageUrl, setImageUrl] = useState(store.imageUrl ?? "");
+  const [addressLine1, setAddressLine1] = useState(store.addressLine1 ?? "");
+  const [addressLine2, setAddressLine2] = useState(store.addressLine2 ?? "");
+  const [city, setCity] = useState(store.city);
+  const [region, setRegion] = useState(store.region ?? "");
+  const [postcode, setPostcode] = useState(store.postcode);
+  const [countryCode, setCountryCode] = useState(store.countryCode);
+  const [latitudeInput, setLatitudeInput] = useState(store.latitude != null ? String(store.latitude) : "");
+  const [longitudeInput, setLongitudeInput] = useState(store.longitude != null ? String(store.longitude) : "");
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [contactEmail, setContactEmail] = useState(store.contactEmail ?? "");
+  const [phone, setPhone] = useState(store.phone ?? "");
+  const [websiteUrl, setWebsiteUrl] = useState(store.websiteUrl ?? "");
+
+  const initialHours = (store.openingHours ?? {}) as Record<string, string>;
+  const [hours, setHours] = useState<Record<string, string>>({
+    monday: initialHours.monday ?? "10:00 - 19:00",
+    tuesday: initialHours.tuesday ?? "10:00 - 19:00",
+    wednesday: initialHours.wednesday ?? "10:00 - 19:00",
+    thursday: initialHours.thursday ?? "10:00 - 19:00",
+    friday: initialHours.friday ?? "10:00 - 20:00",
+    saturday: initialHours.saturday ?? "10:00 - 18:00",
+    sunday: initialHours.sunday ?? "Closed",
+  });
+
+  useEffect(() => {
+    setName(store.name);
+    setDescription(store.description ?? "");
+    setImageUrl(store.imageUrl ?? "");
+    setAddressLine1(store.addressLine1 ?? "");
+    setAddressLine2(store.addressLine2 ?? "");
+    setCity(store.city);
+    setRegion(store.region ?? "");
+    setPostcode(store.postcode);
+    setCountryCode(store.countryCode);
+    setLatitudeInput(store.latitude != null ? String(store.latitude) : "");
+    setLongitudeInput(store.longitude != null ? String(store.longitude) : "");
+    setContactEmail(store.contactEmail ?? "");
+    setPhone(store.phone ?? "");
+    setWebsiteUrl(store.websiteUrl ?? "");
+    const h = (store.openingHours ?? {}) as Record<string, string>;
+    setHours({
+      monday: h.monday ?? "10:00 - 19:00",
+      tuesday: h.tuesday ?? "10:00 - 19:00",
+      wednesday: h.wednesday ?? "10:00 - 19:00",
+      thursday: h.thursday ?? "10:00 - 19:00",
+      friday: h.friday ?? "10:00 - 20:00",
+      saturday: h.saturday ?? "10:00 - 18:00",
+      sunday: h.sunday ?? "Closed",
+    });
+  }, [store]);
+
+  const parsedLat = latitudeInput.trim() !== "" ? Number(latitudeInput) : null;
+  const parsedLon = longitudeInput.trim() !== "" ? Number(longitudeInput) : null;
+  const hasValidCoordinates = isValidLatitude(parsedLat) && isValidLongitude(parsedLon);
+
+  const handleAutoGeocode = async () => {
+    setIsGeocoding(true);
+    setLocalError(null);
+    try {
+      const res = await geocodeAddress({ addressLine1, addressLine2, city, region, postcode, countryCode });
+      if (res) {
+        setLatitudeInput(res.latitude.toFixed(6));
+        setLongitudeInput(res.longitude.toFixed(6));
+      } else {
+        setLocalError("Could not determine coordinates from this address. Please adjust or enter manually.");
+      }
+    } catch {
+      setLocalError("Geocoding service unavailable.");
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
+
+  const handleSave = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setNotice(null);
+    setLocalError(null);
+
+    try {
+      const draft: StoreProfileDraft = {
+        name,
+        description: description.trim() || null,
+        addressLine1,
+        addressLine2: addressLine2.trim() || null,
+        city,
+        region: region.trim() || null,
+        postcode,
+        countryCode: countryCode.toUpperCase(),
+        latitude: hasValidCoordinates ? parsedLat : null,
+        longitude: hasValidCoordinates ? parsedLon : null,
+        openingHours: hours,
+        contactEmail: contactEmail.trim() || null,
+        phone: phone.trim() || null,
+        websiteUrl: websiteUrl.trim() || null,
+        imageUrl: imageUrl.trim() || null,
+      };
+      await access.updateStoreProfile(store.id, draft);
+      setNotice("Store profile saved successfully.");
+      setEditing(false);
+    } catch (err) {
+      setLocalError(err instanceof Error ? err.message : "Failed to update store profile.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setName(store.name);
+    setDescription(store.description ?? "");
+    setImageUrl(store.imageUrl ?? "");
+    setAddressLine1(store.addressLine1 ?? "");
+    setAddressLine2(store.addressLine2 ?? "");
+    setCity(store.city);
+    setRegion(store.region ?? "");
+    setPostcode(store.postcode);
+    setCountryCode(store.countryCode);
+    setLatitudeInput(store.latitude != null ? String(store.latitude) : "");
+    setLongitudeInput(store.longitude != null ? String(store.longitude) : "");
+    setContactEmail(store.contactEmail ?? "");
+    setPhone(store.phone ?? "");
+    setWebsiteUrl(store.websiteUrl ?? "");
+    setLocalError(null);
+    setNotice(null);
+    setEditing(false);
+  };
+
+  return (
+    <section className="production-store-profile-manager" style={{ marginTop: 19, paddingTop: 18, borderTop: "1px solid rgba(255,255,255,.07)" }}>
+      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, marginBottom: 14 }}>
+        <div>
+          <h4 style={{ margin: 0, color: "#e2e9e7", fontSize: 13 }}>Store profile & location</h4>
+          <p style={{ margin: "4px 0 0", color: "#71878c", fontSize: 10 }}>Update store name, physical address, map coordinates, opening hours, and branding.</p>
+        </div>
+        {!editing && (
+          <button
+            type="button"
+            className="production-secondary"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11 }}
+            onClick={() => setEditing(true)}
+          >
+            <Icon name="edit" size={14} /> Edit profile
+          </button>
+        )}
+      </header>
+
+      {notice && <p className="production-notice production-notice-success" role="status"><Icon name="check" size={16} />{notice}</p>}
+      {localError && <p className="production-notice production-notice-error" role="alert"><Icon name="info" size={16} />{localError}</p>}
+
+      {!editing ? (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, padding: 14, borderRadius: 10, background: "rgba(3,14,17,.22)", border: "1px solid rgba(255,255,255,.07)" }}>
+          <div>
+            <span style={{ fontSize: 10, color: "#71878c", textTransform: "uppercase", letterSpacing: 0.5 }}>Location</span>
+            <p style={{ margin: "4px 0 0", color: "#dce5e3", fontSize: 12, fontWeight: 600 }}>{store.name}</p>
+            <p style={{ margin: "2px 0 0", color: "#9eb0b2", fontSize: 11 }}>
+              {store.addressLine1 ? `${store.addressLine1}, ` : ""}{store.postcode} {store.city}, {store.countryCode}
+            </p>
+            {store.description && <p style={{ margin: "6px 0 0", color: "#71878c", fontSize: 10, fontStyle: "italic" }}>{store.description}</p>}
+          </div>
+
+          <div>
+            <span style={{ fontSize: 10, color: "#71878c", textTransform: "uppercase", letterSpacing: 0.5 }}>Opening Hours</span>
+            <div style={{ margin: "4px 0 0", display: "grid", gap: 2, fontSize: 10, color: "#9eb0b2" }}>
+              {Object.entries(hours).map(([day, time]) => (
+                <div key={day} style={{ display: "flex", justifyContent: "space-between", maxWidth: 180 }}>
+                  <span style={{ textTransform: "capitalize", color: "#71878c" }}>{day.slice(0, 3)}</span>
+                  <span>{time}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <span style={{ fontSize: 10, color: "#71878c", textTransform: "uppercase", letterSpacing: 0.5 }}>Contact & Branding</span>
+            <div style={{ margin: "4px 0 0", display: "grid", gap: 4, fontSize: 11, color: "#9eb0b2" }}>
+              {store.contactEmail && <div><Icon name="mail" size={11} /> {store.contactEmail}</div>}
+              {store.phone && <div><Icon name="phone" size={11} /> {store.phone}</div>}
+              {store.websiteUrl && <div><Icon name="globe" size={11} /> <a href={store.websiteUrl} target="_blank" rel="noreferrer" style={{ color: "#8dd4b3" }}>{store.websiteUrl}</a></div>}
+              {store.imageUrl ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                  <img src={store.imageUrl} alt={`${store.name} logo`} style={{ width: 28, height: 28, borderRadius: 4, objectFit: "contain", background: "#fffaf1" }} />
+                  <span style={{ fontSize: 10, color: "#8dd4b3" }}>Store logo uploaded</span>
+                </div>
+              ) : (
+                <span style={{ fontSize: 10, color: "#71878c" }}>No logo uploaded</span>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <form onSubmit={handleSave} style={{ display: "grid", gap: 14, padding: 16, borderRadius: 12, background: "rgba(3,14,17,.3)", border: "1px solid rgba(255,255,255,.1)" }}>
+          <div className="production-form-grid">
+            <RequiredField label="Store name" name="name" value={name} onChange={(e) => setName(e.target.value)} required />
+            <OptionalField label="Store logo URL" name="imageUrl" placeholder="https://.../logo.png" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
+          </div>
+
+          <OptionalField label="Store description" name="description" placeholder="Brief info about your store, games hosted, etc." value={description} onChange={(e) => setDescription(e.target.value)} />
+
+          <div className="production-form-grid">
+            <RequiredField label="Address line 1" name="addressLine1" placeholder="Prager Straße 10" value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} required />
+            <OptionalField label="Address line 2" name="addressLine2" placeholder="Suite / Floor" value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} />
+          </div>
+
+          <div className="production-form-grid">
+            <RequiredField label="City" name="city" placeholder="Dresden" value={city} onChange={(e) => setCity(e.target.value)} required />
+            <OptionalField label="Region / State" name="region" placeholder="Saxony" value={region} onChange={(e) => setRegion(e.target.value)} />
+            <RequiredField label="Postal code" name="postcode" placeholder="01069" value={postcode} onChange={(e) => setPostcode(e.target.value)} required />
+            <RequiredField label="Country code" name="countryCode" placeholder="DE" maxLength={2} value={countryCode} onChange={(e) => setCountryCode(e.target.value.toUpperCase())} required />
+          </div>
+
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <button
+              type="button"
+              className="production-secondary"
+              style={{ fontSize: 11 }}
+              disabled={isGeocoding}
+              onClick={() => void handleAutoGeocode()}
+            >
+              <Icon name="search" size={13} /> {isGeocoding ? "Detecting coordinates…" : "Auto-detect coordinates from address"}
+            </button>
+            <small style={{ color: "#71878c", fontSize: 10 }}>Updates the map pin based on your entered address</small>
+          </div>
+
+          <StoreAddressMapPreview
+            latitude={hasValidCoordinates ? parsedLat : undefined}
+            longitude={hasValidCoordinates ? parsedLon : undefined}
+            addressLabel={name || store.name}
+            isGeocoding={isGeocoding}
+            onCoordinatesChange={(nextLat, nextLon) => {
+              setLatitudeInput(nextLat.toFixed(6));
+              setLongitudeInput(nextLon.toFixed(6));
+            }}
+          />
+
+          <div className="production-form-grid">
+            <OptionalField label="Latitude" name="latitude" type="number" step="any" value={latitudeInput} onChange={(e) => setLatitudeInput(e.target.value)} />
+            <OptionalField label="Longitude" name="longitude" type="number" step="any" value={longitudeInput} onChange={(e) => setLongitudeInput(e.target.value)} />
+          </div>
+
+          <fieldset style={{ border: "1px solid rgba(255,255,255,.08)", borderRadius: 8, padding: 12, display: "grid", gap: 8 }}>
+            <legend style={{ color: "#dce5e3", fontSize: 11, fontWeight: 700, padding: "0 6px" }}>Opening Hours</legend>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
+              {(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const).map((day) => (
+                <label key={day} className="production-field" style={{ margin: 0 }}>
+                  <span style={{ textTransform: "capitalize", fontSize: 10 }}>{day}</span>
+                  <input
+                    value={hours[day] ?? ""}
+                    placeholder="10:00 - 19:00 or Closed"
+                    onChange={(e) => setHours((prev) => ({ ...prev, [day]: e.target.value }))}
+                    style={{ fontSize: 11 }}
+                  />
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <div className="production-form-grid">
+            <OptionalField label="Contact email" name="contactEmail" type="email" placeholder="store@example.com" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
+            <OptionalField label="Phone number" name="phone" type="tel" placeholder="+49 351 123456" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <OptionalField label="Website URL" name="websiteUrl" type="url" placeholder="https://..." value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} />
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 6 }}>
+            <button type="button" className="production-secondary" onClick={handleCancel} disabled={busy}>Cancel</button>
+            <button type="submit" className="production-primary" disabled={busy}>
+              {busy ? "Saving…" : "Save profile changes"}
+            </button>
+          </div>
+        </form>
+      )}
+    </section>
+  );
+}
+
 export function StoreWorkspacePanel({ stores, access }: { stores: ManagedStore[]; access: ProductionAccessController }) {
   return (
     <section className="production-panel">
@@ -500,6 +790,7 @@ export function StoreWorkspacePanel({ stores, access }: { stores: ManagedStore[]
             <span><Icon name="qr" size={17} /><strong>Join codes</strong><small>Create and revoke invites</small></span>
             <span><Icon name="settings" size={17} /><strong>Community</strong><small>Rules and store details</small></span>
           </div>
+          <StoreProfileManager store={store} access={access} />
           <StoreQrInviteManager store={store} access={access} />
           <StoreMemberApprovalManager store={store} access={access} />
           {store.community && <>

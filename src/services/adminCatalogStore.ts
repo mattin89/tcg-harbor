@@ -25,6 +25,8 @@ export interface AdminCatalogOverride {
   readonly tcgplayerPriceState?: 'available' | 'unavailable';
   readonly tcgplayerMarketPrice?: number | null;
   readonly errorResolved?: boolean;
+  readonly isApproved?: boolean;
+  readonly approvedAt?: string;
   readonly adminNote?: string;
   readonly updatedAt: string;
 }
@@ -43,6 +45,7 @@ export interface CatalogItemDiagnostics {
 }
 
 const STORAGE_KEY = 'tcg-harbor-admin-catalog-overrides-v1';
+const STORAGE_KEY_APPROVED = 'tcg-harbor-admin-approved-assets-v1';
 export const CATALOG_UPDATED_EVENT = 'tcg-harbor:catalog-updated';
 
 let memoryStorage: Record<string, string> = {};
@@ -96,6 +99,118 @@ export function getAdminCatalogOverrides(): Record<string, AdminCatalogOverride>
 }
 
 /**
+ * Retrieve the set of administrative approved asset IDs.
+ */
+export function getAdminApprovedAssetIds(): Set<string> {
+  try {
+    const raw = getRawStorageItem(STORAGE_KEY_APPROVED);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return new Set(parsed.filter((id): id is string => typeof id === 'string'));
+    }
+    return new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+/**
+ * Persist the full set of approved asset IDs to storage.
+ */
+export function saveAdminApprovedAssetIds(ids: ReadonlySet<string>): void {
+  const array = Array.from(ids);
+  setRawStorageItem(STORAGE_KEY_APPROVED, JSON.stringify(array));
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(CATALOG_UPDATED_EVENT, { detail: { approvedCount: array.length } }));
+  }
+}
+
+/**
+ * Approve an individual asset ID.
+ */
+export function approveCatalogAsset(id: string): void {
+  const current = getAdminApprovedAssetIds();
+  current.add(id);
+  saveAdminApprovedAssetIds(current);
+
+  const overrides = getAdminCatalogOverrides();
+  if (overrides[id]?.isApproved === false) {
+    saveAdminCatalogOverride({
+      ...overrides[id],
+      isApproved: true,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+}
+
+/**
+ * Revoke approval for an individual asset ID.
+ */
+export function revokeCatalogAssetApproval(id: string): void {
+  const current = getAdminApprovedAssetIds();
+  current.delete(id);
+  saveAdminApprovedAssetIds(current);
+
+  const overrides = getAdminCatalogOverrides();
+  saveAdminCatalogOverride({
+    ...(overrides[id] ?? { id }),
+    isApproved: false,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+/**
+ * Bulk approve all items in the catalog that pass diagnostics without error or flags.
+ */
+export function approveAllVerifiedItems(
+  assets: readonly DemoAsset[],
+  flaggedAssetIds?: ReadonlySet<string>,
+): { approvedCount: number; totalVerified: number } {
+  const current = getAdminApprovedAssetIds();
+  const overrides = getAdminCatalogOverrides();
+  let newlyApproved = 0;
+  let totalVerified = 0;
+
+  for (const asset of assets) {
+    const diag = diagnoseCatalogItem(asset, flaggedAssetIds);
+    if (!diag.isFlaggedOrError) {
+      totalVerified++;
+      if (!current.has(asset.id)) {
+        current.add(asset.id);
+        newlyApproved++;
+      }
+      if (overrides[asset.id]?.isApproved === false) {
+        saveAdminCatalogOverride({
+          ...overrides[asset.id],
+          isApproved: true,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
+  }
+
+  saveAdminApprovedAssetIds(current);
+  return { approvedCount: newlyApproved, totalVerified };
+}
+
+/**
+ * Check whether a catalog asset has been approved.
+ */
+export function isCatalogAssetApproved(
+  asset: DemoAsset,
+  overrides: Record<string, AdminCatalogOverride> = getAdminCatalogOverrides(),
+  approvedIds: ReadonlySet<string> = getAdminApprovedAssetIds(),
+): boolean {
+  const override = overrides[asset.id];
+  if (override?.isApproved !== undefined) {
+    return override.isApproved;
+  }
+  return approvedIds.has(asset.id) || Boolean(asset.isApproved);
+}
+
+/**
  * Persist or update an administrative override for an individual card or sealed product.
  */
 export function saveAdminCatalogOverride(override: AdminCatalogOverride): void {
@@ -128,10 +243,11 @@ export function resetAdminCatalogOverride(id: string): void {
 }
 
 /**
- * Clear all overrides back to fresh baseline.
+ * Clear all overrides and approvals back to fresh baseline.
  */
 export function clearAllAdminCatalogOverrides(): void {
   removeRawStorageItem(STORAGE_KEY);
+  removeRawStorageItem(STORAGE_KEY_APPROVED);
   memoryStorage = {};
 
   if (typeof window !== 'undefined') {
@@ -140,19 +256,30 @@ export function clearAllAdminCatalogOverrides(): void {
 }
 
 /**
- * Merge saved admin overrides over the base catalog assets.
+ * Merge saved admin overrides and approvals over the base catalog assets.
  */
 export function applyCatalogOverrides(
   assets: readonly DemoAsset[],
   overrides: Record<string, AdminCatalogOverride> = getAdminCatalogOverrides(),
+  approvedIds: ReadonlySet<string> = getAdminApprovedAssetIds(),
 ): DemoAsset[] {
-  if (!overrides || Object.keys(overrides).length === 0) {
-    return [...assets];
-  }
-
   return assets.map((asset) => {
     const override = overrides[asset.id];
-    if (!override) return asset;
+    const isApproved = override?.isApproved !== undefined
+      ? override.isApproved
+      : (approvedIds.has(asset.id) || Boolean(asset.isApproved));
+    const approvedAt = override?.approvedAt ?? (isApproved ? (asset.approvedAt || override?.updatedAt || '2026-09-21T00:00:00.000Z') : undefined);
+
+    if (!override) {
+      if (isApproved !== asset.isApproved || approvedAt !== asset.approvedAt) {
+        return {
+          ...asset,
+          isApproved,
+          approvedAt,
+        };
+      }
+      return asset;
+    }
 
     const nextQuote = { ...asset.quote };
     if (override.cardmarketTrendPrice !== undefined) {
@@ -218,6 +345,8 @@ export function applyCatalogOverrides(
       tcgplayerPriceState: override.tcgplayerPriceState ?? asset.tcgplayerPriceState,
       quote: nextQuote,
       pricing: nextPricing,
+      isApproved,
+      approvedAt,
       note: override.adminNote ? (asset.note ? `${asset.note} | Admin: ${override.adminNote}` : `Admin: ${override.adminNote}`) : asset.note,
     };
   });
@@ -259,11 +388,12 @@ export function diagnoseCatalogItem(
 }
 
 /**
- * Export all overrides as formatted JSON string for upstream ingestion.
+ * Export all overrides and approved IDs as formatted JSON string for upstream ingestion.
  */
 export function exportCatalogOverridesJson(): string {
   const overrides = getAdminCatalogOverrides();
-  return JSON.stringify(overrides, null, 2);
+  const approvedIds = Array.from(getAdminApprovedAssetIds());
+  return JSON.stringify({ overrides, approvedIds }, null, 2);
 }
 
 /**
@@ -279,7 +409,19 @@ export function importCatalogOverridesJson(jsonText: string): { imported: number
     const current = getAdminCatalogOverrides();
     let count = 0;
 
-    for (const [id, value] of Object.entries(parsed)) {
+    let overridesObj: Record<string, unknown> = {};
+    let approvedArr: unknown[] = [];
+
+    if (parsed.overrides && typeof parsed.overrides === 'object') {
+      overridesObj = parsed.overrides as Record<string, unknown>;
+      if (Array.isArray(parsed.approvedIds)) {
+        approvedArr = parsed.approvedIds;
+      }
+    } else {
+      overridesObj = parsed as Record<string, unknown>;
+    }
+
+    for (const [id, value] of Object.entries(overridesObj)) {
       if (value && typeof value === 'object') {
         current[id] = { ...(value as AdminCatalogOverride), id };
         count++;
@@ -287,6 +429,14 @@ export function importCatalogOverridesJson(jsonText: string): { imported: number
     }
 
     setRawStorageItem(STORAGE_KEY, JSON.stringify(current));
+
+    if (approvedArr.length > 0) {
+      const currentApproved = getAdminApprovedAssetIds();
+      for (const item of approvedArr) {
+        if (typeof item === 'string') currentApproved.add(item);
+      }
+      setRawStorageItem(STORAGE_KEY_APPROVED, JSON.stringify(Array.from(currentApproved)));
+    }
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent(CATALOG_UPDATED_EVENT, { detail: { imported: count } }));

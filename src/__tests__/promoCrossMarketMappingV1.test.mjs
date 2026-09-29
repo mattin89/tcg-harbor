@@ -66,7 +66,7 @@ describe('promotional cross-market artwork mapping v1', () => {
         idExpansion: 5230,
         imageFolder: 'P',
         language: 'English',
-        excludedUnnumberedProductCount: 5,
+        excludedUnnumberedProductCount: 7,
       },
       {
         idExpansion: 5262,
@@ -87,6 +87,8 @@ describe('promotional cross-market artwork mapping v1', () => {
       780210,
       857368,
       867223,
+      911350,
+      911351,
     ]);
     expect(registry.expansions[1].excludedUnnumberedProductIds).toEqual([
       696662,

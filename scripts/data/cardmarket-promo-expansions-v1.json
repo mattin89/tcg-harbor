@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "reviewedAt": "2026-07-23",
+  "reviewedAt": "2026-09-29",
   "expansions": [
     {
       "idExpansion": 5230,
@@ -9,13 +9,15 @@
       "language": "English",
       "releasedOn": "2022-01-04",
       "evidenceUrl": "https://www.cardmarket.com/en/OnePiece/Expansions/Promos",
-      "evidence": "Cardmarket identifies this as the English P expansion and its official image CDN serves product 750655 from the P folder. The exact allowlist records the five unnumbered products that cannot enter a printed-number artwork matrix.",
+      "evidence": "Cardmarket identifies this as the English P expansion and its official image CDN serves product 750655 from the P folder. The exact allowlist records the unnumbered products that cannot enter a printed-number artwork matrix.",
       "excludedUnnumberedProductIds": [
         746238,
         746239,
         780210,
         857368,
-        867223
+        867223,
+        911350,
+        911351
       ]
     },
     {

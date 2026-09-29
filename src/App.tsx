@@ -503,7 +503,7 @@ export default function App({ identity, guest }: AppProps = {}) {
     : path === '/communities' ? ['Your communities', 'Trade and connect where you play']
     : path.startsWith('/messages/') || path === '/messages' ? ['Private messages', 'Available only between collectors who share a community']
     : path === '/settings' ? ['Profile & settings', 'Control your market, privacy, and notifications']
-    : path === '/inventory' ? ['Catalog inventory & diagnostics', 'Review cards, sealed products, and resolve errors']
+    : path === '/inventory' ? (isPlatformAdministrator ? ['Catalog inventory & diagnostics', 'Review cards, sealed products, and resolve errors'] : ['Access restricted', 'Platform administration only'])
     : path === '/store-admin' ? [isPlatformAdministrator ? 'Store approvals' : isApprovedStoreAdministrator ? 'Store administration' : 'Register your store', isPlatformAdministrator ? 'Review store applications and protect community access' : 'Manage store identity and community access after approval']
     : path === '/scan' ? ['Scan a store code', 'Join a community while you are physically at the store']
     : path.startsWith('/join/') ? ['Join community', 'Confirm the store you are visiting']
@@ -534,7 +534,7 @@ export default function App({ identity, guest }: AppProps = {}) {
               : path === '/messages' || path.startsWith('/messages/')
                 ? <MessagesPage conversationId={path.split('/')[2]} conversations={conversations} setConversations={setConversations} productionMessages={identity ? productionDirectMessages : undefined} navigate={navigate} notify={notify} />
                 : path === '/inventory'
-                  ? <PlatformInventoryPanel />
+                  ? (isPlatformAdministrator ? <PlatformInventoryPanel /> : <AdminAccessDenied navigate={navigate} />)
                 : path === '/settings'
                   ? <SettingsPageV5 market={market} setMarket={setMarket} navigate={navigate} notify={notify} signOut={signOut} identity={identity} />
                   : path === '/store-admin'
@@ -556,7 +556,7 @@ export default function App({ identity, guest }: AppProps = {}) {
       <div className="sidebar-grow" />
       {isGuest ? <section className="guest-auth-card"><Icon name="lock"/><div><strong>Browsing as a guest</strong><small>Sign in to save cards or join a store community.</small></div><Button type="button" size="sm" onClick={guest?.onRequestAuthentication}>Sign in / Create account</Button></section> : <>
         {canOpenStorePortal && <button className={`side-utility ${path === '/store-admin' ? 'active' : ''}`} aria-current={path === '/store-admin' ? 'page' : undefined} onClick={() => navigate('/store-admin')}><Icon name="shield" /><span>{isPlatformAdministrator ? 'Store approvals' : isApprovedStoreAdministrator ? 'Store admin' : identity ? 'Register store' : 'Store admin'}</span></button>}
-        {(!identity || isPlatformAdministrator) && <button className={`side-utility ${path === '/inventory' ? 'active' : ''}`} aria-current={path === '/inventory' ? 'page' : undefined} onClick={() => navigate('/inventory')}><Icon name="box" /><span>Catalog inventory</span></button>}
+        {isPlatformAdministrator && <button className={`side-utility ${path === '/inventory' ? 'active' : ''}`} aria-current={path === '/inventory' ? 'page' : undefined} onClick={() => navigate('/inventory')}><Icon name="box" /><span>Catalog inventory</span></button>}
         <button className={`profile-card ${path === '/settings' ? 'active' : ''}`} aria-current={path === '/settings' ? 'page' : undefined} onClick={() => navigate('/settings')}><Avatar initials={profileInitials} size="md" /><span><strong>{profileName}</strong><small>{accountLabel}</small></span><Icon name="more" size={18} /></button>
       </>}
       <p className="unofficial">Unofficial collector/community {isGuest ? 'public preview' : identity ? 'platform' : 'demo'}<br />Not affiliated with any publisher or marketplace.</p>
@@ -1324,7 +1324,7 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
     {!browseOnly && <section className="add-progress"><div className="active"><span>1</span><strong>Find item</strong></div><i /><div className={selected ? 'active' : ''}><span>2</span><strong>Add details</strong></div><i /><div><span>3</span><strong>Review</strong></div></section>}
     <div className="add-layout">
       <section className="add-catalog panel">
-        <div className="panel-header"><div><p className="eyebrow">One Piece Card Game</p><h2>Search the complete catalog</h2></div><div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><MarketDataBadge compact />{!browseOnly && <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/inventory')}><Icon name="box" size={14} /><span>Inventory</span></Button>}</div></div>
+        <div className="panel-header"><div><p className="eyebrow">One Piece Card Game</p><h2>Search the complete catalog</h2></div><div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><MarketDataBadge compact /></div></div>
         <Segmented value={tab} onChange={(value) => { setTab(value); setSelected(null); setQuery(''); setCatalogSet('all'); setCondition(value === 'sealed' ? 'Factory sealed' : 'Near Mint'); }} label="Catalog type" options={[{ value: 'card', label: 'Individual card', icon: 'cards' }, { value: 'sealed', label: 'Sealed product', icon: 'box' }]} />
         <div className="catalog-search-row"><label className="search-field catalog-search"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tab === 'card' ? 'Search card name, number, set code or art' : 'Search product, set or type'} aria-label="Search catalog" /></label><label className="select-field catalog-set-filter"><span>Set</span><select value={catalogSet} onChange={(event) => { setCatalogSet(event.target.value); setSelected(null); }}><option value="all">All current sets</option>{catalogSets.map((setCode) => <option key={setCode} value={setCode}>{setCode}</option>)}</select></label></div>
         <p className="catalog-hint">{tab === 'card' ? `${cardGroups.length.toLocaleString()} card numbers with every sourced art · try “Nami” or “OP01-016”` : `${allResults.length.toLocaleString()} released, source-backed sealed products · try “Booster Box”`}</p>
@@ -1612,6 +1612,10 @@ function MessagesPage({ conversationId, conversations, setConversations, product
 
 function StorePortalDenied({ navigate }: { navigate: (path: string) => void }) {
   return <div className="page join-page"><section className="join-result panel"><span><Icon name="lock" size={34}/></span><p className="eyebrow">Player account</p><h2>Store tools require an approved store</h2><p>Your player features are ready. To operate a store community, create a store account or ask an approved store owner to add you through the protected administration workflow.</p><div><Button variant="secondary" onClick={() => navigate('/dashboard')}>Back to dashboard</Button></div></section></div>;
+}
+
+function AdminAccessDenied({ navigate }: { navigate: (path: string) => void }) {
+  return <div className="page join-page"><section className="join-result panel"><span><Icon name="lock" size={34}/></span><p className="eyebrow">Platform admin required</p><h2>Catalog inventory is restricted</h2><p>This administrative tool is reserved for verified platform administrators.</p><div><Button variant="secondary" onClick={() => navigate('/dashboard')}>Back to dashboard</Button></div></section></div>;
 }
 
 function StoreAdminPage({ notify, requiresMemberApproval, setRequiresMemberApproval, pendingRequests, onAcceptJoinRequest, onRejectJoinRequest }: { notify: (message: string) => void; requiresMemberApproval?: boolean; setRequiresMemberApproval?: (val: boolean) => void; pendingRequests?: StoreJoinRequest[]; onAcceptJoinRequest?: (id: string) => void; onRejectJoinRequest?: (id: string) => void }) {

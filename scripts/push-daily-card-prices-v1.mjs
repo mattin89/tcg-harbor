@@ -55,11 +55,6 @@ export async function pushDailyCardPrices(options = {}) {
       ? asset.quote.tcgplayer
       : null;
 
-    // Ensure OP16-022 Alternate Art is set to the current market price of $73.48
-    if (asset.id === 'card-optcg-14e708d5ed778d211643' || (asset.number === 'OP16-022' && /alternate art/i.test(asset.variant))) {
-      tcgPrice = 73.48;
-    }
-
     if (cmPrice !== null || tcgPrice !== null) {
       prices[asset.id] = {
         cardmarket: cmPrice,

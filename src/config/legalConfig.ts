@@ -51,7 +51,7 @@ export const LEGAL_CONFIG: LegalConfig = Object.freeze({
   publicSiteUrl: 'https://tcg-harbor.onrender.com',
 
   /** Operator & legal entity contact details (German DDG § 5 / MStV § 18) */
-  operatorName: '[Operator / Entity Name]',
+  operatorName: 'Mario De Lorenzo',
   operatorAddress: '[Street Address, Postal Code, City, Country]',
   supportEmail: 'support@tcgharbor.com',
   legalEmail: 'legal@tcgharbor.com',

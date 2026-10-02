@@ -100,6 +100,18 @@ describe('legal compliance & EU data protection suite', () => {
     expect(ageSection?.content[1]).toContain('affirmatively confirm that you are at least 16 years of age');
   });
 
+  it('correctly sets Mario De Lorenzo as the operating entity across legal policies', () => {
+    expect(LEGAL_CONFIG.operatorName).toBe('Mario De Lorenzo');
+    const privacy = getPrivacyPolicy(LEGAL_CONFIG);
+    const impressum = getLegalNotice(LEGAL_CONFIG);
+
+    const controllerSection = privacy.sections.find((s) => s.id === 'controller-identity');
+    expect(controllerSection?.content.some((c) => c.includes('Mario De Lorenzo'))).toBe(true);
+
+    const providerSection = impressum.sections.find((s) => s.id === 'provider-info');
+    expect(providerSection?.content.some((c) => c.includes('Mario De Lorenzo'))).toBe(true);
+  });
+
   it('verifies client storage registry satisfies EU ePrivacy Directive Art. 5(3)', () => {
     const registry = LEGAL_CONFIG.clientStorageRegistry;
     expect(registry.length).toBeGreaterThan(0);

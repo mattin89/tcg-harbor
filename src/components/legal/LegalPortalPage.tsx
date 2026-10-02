@@ -47,18 +47,18 @@ export function LegalPortalPage({
             </Button>
             <Chip tone="positive">{LEGAL_CONFIG.brandName}</Chip>
           </div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, margin: '0 0 0.5rem 0', color: 'var(--text, #f8fafc)' }}>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, margin: '0 0 0.5rem 0', color: 'var(--ink, #132130)', letterSpacing: '-0.02em' }}>
             Legal & Compliance Portal
           </h1>
-          <p style={{ margin: 0, color: 'var(--text-muted, #94a3b8)', fontSize: '0.9rem' }}>
+          <p style={{ margin: 0, color: 'var(--muted, #63717e)', fontSize: '0.9rem' }}>
             EU regulatory disclosures, intellectual property notices, and data protection terms.
           </p>
         </div>
 
         <div style={{ textAlign: 'right' }}>
-          <Chip tone="neutral">Effective: {LEGAL_CONFIG.effectiveDate}</Chip>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #94a3b8)', marginTop: '0.35rem' }}>
-            Jurisdiction: {LEGAL_CONFIG.governingLaw}
+          <Chip tone="neutral">Entity: {LEGAL_CONFIG.operatorName}</Chip>
+          <div style={{ fontSize: '0.75rem', color: 'var(--muted, #63717e)', marginTop: '0.35rem' }}>
+            Effective: {LEGAL_CONFIG.effectiveDate} · {LEGAL_CONFIG.governingLaw}
           </div>
         </div>
       </header>
@@ -71,7 +71,7 @@ export function LegalPortalPage({
           gap: '0.5rem',
           flexWrap: 'wrap',
           marginBottom: '2rem',
-          borderBottom: '1px solid var(--border, #1f2937)',
+          borderBottom: '1px solid var(--line, #deddd8)',
           paddingBottom: '0.75rem',
         }}
       >
@@ -86,15 +86,17 @@ export function LegalPortalPage({
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.5rem',
-                padding: '0.5rem 1rem',
-                borderRadius: '8px',
-                border: 'none',
+                padding: '0.55rem 1.1rem',
+                borderRadius: '10px',
+                border: '1px solid',
+                borderColor: isActive ? 'var(--navy-900, #091827)' : 'var(--line, #deddd8)',
                 cursor: 'pointer',
-                fontWeight: isActive ? 600 : 500,
+                fontWeight: isActive ? 700 : 500,
                 fontSize: '0.875rem',
-                backgroundColor: isActive ? 'var(--primary-bg, #0284c7)' : 'var(--card-bg, #1e293b)',
-                color: isActive ? '#ffffff' : 'var(--text-secondary, #cbd5e1)',
-                transition: 'background-color 0.15s ease',
+                backgroundColor: isActive ? 'var(--navy-900, #091827)' : 'var(--paper, #fffdf9)',
+                color: isActive ? '#ffffff' : 'var(--ink, #132130)',
+                boxShadow: isActive ? 'var(--shadow-sm)' : 'none',
+                transition: 'all 0.15s ease',
               }}
             >
               <Icon name={tab.icon} size={15} />
@@ -108,20 +110,21 @@ export function LegalPortalPage({
       <main
         className="panel"
         style={{
-          backgroundColor: 'var(--card-bg, #0f172a)',
-          border: '1px solid var(--border, #1e293b)',
-          borderRadius: '12px',
-          padding: '2rem',
-          color: 'var(--text, #f8fafc)',
+          backgroundColor: 'var(--paper, #fffdf9)',
+          border: '1px solid var(--line, #deddd8)',
+          borderRadius: '16px',
+          padding: '2.5rem',
+          color: 'var(--ink, #132130)',
+          boxShadow: 'var(--shadow-sm)',
         }}
       >
-        <header style={{ marginBottom: '2rem', paddingBottom: '1.25rem', borderBottom: '1px solid var(--border, #1e293b)' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 700, margin: '0 0 0.5rem 0' }}>{activeDoc.title}</h2>
-          <p style={{ margin: '0 0 0.5rem 0', color: 'var(--text-muted, #94a3b8)', fontSize: '0.95rem', lineHeight: 1.5 }}>
+        <header style={{ marginBottom: '2rem', paddingBottom: '1.25rem', borderBottom: '1px solid var(--line, #deddd8)' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '0 0 0.5rem 0', color: 'var(--ink, #132130)' }}>{activeDoc.title}</h2>
+          <p style={{ margin: '0 0 0.5rem 0', color: 'var(--muted, #63717e)', fontSize: '0.95rem', lineHeight: 1.5 }}>
             {activeDoc.subtitle}
           </p>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted, #94a3b8)' }}>
-            Last modified: <strong>{activeDoc.lastUpdated}</strong>
+          <div style={{ fontSize: '0.8rem', color: 'var(--muted, #63717e)' }}>
+            Operating Entity: <strong style={{ color: 'var(--ink, #132130)' }}>{LEGAL_CONFIG.operatorName}</strong> · Last modified: <strong style={{ color: 'var(--ink, #132130)' }}>{activeDoc.lastUpdated}</strong>
           </div>
         </header>
 
@@ -129,11 +132,11 @@ export function LegalPortalPage({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           {activeDoc.sections.map((section) => (
             <section key={section.id} aria-labelledby={`section-heading-${section.id}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <h3 id={`section-heading-${section.id}`} style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-bright, #ffffff)' }}>
+              <h3 id={`section-heading-${section.id}`} style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--ink, #132130)' }}>
                 {section.title}
               </h3>
               {section.content.map((paragraph, idx) => (
-                <p key={idx} style={{ margin: 0, fontSize: '0.925rem', lineHeight: 1.65, color: 'var(--text-secondary, #cbd5e1)' }}>
+                <p key={idx} style={{ margin: 0, fontSize: '0.925rem', lineHeight: 1.65, color: '#243447' }}>
                   {paragraph}
                 </p>
               ))}
@@ -141,7 +144,7 @@ export function LegalPortalPage({
               {section.listItems && section.listItems.length > 0 && (
                 <ul style={{ margin: '0.5rem 0', paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {section.listItems.map((item, itemIdx) => (
-                    <li key={itemIdx} style={{ fontSize: '0.925rem', lineHeight: 1.55, color: 'var(--text-secondary, #cbd5e1)' }}>
+                    <li key={itemIdx} style={{ fontSize: '0.925rem', lineHeight: 1.55, color: '#243447' }}>
                       {item}
                     </li>
                   ))}
@@ -157,13 +160,14 @@ export function LegalPortalPage({
                       borderCollapse: 'collapse',
                       fontSize: '0.85rem',
                       textAlign: 'left',
-                      backgroundColor: 'var(--bg-secondary, #1e293b)',
-                      borderRadius: '8px',
+                      backgroundColor: 'var(--paper, #fffdf9)',
+                      border: '1px solid var(--line, #deddd8)',
+                      borderRadius: '10px',
                       overflow: 'hidden',
                     }}
                   >
                     <thead>
-                      <tr style={{ backgroundColor: 'var(--table-header, #334155)', color: '#ffffff' }}>
+                      <tr style={{ backgroundColor: 'var(--navy-900, #091827)', color: '#ffffff' }}>
                         <th style={{ padding: '0.75rem 1rem' }}>Storage Key</th>
                         <th style={{ padding: '0.75rem 1rem' }}>Mechanism</th>
                         <th style={{ padding: '0.75rem 1rem' }}>Classification</th>
@@ -176,14 +180,14 @@ export function LegalPortalPage({
                         <tr
                           key={entry.key}
                           style={{
-                            borderTop: '1px solid var(--border, #334155)',
-                            backgroundColor: index % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.02)',
+                            borderTop: '1px solid var(--line, #deddd8)',
+                            backgroundColor: index % 2 === 0 ? 'transparent' : 'rgba(0, 0, 0, 0.02)',
                           }}
                         >
-                          <td style={{ padding: '0.75rem 1rem', fontFamily: 'monospace', fontWeight: 600, color: 'var(--primary, #38bdf8)' }}>
+                          <td style={{ padding: '0.75rem 1rem', fontFamily: 'monospace', fontWeight: 600, color: 'var(--blue, #427da2)' }}>
                             {entry.key}
                           </td>
-                          <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary, #cbd5e1)' }}>
+                          <td style={{ padding: '0.75rem 1rem', color: 'var(--ink, #132130)' }}>
                             {entry.storageType}
                           </td>
                           <td style={{ padding: '0.75rem 1rem' }}>
@@ -191,10 +195,10 @@ export function LegalPortalPage({
                               {entry.classification}
                             </Chip>
                           </td>
-                          <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary, #cbd5e1)', maxWidth: '300px', lineHeight: 1.4 }}>
+                          <td style={{ padding: '0.75rem 1rem', color: '#243447', maxWidth: '300px', lineHeight: 1.4 }}>
                             {entry.purpose}
                           </td>
-                          <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted, #94a3b8)', fontSize: '0.8rem' }}>
+                          <td style={{ padding: '0.75rem 1rem', color: 'var(--muted, #63717e)', fontSize: '0.8rem' }}>
                             {entry.retention}
                           </td>
                         </tr>
@@ -212,20 +216,21 @@ export function LegalPortalPage({
           style={{
             marginTop: '3rem',
             paddingTop: '1.5rem',
-            borderTop: '1px solid var(--border, #1e293b)',
+            borderTop: '1px solid var(--line, #deddd8)',
             display: 'flex',
             flexWrap: 'wrap',
             justifyContent: 'space-between',
             alignItems: 'center',
             gap: '1rem',
             fontSize: '0.85rem',
-            color: 'var(--text-muted, #94a3b8)',
+            color: 'var(--muted, #63717e)',
           }}
         >
           <div>
-            <strong>Questions regarding legal compliance?</strong>
-            <div>Data privacy: <a href={`mailto:${LEGAL_CONFIG.privacyEmail}`} style={{ color: 'var(--primary, #38bdf8)' }}>{LEGAL_CONFIG.privacyEmail}</a></div>
-            <div>Legal inquiries: <a href={`mailto:${LEGAL_CONFIG.legalEmail}`} style={{ color: 'var(--primary, #38bdf8)' }}>{LEGAL_CONFIG.legalEmail}</a></div>
+            <strong style={{ color: 'var(--ink, #132130)' }}>Questions regarding legal compliance?</strong>
+            <div style={{ marginTop: '0.25rem' }}>Operating entity: <strong style={{ color: 'var(--ink, #132130)' }}>{LEGAL_CONFIG.operatorName}</strong></div>
+            <div>Data privacy: <a href={`mailto:${LEGAL_CONFIG.privacyEmail}`} style={{ color: 'var(--blue, #427da2)', textDecoration: 'underline' }}>{LEGAL_CONFIG.privacyEmail}</a></div>
+            <div>Legal inquiries: <a href={`mailto:${LEGAL_CONFIG.legalEmail}`} style={{ color: 'var(--blue, #427da2)', textDecoration: 'underline' }}>{LEGAL_CONFIG.legalEmail}</a></div>
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem' }}>

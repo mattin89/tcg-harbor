@@ -30,7 +30,7 @@ export function getTermsOfService(config: LegalConfig = LEGAL_CONFIG): LegalDocu
         title: '1. Nature of the Service',
         content: [
           `${config.brandName} is a fan-created, community-driven collection manager and catalog for the ${config.ipHolders.gameName}.`,
-          'The platform operates strictly as an informational utility and community bulletin board. We do not operate a commercial marketplace, web shop, payment gateway, escrow service, or auction house. We do not sell cards, take custody of assets, handle shipping, or process transactions between users.',
+          'The platform operates as an informational utility and community bulletin board for hobbyists, collectors, and local game stores. We do not operate a commercial marketplace, web shop, payment gateway, escrow service, or auction house. We do not sell cards, take custody of assets, handle shipping, or process transactions between users. For commercial store profiles and management tools, please refer to Section 4.',
         ],
       },
       {
@@ -38,7 +38,7 @@ export function getTermsOfService(config: LegalConfig = LEGAL_CONFIG): LegalDocu
         title: '2. Eligibility and Age Verification',
         content: [
           `You must be at least ${config.minimumAge} years of age to register an account or participate in community discussions.`,
-          `By creating an account, you represent and warrant that you meet this minimum age requirement under the laws of your residence, including the digital consent age established under Article 8 of the General Data Protection Regulation (GDPR). If you are under ${config.minimumAge}, you may only browse the public catalog as an unauthenticated guest.`,
+          `By creating an account, you represent and warrant that you meet this minimum age requirement under the laws of your residence, including the digital consent age established under Article 8 of the General Data Protection Regulation (GDPR). When creating an account, you must affirmatively confirm that you are at least ${config.minimumAge} years of age. If you are under ${config.minimumAge}, you may only browse the public catalog as an unauthenticated guest.`,
         ],
       },
       {
@@ -50,8 +50,17 @@ export function getTermsOfService(config: LegalConfig = LEGAL_CONFIG): LegalDocu
         ],
       },
       {
+        id: 'store-services-and-fees',
+        title: '4. Commercial Store Services and Future Subscription Fees',
+        content: [
+          'Individual collectors and hobby players may search catalogs, track binders, compute portfolio values, and arrange peer-to-peer trades without charge.',
+          `Commercial game stores, hobby shops, and business venues may register store workspaces, publish venue profiles, host local community hubs, list inventories, or issue verification codes. While basic store features may be made available during testing and preview periods without charge, ${config.brandName} reserves the right to introduce commercial subscription tiers, feature-based management fees, or listing charges for commercial store accounts in the future.`,
+          'Should paid commercial tiers be introduced, verified store administrators will receive clear prior notice of fee structures, billing cycles, and payment terms before any charges take effect. Store operators will have the choice to maintain, upgrade, downgrade, or close their commercial store workspaces before any fee applies. Introducing fees for commercial stores will not affect the free status of standard collector and player portfolios.',
+        ],
+      },
+      {
         id: 'trading-rules',
-        title: '4. Peer-to-Peer Community Trading',
+        title: '5. Peer-to-Peer Community Trading',
         content: [
           'Users may publish trade postings and send direct messages to arrange card-for-card exchanges with members of their local store communities.',
           'All trades occur directly between users. We do not verify card authenticity, inspect card condition, guarantee counterparty performance, or insure shipments. You arrange and complete all trades at your own risk. Exercise caution when meeting other collectors or sending items by mail.',
@@ -59,7 +68,7 @@ export function getTermsOfService(config: LegalConfig = LEGAL_CONFIG): LegalDocu
       },
       {
         id: 'market-pricing',
-        title: '5. Market Reference Data and Valuations',
+        title: '6. Market Reference Data and Valuations',
         content: [
           'Market trends, average prices, and portfolio totals displayed across the service represent aggregated public reference figures sourced daily from third-party catalogs, including ' + config.ipHolders.marketDataSources + '.',
           'These figures serve informational purposes only. They do not constitute financial appraisals, investment advice, or guaranteed buyback quotes. Actual market prices fluctuate based on physical condition, seller reputation, regional liquidity, and currency exchange rates.',
@@ -67,7 +76,7 @@ export function getTermsOfService(config: LegalConfig = LEGAL_CONFIG): LegalDocu
       },
       {
         id: 'prohibited-conduct',
-        title: '6. Prohibited Activities',
+        title: '7. Prohibited Activities',
         content: [
           'You agree not to misuse the platform or assist others in doing so. Prohibited activities include:',
         ],
@@ -82,7 +91,7 @@ export function getTermsOfService(config: LegalConfig = LEGAL_CONFIG): LegalDocu
       },
       {
         id: 'user-content',
-        title: '7. User Content and License',
+        title: '8. User Content and License',
         content: [
           'You retain ownership of any text, images, or trade listings you submit. By uploading content to public or community areas, you grant us a worldwide, non-exclusive, royalty-free license to host, display, and format that content solely to operate the platform.',
           'We reserve the right to remove any content that violates these Terms or applicable laws.',
@@ -90,7 +99,7 @@ export function getTermsOfService(config: LegalConfig = LEGAL_CONFIG): LegalDocu
       },
       {
         id: 'liability-limits',
-        title: '8. Limitation of Liability',
+        title: '9. Limitation of Liability',
         content: [
           `To the maximum extent permitted by applicable law in ${config.governingLaw}, ${config.brandName} and its operators provide the service on an "as is" and "as available" basis without warranties of any kind.`,
           'We are liable only for damages caused by willful misconduct or gross negligence. Statutory liability for bodily injury, life, health, or claims under mandatory consumer protection legislation remains unaffected.',
@@ -98,7 +107,7 @@ export function getTermsOfService(config: LegalConfig = LEGAL_CONFIG): LegalDocu
       },
       {
         id: 'termination-severability',
-        title: '9. Suspension, Termination, and Severability',
+        title: '10. Suspension, Termination, and Severability',
         content: [
           'We may suspend or terminate your access if you breach these Terms. You may delete your account at any time through your account settings.',
           'If any provision in these Terms is deemed invalid or unenforceable, that provision will be severed, and the remaining provisions will continue in full force and effect.',

@@ -62,6 +62,7 @@ export function ProductionAuthPanel({
   const [accountKind, setAccountKind] = useState<AccountKind>("player");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [pendingConfirmation, setPendingConfirmation] = useState<{ email: string; redirectPath: string } | null>(null);
 
   if (access.passwordRecovery) {
@@ -93,9 +94,17 @@ export function ProductionAuthPanel({
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     access.clearError();
+    setFormError(null);
     setNotice(null);
     const data = new FormData(event.currentTarget);
     const email = String(data.get("email") ?? "").trim();
+    if (mode === "sign-up") {
+      const confirmed = Boolean(data.get("ageAndTermsConfirmed"));
+      if (!confirmed) {
+        setFormError(`Please confirm that you are at least ${LEGAL_CONFIG.minimumAge} years of age and agree to the Terms of Service and Privacy Policy.`);
+        return;
+      }
+    }
     setBusy(true);
     try {
       if (mode === "sign-in") {
@@ -189,10 +198,11 @@ export function ProductionAuthPanel({
         </>}
         <Field label="Email" name="email" type="email" autoComplete="email" placeholder="you@example.com" />
         {mode !== "reset" && <Field label="Password" name="password" type="password" autoComplete={mode === "sign-up" ? "new-password" : "current-password"} minLength={12} />}
-        <AuthError message={access.error} />
+        <AuthError message={formError || access.error} />
         {notice && <p className="production-notice production-notice-success" role="status"><Icon name="check" size={16} />{notice}</p>}
         {mode === "sign-in" && pendingConfirmation && <button className="production-secondary production-resend-confirmation" type="button" disabled={busy} onClick={async () => {
           access.clearError();
+          setFormError(null);
           setBusy(true);
           try {
             await access.resendSignUpConfirmation(pendingConfirmation.email, pendingConfirmation.redirectPath);
@@ -204,17 +214,55 @@ export function ProductionAuthPanel({
           }
         }}><Icon name="refresh" size={15} />Resend confirmation email</button>}
         {mode === "sign-up" && (
-          <p className="production-legal-consent" style={{ fontSize: "0.8rem", color: "var(--text-muted, #94a3b8)", margin: "0.75rem 0", lineHeight: 1.45 }}>
-            By creating an account, you confirm that you are at least {LEGAL_CONFIG.minimumAge} years old, agree to our{" "}
-            <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: "var(--primary, #38bdf8)", textDecoration: "underline" }}>
-              Terms of Service
-            </a>
-            , and acknowledge our{" "}
-            <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "var(--primary, #38bdf8)", textDecoration: "underline" }}>
-              Privacy Policy
-            </a>
-            .
-          </p>
+          <label
+            className="production-legal-consent-label"
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "0.625rem",
+              fontSize: "0.82rem",
+              color: "var(--text-muted, #94a3b8)",
+              margin: "0.75rem 0",
+              lineHeight: 1.45,
+              cursor: "pointer",
+              textAlign: "left",
+            }}
+          >
+            <input
+              type="checkbox"
+              name="ageAndTermsConfirmed"
+              required
+              style={{
+                marginTop: "0.15rem",
+                width: "1rem",
+                height: "1rem",
+                flexShrink: 0,
+                cursor: "pointer",
+                accentColor: "var(--primary, #0284c7)",
+              }}
+            />
+            <span>
+              I confirm that I am at least {LEGAL_CONFIG.minimumAge} years of age, agree to the{" "}
+              <a
+                href="/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "var(--primary, #38bdf8)", textDecoration: "underline" }}
+              >
+                Terms of Service
+              </a>
+              , and acknowledge the{" "}
+              <a
+                href="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "var(--primary, #38bdf8)", textDecoration: "underline" }}
+              >
+                Privacy Policy
+              </a>
+              .
+            </span>
+          </label>
         )}
         <button className="production-primary" type="submit" disabled={busy}>
           {busy ? "Please wait…" : mode === "sign-in" ? "Sign in" : mode === "sign-up" ? "Create account" : "Send reset link"}
@@ -223,10 +271,10 @@ export function ProductionAuthPanel({
 
       <div className="production-auth-links">
         {mode === "sign-in" && <>
-          <button type="button" onClick={() => { setMode("sign-up"); setNotice(null); access.clearError(); }}>Create an account</button>
-          <button type="button" onClick={() => { setMode("reset"); setNotice(null); access.clearError(); }}>Forgot password?</button>
+          <button type="button" onClick={() => { setMode("sign-up"); setNotice(null); setFormError(null); access.clearError(); }}>Create an account</button>
+          <button type="button" onClick={() => { setMode("reset"); setNotice(null); setFormError(null); access.clearError(); }}>Forgot password?</button>
         </>}
-        {mode !== "sign-in" && <button type="button" onClick={() => { setMode("sign-in"); setNotice(null); access.clearError(); }}>Back to sign in</button>}
+        {mode !== "sign-in" && <button type="button" onClick={() => { setMode("sign-in"); setNotice(null); setFormError(null); access.clearError(); }}>Back to sign in</button>}
         {onBrowseAsGuest && <button type="button" onClick={onBrowseAsGuest}>Continue browsing as guest</button>}
       </div>
 

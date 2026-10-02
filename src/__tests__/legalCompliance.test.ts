@@ -87,6 +87,19 @@ describe('legal compliance & EU data protection suite', () => {
     expect(cookies.subtitle).toContain('Card Haven');
   });
 
+  it('explicitly separates free collector tools from future commercial store subscription terms', () => {
+    const terms = getTermsOfService(LEGAL_CONFIG);
+    const storeSection = terms.sections.find((s) => s.id === 'store-services-and-fees');
+    expect(storeSection).toBeDefined();
+    expect(storeSection?.title).toContain('Commercial Store Services');
+    expect(storeSection?.content[0]).toContain('without charge');
+    expect(storeSection?.content[1]).toContain('reserves the right to introduce commercial subscription tiers');
+    expect(storeSection?.content[2]).toContain('will not affect the free status of standard collector and player portfolios');
+
+    const ageSection = terms.sections.find((s) => s.id === 'eligibility');
+    expect(ageSection?.content[1]).toContain('affirmatively confirm that you are at least 16 years of age');
+  });
+
   it('verifies client storage registry satisfies EU ePrivacy Directive Art. 5(3)', () => {
     const registry = LEGAL_CONFIG.clientStorageRegistry;
     expect(registry.length).toBeGreaterThan(0);

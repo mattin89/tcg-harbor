@@ -725,6 +725,65 @@
   color: var(--text-strong);
 }
 
+.trade-context-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.trade-context-view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--blue, #2563eb);
+  color: #ffffff;
+  border: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.trade-context-view-btn:hover {
+  opacity: 0.9;
+}
+
+.chat-message-link {
+  color: #2563eb;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 600;
+  cursor: pointer;
+  word-break: break-word;
+  transition: opacity 0.15s ease;
+}
+
+.chat-message-link:hover {
+  opacity: 0.8;
+}
+
+.chat-message.own .chat-message-link {
+  color: #93c5fd;
+}
+
+.community-trade-card-highlighted {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4), 0 8px 24px rgba(37, 99, 235, 0.15) !important;
+  animation: pulse-trade-post 2s infinite ease-in-out;
+}
+
+@keyframes pulse-trade-post {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4), 0 8px 24px rgba(37, 99, 235, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.6), 0 12px 30px rgba(37, 99, 235, 0.25);
+  }
+}
+
 @media (max-width: 760px) {
   .community-v6-intro,
   .community-v6-header,

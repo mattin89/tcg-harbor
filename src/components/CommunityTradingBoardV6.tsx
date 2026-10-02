@@ -32,6 +32,7 @@ export interface ProductionCommunityTradingBoardV6Props extends CommunityBasePro
   readonly market?: Market;
   readonly priceHistory?: UserCardPriceHistory;
   readonly directMessagesRuntime?: ProductionDirectMessagesRuntimeV2;
+  readonly targetPostId?: string;
 }
 
 function supportedCardsV6(assets: readonly DemoAsset[]): DemoAsset[] {
@@ -112,6 +113,7 @@ export function ProductionCommunityTradingBoardV6({
   market = 'cardmarket',
   priceHistory,
   directMessagesRuntime,
+  targetPostId,
 }: ProductionCommunityTradingBoardV6Props) {
   const store = stores.find((candidate) => candidate.communityId === communityId);
   const [createOpen, setCreateOpen] = useState(false);
@@ -119,6 +121,50 @@ export function ProductionCommunityTradingBoardV6({
   const [contactingPostId, setContactingPostId] = useState<string | null>(null);
   const [status, setStatus] = useState<CommunityTradeStatusV6 | 'active' | 'all'>('active');
   const [query, setQuery] = useState('');
+
+  const effectiveTargetPostId = targetPostId || (() => {
+    if (typeof window === 'undefined') return undefined;
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromQuery = urlParams.get('post');
+    if (fromQuery) return fromQuery;
+    const hash = window.location.hash;
+    if (hash.startsWith('#trade-post-')) return hash.replace('#trade-post-', '');
+    return undefined;
+  })();
+
+  const [highlightedPostId, setHighlightedPostId] = useState<string | null>(effectiveTargetPostId ?? null);
+
+  useEffect(() => {
+    if (effectiveTargetPostId) {
+      setHighlightedPostId(effectiveTargetPostId);
+    }
+  }, [effectiveTargetPostId]);
+
+  useEffect(() => {
+    if (!effectiveTargetPostId || runtime.loading) return;
+    const targetPost = runtime.posts.find((p) => p.id === effectiveTargetPostId && p.communityId === communityId);
+    if (targetPost && targetPost.status !== 'open' && targetPost.status !== 'discussing') {
+      setStatus('all');
+    }
+  }, [effectiveTargetPostId, runtime.loading, runtime.posts, communityId]);
+
+  useEffect(() => {
+    if (!effectiveTargetPostId || runtime.loading) return;
+    const timer = setTimeout(() => {
+      const element = document.getElementById(`trade-post-${effectiveTargetPostId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 200);
+    const unhighlightTimer = setTimeout(() => {
+      setHighlightedPostId(null);
+    }, 4500);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(unhighlightTimer);
+    };
+  }, [effectiveTargetPostId, runtime.loading, status]);
+
   const historicalPostCount = runtime.posts.filter((post) => (
     post.communityId === communityId
     && (post.status === 'completed' || post.status === 'closed')
@@ -158,23 +204,29 @@ export function ProductionCommunityTradingBoardV6({
   };
 
   const handleContactAuthor = async (post: CommunityTradePostV6, customMessage?: string) => {
-    const authorTag = post.authorUsername ? `@${post.authorUsername}` : post.authorName;
+    const authorTag = post.authorUsername
+      ? `@${post.authorUsername}`
+      : (post.authorName && post.authorName !== 'Trader' ? post.authorName : 'trader');
     const primary = assetForV6(post.primaryAssetId, collectionAssets);
     const cardTitle = primary ? `${primary.name} (${primary.number ?? primary.variant ?? ''})` : 'Card';
-    const direction = post.postKind === 'offering_card' ? 'Offer' : 'Wanted';
-    const postRef = `${direction}: ${cardTitle} · Post by ${authorTag}`;
-    const defaultDraft = customMessage || `Hi ${authorTag}, regarding your ${direction.toLowerCase()} post for ${cardTitle}:`;
+    const direction = post.postKind === 'offering_card' ? 'offer' : 'wanted';
+    const communityName = store?.communityName ?? store?.name ?? 'Community';
+    const postUrl = `/communities/${communityId}?post=${post.id}#trade-post-${post.id}`;
+    const postRef = `${post.postKind === 'offering_card' ? 'Offer' : 'Wanted'}: ${cardTitle} · ${communityName} · Post by ${authorTag}`;
+    const defaultDraft = customMessage
+      ? `Hi ${authorTag}, [regarding your ${direction} post for ${cardTitle} in ${communityName}](${postUrl}): ${customMessage}`
+      : `Hi ${authorTag}, [regarding your ${direction} post for ${cardTitle} in ${communityName}](${postUrl}): `;
 
     setContactingPostId(post.id);
     try {
       if (directMessagesRuntime) {
         const conversationId = await directMessagesRuntime.createConversation(post.authorId, communityId);
         if (conversationId) {
-          navigate(`/messages/${conversationId}?ref=${encodeURIComponent(postRef)}&draft=${encodeURIComponent(defaultDraft)}`);
+          navigate(`/messages/${conversationId}?ref=${encodeURIComponent(postRef)}&draft=${encodeURIComponent(defaultDraft)}&postUrl=${encodeURIComponent(postUrl)}`);
           return;
         }
       }
-      navigate(`/messages?ref=${encodeURIComponent(postRef)}&draft=${encodeURIComponent(defaultDraft)}`);
+      navigate(`/messages?ref=${encodeURIComponent(postRef)}&draft=${encodeURIComponent(defaultDraft)}&postUrl=${encodeURIComponent(postUrl)}`);
     } catch (reason) {
       notify(reason instanceof Error ? reason.message : 'Could not open conversation with this member.');
     } finally {
@@ -206,6 +258,7 @@ export function ProductionCommunityTradingBoardV6({
             onInspectAsset={setInspectAsset}
             onContactAuthor={handleContactAuthor}
             isContacting={contactingPostId === post.id}
+            isHighlighted={highlightedPostId === post.id}
           />
         ))}</div>}
     <CommunityTradeCreateModalV9 open={createOpen} onClose={() => setCreateOpen(false)} communityId={communityId} collectionAssets={collectionAssets} runtime={runtime} notify={notify}/>
@@ -228,6 +281,7 @@ function CommunityTradeCardV6({
   onInspectAsset,
   onContactAuthor,
   isContacting = false,
+  isHighlighted = false,
 }: {
   readonly post: CommunityTradePostV6;
   readonly collectionAssets: readonly DemoAsset[];
@@ -236,6 +290,7 @@ function CommunityTradeCardV6({
   readonly onInspectAsset: (asset: DemoAsset) => void;
   readonly onContactAuthor: (post: CommunityTradePostV6, customMessage?: string) => Promise<void> | void;
   readonly isContacting?: boolean;
+  readonly isHighlighted?: boolean;
 }) {
   const [counterOfferDraft, setCounterOfferDraft] = useState('');
   const primary = assetForV6(post.primaryAssetId, collectionAssets);
@@ -245,7 +300,10 @@ function CommunityTradeCardV6({
   const authorDisplay = post.authorUsername ? `@${post.authorUsername}` : post.authorName;
 
   return (
-    <article className="panel community-trade-card-v6">
+    <article
+      className={`panel community-trade-card-v6 ${isHighlighted ? 'community-trade-card-highlighted' : ''}`}
+      id={`trade-post-${post.id}`}
+    >
       <header>
         <Avatar initials={post.authorInitials} size="sm" />
         <span>

@@ -483,10 +483,48 @@ export default function App({ identity, guest }: AppProps = {}) {
               : <CommunitiesPage joinedIds={joinedIds} navigate={navigate} />
             : path.startsWith('/communities/')
               ? identity
-                ? <ProductionCommunityTradingBoardV6 communityId={path.split('/')[2]} stores={storeDirectory} runtime={productionCommunityTrading} collectionAssets={assets} navigate={navigate} notify={notify} market={market} priceHistory={cardPriceHistory} directMessagesRuntime={identity ? productionDirectMessages : undefined}/>
-                : <CommunityPage communityId={path.split('/')[2]} joinedIds={joinedIds} assets={assets} messages={communityMessages} setMessages={setCommunityMessages} trades={tradePosts} setTrades={setTradePosts} market={market} navigate={navigate} notify={notify} isStoreManager={!identity} pendingRequests={storeJoinRequests.filter(r => r.storeId === (path.split('/')[2]) && r.status === 'pending')} onAcceptJoinRequest={(id) => setStoreJoinRequests(prev => prev.filter(r => r.id !== id))} onRejectJoinRequest={(id) => setStoreJoinRequests(prev => prev.filter(r => r.id !== id))} profileName={profileName} profileInitials={profileInitials} />
+                ? <ProductionCommunityTradingBoardV6
+                    communityId={path.split('/')[2]?.split('?')[0]?.split('#')[0]}
+                    stores={storeDirectory}
+                    runtime={productionCommunityTrading}
+                    collectionAssets={assets}
+                    navigate={navigate}
+                    notify={notify}
+                    market={market}
+                    priceHistory={cardPriceHistory}
+                    directMessagesRuntime={identity ? productionDirectMessages : undefined}
+                    targetPostId={new URLSearchParams(path.includes('?') ? path.slice(path.indexOf('?')) : (typeof window !== 'undefined' ? window.location.search : '')).get('post') ?? undefined}
+                  />
+                : <CommunityPage
+                    communityId={path.split('/')[2]?.split('?')[0]?.split('#')[0]}
+                    joinedIds={joinedIds}
+                    assets={assets}
+                    messages={communityMessages}
+                    setMessages={setCommunityMessages}
+                    trades={tradePosts}
+                    setTrades={setTradePosts}
+                    market={market}
+                    navigate={navigate}
+                    notify={notify}
+                    isStoreManager={!identity}
+                    pendingRequests={storeJoinRequests.filter(r => r.storeId === (path.split('/')[2]?.split('?')[0]?.split('#')[0]) && r.status === 'pending')}
+                    onAcceptJoinRequest={(id) => setStoreJoinRequests(prev => prev.filter(r => r.id !== id))}
+                    onRejectJoinRequest={(id) => setStoreJoinRequests(prev => prev.filter(r => r.id !== id))}
+                    profileName={profileName}
+                    profileInitials={profileInitials}
+                  />
               : path === '/messages' || path.startsWith('/messages/')
-                ? <MessagesPage conversationId={path.split('/')[2]?.split('?')[0]} conversations={conversations} setConversations={setConversations} productionMessages={identity ? productionDirectMessages : undefined} navigate={navigate} notify={notify} initialRef={new URLSearchParams(path.includes('?') ? path.slice(path.indexOf('?')) : (typeof window !== 'undefined' ? window.location.search : '')).get('ref') ?? undefined} initialDraft={new URLSearchParams(path.includes('?') ? path.slice(path.indexOf('?')) : (typeof window !== 'undefined' ? window.location.search : '')).get('draft') ?? undefined} />
+                ? <MessagesPage
+                    conversationId={path.split('/')[2]?.split('?')[0]?.split('#')[0]}
+                    conversations={conversations}
+                    setConversations={setConversations}
+                    productionMessages={identity ? productionDirectMessages : undefined}
+                    navigate={navigate}
+                    notify={notify}
+                    initialRef={new URLSearchParams(path.includes('?') ? path.slice(path.indexOf('?')) : (typeof window !== 'undefined' ? window.location.search : '')).get('ref') ?? undefined}
+                    initialDraft={new URLSearchParams(path.includes('?') ? path.slice(path.indexOf('?')) : (typeof window !== 'undefined' ? window.location.search : '')).get('draft') ?? undefined}
+                    initialPostUrl={new URLSearchParams(path.includes('?') ? path.slice(path.indexOf('?')) : (typeof window !== 'undefined' ? window.location.search : '')).get('postUrl') ?? undefined}
+                  />
                 : path === '/legal' || path === '/terms' || path === '/privacy' || path === '/cookies' || path === '/impressum'
                   ? <LegalPortalPage activeSlug={path === '/terms' ? 'terms' : path === '/privacy' ? 'privacy' : path === '/cookies' ? 'cookies' : path === '/impressum' ? 'impressum' : 'disclaimers'} navigate={navigate} isAuthenticated={Boolean(identity)} />
                 : path === '/inventory'
@@ -1284,6 +1322,72 @@ function TradeCreateModal({ open, onClose, communityId, assets, market, onCreate
   return <Modal open={open} onClose={onClose} title="Create a local trade post" eyebrow="Card for card · no sales" wide><form className="trade-form" onSubmit={submit}><div className="trade-form-notice"><Icon name="shield"/><span><strong>No price entry, payments, or auctions.</strong><small>Only read-only market references appear after publication.</small></span></div><div className="trade-form-grid"><section><p className="eyebrow offering">You are offering</p><label>Your collection card<select value={offeredId} onChange={(event) => setOfferedId(event.target.value)}>{assets.filter((asset) => asset.kind === 'card').map((asset) => <option value={asset.id} key={asset.id}>{asset.name} · {asset.number}</option>)}</select></label><div className="form-asset-preview"><CardArt asset={offered} size="sm"/><span><strong>{offered.name}</strong><small>{offered.number} · Qty owned {offered.quantity}</small><em>{formatMoney(offered.quote[market], market)} read-only reference</em></span></div><div className="form-grid"><label>Quantity<input type="number" min="1" max={offered.quantity} defaultValue="1" /></label><label>Condition<select value={condition} onChange={(event) => setCondition(event.target.value)}><option>Near Mint</option><option>Excellent</option><option>Good</option></select></label><label className="read-only-field">Language<output>{offered.language}</output></label></div></section><span className="trade-form-arrow"><Icon name="trade"/></span><section><p className="eyebrow looking">You are looking for</p><label>Catalog card<select value={wantedId} onChange={(event) => setWantedId(event.target.value)}>{catalogAssets.filter((asset) => asset.kind === 'card').map((asset) => <option value={asset.id} key={asset.id}>{asset.name} · {asset.number}</option>)}</select></label><div className="form-asset-preview"><CardArt asset={wanted} size="sm"/><span><strong>{wanted.name}</strong><small>{wanted.number} · {wanted.setCode}</small><em>{formatMoney(wanted.quote[market], market)} read-only reference</em></span></div><div className="form-grid"><label>Desired condition<select><option>Near Mint</option><option>Excellent or better</option><option>Any</option></select></label><label className="read-only-field">Desired language<output>{wanted.language}</output></label></div></section></div><label>Trade note <small>No cash terms or sale prices</small><textarea value={note} onChange={(event) => setNote(event.target.value.replace(/€|\$|USD|EUR/gi, ''))} placeholder="Describe variants, meetup timing, or what you’re flexible on…" maxLength={300}/></label><label>Local meetup preference<select><option>{stores.find((store) => store.id === communityId)?.name}</option><option>Friday locals</option><option>Weekend afternoon</option></select></label>{error && <div className="form-error"><Icon name="info"/>{error}</div>}<div className="trade-form-reference"><span><Icon name="info"/></span><p>At publication, the app captures read-only EU and US market references with timestamps. Similar references do not imply an equal or fair trade.</p></div><div className="form-actions"><Button type="button" variant="secondary" onClick={onClose}>Cancel</Button><Button type="submit" icon="trade">Publish trade post</Button></div></form></Modal>;
 }
 
+function renderChatMessageContent(text: string, navigate: (path: string) => void): React.ReactNode {
+  if (!text) return text;
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)|(https?:\/\/[^\s<]+)|(\/communities\/[a-zA-Z0-9_-]+(?:\?[^\s<)]*)?(?:#[^\s<)]*)?)/g;
+
+  const elements: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = linkRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      elements.push(text.slice(lastIndex, match.index));
+    }
+
+    if (match[1] !== undefined && match[2] !== undefined) {
+      const label = match[1];
+      const url = match[2];
+      const isInternal = url.startsWith('/');
+      elements.push(
+        <a
+          key={`md-${match.index}`}
+          href={url}
+          className="chat-message-link"
+          onClick={(e) => {
+            if (isInternal) {
+              e.preventDefault();
+              navigate(url);
+            }
+          }}
+          target={isInternal ? undefined : '_blank'}
+          rel={isInternal ? undefined : 'noopener noreferrer'}
+        >
+          {label}
+        </a>
+      );
+    } else {
+      const rawUrl = match[3] ?? match[4];
+      const isInternal = rawUrl.startsWith('/');
+      elements.push(
+        <a
+          key={`raw-${match.index}`}
+          href={rawUrl}
+          className="chat-message-link"
+          onClick={(e) => {
+            if (isInternal) {
+              e.preventDefault();
+              navigate(rawUrl);
+            }
+          }}
+          target={isInternal ? undefined : '_blank'}
+          rel={isInternal ? undefined : 'noopener noreferrer'}
+        >
+          {rawUrl}
+        </a>
+      );
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    elements.push(text.slice(lastIndex));
+  }
+
+  return elements.length > 0 ? elements : text;
+}
+
 function MessagesPage({
   conversationId,
   conversations,
@@ -1293,6 +1397,7 @@ function MessagesPage({
   notify,
   initialRef,
   initialDraft,
+  initialPostUrl,
 }: {
   conversationId?: string;
   conversations: Conversation[];
@@ -1302,12 +1407,20 @@ function MessagesPage({
   notify: (message: string) => void;
   initialRef?: string;
   initialDraft?: string;
+  initialPostUrl?: string;
 }) {
   const active = conversations.find((conversation) => conversation.id === conversationId) ?? conversations[0];
   const [tradeContext, setTradeContext] = useState<string | null>(() => {
     if (initialRef) return initialRef;
     if (typeof window !== 'undefined') {
       return new URLSearchParams(window.location.search).get('ref');
+    }
+    return null;
+  });
+  const [tradePostUrl, setTradePostUrl] = useState<string | null>(() => {
+    if (initialPostUrl) return initialPostUrl;
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search).get('postUrl');
     }
     return null;
   });
@@ -1325,7 +1438,8 @@ function MessagesPage({
   useEffect(() => {
     if (initialRef) setTradeContext(initialRef);
     if (initialDraft && !text) setText(initialDraft);
-  }, [initialRef, initialDraft]);
+    if (initialPostUrl) setTradePostUrl(initialPostUrl);
+  }, [initialRef, initialDraft, initialPostUrl]);
 
   useEffect(() => {
     if (conversationId && active?.unread) {
@@ -1340,13 +1454,16 @@ function MessagesPage({
     event.preventDefault();
     if (!text.trim() || blocked || !active) return;
     const rawBody = text.trim();
-    const body = tradeContext && !rawBody.includes('[Regarding')
-      ? `[Regarding ${tradeContext}]\n\n${rawBody}`.slice(0, 1000)
+    const body = tradeContext && !rawBody.includes('[Regarding') && !rawBody.includes('regarding your')
+      ? (tradePostUrl
+          ? `[Regarding ${tradeContext}](${tradePostUrl})\n\n${rawBody}`
+          : `[Regarding ${tradeContext}]\n\n${rawBody}`).slice(0, 1000)
       : rawBody.slice(0, 1000);
 
     if (productionMessages) {
       setText('');
       setTradeContext(null);
+      setTradePostUrl(null);
       try {
         await productionMessages.send({ conversationId: active.id, body });
       } catch (reason) {
@@ -1362,6 +1479,7 @@ function MessagesPage({
     setConversations(conversations.map((conversation) => conversation.id === active.id ? { ...conversation, messages: [...conversation.messages, message] } : conversation));
     setText('');
     setTradeContext(null);
+    setTradePostUrl(null);
   };
   if (!active) {
     const emptyTitle = productionMessages?.loading
@@ -1376,7 +1494,7 @@ function MessagesPage({
         : 'After you join a physical store community, open a member profile to start a private conversation.';
     return <div className="page messages-page"><section className="dm-privacy"><Icon name="lock"/><span><strong>Private account inbox</strong><small>Only account-owned conversations are shown. Store staff cannot read private messages.</small></span><Chip tone="positive"><Icon name="shield" size={13}/>Server protected</Chip></section><div className="messages-layout inbox-empty"><aside className="conversation-list panel"><header><div><p className="eyebrow">Inbox</p><h2>Conversations</h2></div><Button variant="ghost" size="icon" aria-label="Start conversation" onClick={() => notify('Join a store community to meet collectors you can message')}><Icon name="plus"/></Button></header><label className="search-field"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search conversations" disabled aria-label="Search conversations"/></label><div className="conversation-list-empty"><Icon name="message" size={20}/><span><strong>{productionMessages?.loading ? 'Loading inbox…' : productionMessages?.error ? 'Inbox needs attention' : 'Your inbox is empty'}</strong><small>{productionMessages?.error ?? 'No demo messages are added to real accounts.'}</small></span></div><footer><Icon name="shield"/><span><strong>Server-enforced access</strong><small>A shared active store membership is required.</small></span></footer></aside><section className="conversation panel conversation-empty"><EmptyState icon={productionMessages?.error ? 'info' : 'message'} title={emptyTitle} detail={emptyDetail} action={productionMessages?.error ? <Button onClick={() => void productionMessages.refresh()} icon="refresh">Try again</Button> : productionMessages?.loading ? undefined : <Button onClick={() => navigate('/stores')} icon="store">Find a store</Button>}/></section></div></div>;
   }
-  return <div className="page messages-page"><section className="dm-privacy"><Icon name="lock"/><span><strong>Participant-only private access</strong><small>Only you and the other participant can access this conversation. Store staff cannot read messages.</small></span><Chip tone="positive"><Icon name="shield" size={13}/>Shared community verified</Chip></section><div className={`messages-layout ${conversationId ? 'conversation-open' : ''}`}><aside className="conversation-list panel"><header><div><p className="eyebrow">Inbox</p><h2>Conversations</h2></div><Button variant="ghost" size="icon" aria-label="Start conversation" onClick={() => notify('Open a community member profile to start a verified conversation')}><Icon name="plus"/></Button></header><label className="search-field"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search conversations" /></label><div>{visible.map((conversation, index) => { const last = conversation.messages.at(-1); return <button key={conversation.id} className={active.id === conversation.id && conversationId ? 'active' : ''} onClick={() => navigate(`/messages/${conversation.id}`)}><span className="avatar-presence"><Avatar initials={conversation.initials} tone={index}/><i className={conversation.online ? 'online' : ''}/></span><span><strong>{conversation.user}<small>{last?.time}</small></strong><em>{conversation.community}</em><p>{last?.own ? 'You: ' : ''}{last?.text}</p></span>{conversation.unread > 0 && <b>{conversation.unread}</b>}</button>; })}</div><footer><Icon name="shield"/><span><strong>Server-enforced access</strong><small>A shared active store membership is required.</small></span></footer></aside><section className="conversation panel"><header><button className="mobile-back" onClick={() => navigate('/messages')} aria-label="Back to conversations"><Icon name="chevron"/></button><span className="avatar-presence"><Avatar initials={active.initials}/><i className={active.online ? 'online' : ''}/></span><div><strong>{active.user}</strong><small>{productionMessages ? 'Activity status private' : active.online ? 'Online now' : 'Last active yesterday'} · via {active.community}</small></div><div className="conversation-actions"><Button variant="ghost" size="icon" aria-label="Report user" onClick={() => notify(`${active.user} reported for review`)}><Icon name="shield"/></Button><Button variant="ghost" size="icon" aria-label="Conversation options" onClick={() => setBlocked((value) => !value)}><Icon name="more"/></Button></div></header><div className="shared-context"><Icon name="users"/><span>You can message because you both belong to <strong>{active.community}</strong>.</span></div>{tradeContext && <div className="trade-context-banner"><div className="trade-context-info"><Icon name="trade" size={16}/><div><small>Referenced trade post</small><strong>{tradeContext}</strong></div></div><button type="button" className="trade-context-dismiss" onClick={() => setTradeContext(null)} title="Dismiss post reference" aria-label="Dismiss post reference"><Icon name="close" size={14}/></button></div>}<div className="dm-messages"><div className="chat-date"><span>Today</span></div>{active.messages.map((message, index) => <div className={`chat-message ${message.own ? 'own' : ''}`} key={message.id}>{!message.own && <Avatar initials={message.initials} size="sm" tone={index}/>}<div><p>{message.text}</p><time>{message.time}{message.own && ' · Delivered'}</time></div></div>)}</div>{blocked ? <div className="blocked-composer"><Icon name="lock"/><span><strong>You blocked {active.user}</strong><small>They cannot message you and this composer is disabled.</small></span><Button variant="secondary" size="sm" onClick={() => setBlocked(false)}>Unblock</Button></div> : <form className="message-composer dm-composer" onSubmit={send}><label><span className="sr-only">Private message</span><textarea value={text} onChange={(event) => setText(event.target.value)} placeholder={`Message ${active.user}…`} rows={1} maxLength={1000}/><small>{text.length}/1000</small></label><Button size="icon" disabled={!text.trim() || productionMessages?.mutating} aria-label="Send private message"><Icon name="send"/></Button></form>}<p className="realtime-note"><span className="live-pulse"/>{productionMessages ? 'Private Supabase inbox · visible only to both participants' : 'Private realtime demo channel connected · visible only to both participants'}</p></section></div></div>;
+  return <div className="page messages-page"><section className="dm-privacy"><Icon name="lock"/><span><strong>Participant-only private access</strong><small>Only you and the other participant can access this conversation. Store staff cannot read messages.</small></span><Chip tone="positive"><Icon name="shield" size={13}/>Shared community verified</Chip></section><div className={`messages-layout ${conversationId ? 'conversation-open' : ''}`}><aside className="conversation-list panel"><header><div><p className="eyebrow">Inbox</p><h2>Conversations</h2></div><Button variant="ghost" size="icon" aria-label="Start conversation" onClick={() => notify('Open a community member profile to start a verified conversation')}><Icon name="plus"/></Button></header><label className="search-field"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search conversations" /></label><div>{visible.map((conversation, index) => { const last = conversation.messages.at(-1); return <button key={conversation.id} className={active.id === conversation.id && conversationId ? 'active' : ''} onClick={() => navigate(`/messages/${conversation.id}`)}><span className="avatar-presence"><Avatar initials={conversation.initials} tone={index}/><i className={conversation.online ? 'online' : ''}/></span><span><strong>{conversation.user}<small>{last?.time}</small></strong><em>{conversation.community}</em><p>{last?.own ? 'You: ' : ''}{last?.text}</p></span>{conversation.unread > 0 && <b>{conversation.unread}</b>}</button>; })}</div><footer><Icon name="shield"/><span><strong>Server-enforced access</strong><small>A shared active store membership is required.</small></span></footer></aside><section className="conversation panel"><header><button className="mobile-back" onClick={() => navigate('/messages')} aria-label="Back to conversations"><Icon name="chevron"/></button><span className="avatar-presence"><Avatar initials={active.initials}/><i className={active.online ? 'online' : ''}/></span><div><strong>{active.user}</strong><small>{productionMessages ? 'Activity status private' : active.online ? 'Online now' : 'Last active yesterday'} · via {active.community}</small></div><div className="conversation-actions"><Button variant="ghost" size="icon" aria-label="Report user" onClick={() => notify(`${active.user} reported for review`)}><Icon name="shield"/></Button><Button variant="ghost" size="icon" aria-label="Conversation options" onClick={() => setBlocked((value) => !value)}><Icon name="more"/></Button></div></header><div className="shared-context"><Icon name="users"/><span>You can message because you both belong to <strong>{active.community}</strong>.</span></div>{tradeContext && <div className="trade-context-banner"><div className="trade-context-info"><Icon name="trade" size={16}/><div><small>Referenced trade post</small><strong>{tradeContext}</strong></div></div><div className="trade-context-actions">{tradePostUrl && <button type="button" className="trade-context-view-btn" onClick={() => navigate(tradePostUrl)}>View post <Icon name="chevron" size={13}/></button>}<button type="button" className="trade-context-dismiss" onClick={() => { setTradeContext(null); setTradePostUrl(null); }} title="Dismiss post reference" aria-label="Dismiss post reference"><Icon name="close" size={14}/></button></div></div>}<div className="dm-messages"><div className="chat-date"><span>Today</span></div>{active.messages.map((message, index) => <div className={`chat-message ${message.own ? 'own' : ''}`} key={message.id}>{!message.own && <Avatar initials={message.initials} size="sm" tone={index}/>}<div><p>{renderChatMessageContent(message.text, navigate)}</p><time>{message.time}{message.own && ' · Delivered'}</time></div></div>)}</div>{blocked ? <div className="blocked-composer"><Icon name="lock"/><span><strong>You blocked {active.user}</strong><small>They cannot message you and this composer is disabled.</small></span><Button variant="secondary" size="sm" onClick={() => setBlocked(false)}>Unblock</Button></div> : <form className="message-composer dm-composer" onSubmit={send}><label><span className="sr-only">Private message</span><textarea value={text} onChange={(event) => setText(event.target.value)} placeholder={`Message ${active.user}…`} rows={1} maxLength={1000}/><small>{text.length}/1000</small></label><Button size="icon" disabled={!text.trim() || productionMessages?.mutating} aria-label="Send private message"><Icon name="send"/></Button></form>}<p className="realtime-note"><span className="live-pulse"/>{productionMessages ? 'Private Supabase inbox · visible only to both participants' : 'Private realtime demo channel connected · visible only to both participants'}</p></section></div></div>;
 }
 
 function StorePortalDenied({ navigate }: { navigate: (path: string) => void }) {

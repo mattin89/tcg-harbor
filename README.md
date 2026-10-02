@@ -179,6 +179,7 @@ The target database is defined by:
 - [`supabase/migrations/20260721131143_collection_owner_archived_catalog_read_v2.sql`](supabase/migrations/20260721131143_collection_owner_archived_catalog_read_v2.sql)
 - [`supabase/migrations/20260721153100_clear_collection_lot_purchase_context_v2.sql`](supabase/migrations/20260721153100_clear_collection_lot_purchase_context_v2.sql)
 - [`supabase/migrations/20260724110922_open_dresden_community_trading_v6.sql`](supabase/migrations/20260724110922_open_dresden_community_trading_v6.sql)
+- [`supabase/migrations/20261002164000_fix_direct_messages_and_community_profiles.sql`](supabase/migrations/20261002164000_fix_direct_messages_and_community_profiles.sql)
 - [`supabase/config.toml`](supabase/config.toml)
 - [`supabase/seed.sql`](supabase/seed.sql)
 - [`supabase/SECURITY.md`](supabase/SECURITY.md)

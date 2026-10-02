@@ -1349,9 +1349,12 @@ function MessagesPage({
       setTradeContext(null);
       try {
         await productionMessages.send({ conversationId: active.id, body });
-      } catch {
+      } catch (reason) {
         setText(rawBody);
-        notify('The private message could not be sent. Check the inbox status and try again.');
+        const detail = reason instanceof Error && reason.message
+          ? reason.message
+          : 'The private message could not be sent. Check the inbox status and try again.';
+        notify(detail);
       }
       return;
     }

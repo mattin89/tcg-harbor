@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   eurosToCentsV6,
+  parseTradeNotesAndNegotiationV6,
   tradeActionLabelV6,
   validateCommunityTradeDraftV6,
 } from '../domain/communityTradingV6';
@@ -68,5 +69,24 @@ describe('community card trading v6', () => {
       exchangeMode: 'open',
       cashAmountEuros: '10',
     })).toThrow(/money option/i);
+  });
+
+  it('encodes firm terms in notes when negotiations are disabled and parses them back cleanly', () => {
+    const validated = validateCommunityTradeDraftV6({
+      ...baseDraft,
+      cashAmountEuros: '15',
+      notes: 'Near mint only, meetup at shop.',
+      allowNegotiation: false,
+    });
+    expect(validated.notes).toContain('[Firm - No negotiations]');
+    expect(validated.notes).toContain('Near mint only, meetup at shop.');
+
+    const parsedFirm = parseTradeNotesAndNegotiationV6(validated.notes);
+    expect(parsedFirm.allowNegotiation).toBe(false);
+    expect(parsedFirm.notes).toBe('Near mint only, meetup at shop.');
+
+    const parsedOpen = parseTradeNotesAndNegotiationV6('Willing to negotiate on condition.');
+    expect(parsedOpen.allowNegotiation).toBe(true);
+    expect(parsedOpen.notes).toBe('Willing to negotiate on condition.');
   });
 });

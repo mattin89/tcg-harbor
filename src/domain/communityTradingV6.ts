@@ -12,6 +12,7 @@ export interface CommunityTradeDraftV6 {
   readonly desiredCondition: 'near_mint' | 'excellent' | 'good' | 'light_played' | 'played';
   readonly cashAmountEuros?: string;
   readonly notes?: string;
+  readonly allowNegotiation?: boolean;
 }
 
 export interface CommunityTradePostV6 {
@@ -19,6 +20,7 @@ export interface CommunityTradePostV6 {
   readonly communityId: string;
   readonly authorId: string;
   readonly authorName: string;
+  readonly authorUsername?: string;
   readonly authorInitials: string;
   readonly postKind: CommunityTradePostKindV6;
   readonly exchangeMode: CommunityTradeExchangeModeV6;
@@ -31,6 +33,7 @@ export interface CommunityTradePostV6 {
   readonly condition: string;
   readonly language: string;
   readonly notes: string;
+  readonly allowNegotiation?: boolean;
   readonly status: CommunityTradeStatusV6;
   readonly createdAt: string;
   readonly own: boolean;
@@ -80,6 +83,21 @@ export function eurosToCentsV6(raw: string | undefined, required: boolean): numb
   return cents;
 }
 
+export const FIRM_TERMS_TAG_V6 = '[Firm - No negotiations]';
+
+export function parseTradeNotesAndNegotiationV6(rawNotes: string | null | undefined): {
+  readonly notes: string;
+  readonly allowNegotiation: boolean;
+} {
+  const text = rawNotes ?? '';
+  const hasFirmTag = text.includes(FIRM_TERMS_TAG_V6);
+  const cleanNotes = text.replace(FIRM_TERMS_TAG_V6, '').trim();
+  return {
+    notes: cleanNotes,
+    allowNegotiation: !hasFirmTag,
+  };
+}
+
 export function validateCommunityTradeDraftV6(draft: CommunityTradeDraftV6): {
   readonly cashAmountCents: number | null;
   readonly notes: string | null;
@@ -107,8 +125,11 @@ export function validateCommunityTradeDraftV6(draft: CommunityTradeDraftV6): {
   if (draft.exchangeMode !== 'money' && draft.cashAmountEuros?.trim()) {
     throw new Error('A euro amount can only be attached to the money option.');
   }
-  const notes = draft.notes?.trim() || null;
+  let notes = draft.notes?.trim() || null;
   if (notes && notes.length > 1_000) throw new Error('Keep the post note to 1,000 characters or fewer.');
+  if (draft.allowNegotiation === false) {
+    notes = notes ? `${notes}\n\n${FIRM_TERMS_TAG_V6}` : FIRM_TERMS_TAG_V6;
+  }
   return { cashAmountCents, notes };
 }
 
@@ -137,6 +158,7 @@ export function tradeActionLabelV6(post: Pick<
 
 export function initialsV6(name: string): string {
   return name
+    .replace(/^@+/, '')
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)

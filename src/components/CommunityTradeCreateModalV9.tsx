@@ -57,6 +57,7 @@ export function CommunityTradeCreateModalV9({
   const [condition, setCondition] = useState<CommunityTradeDraftV6['desiredCondition']>('near_mint');
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
+  const [allowNegotiation, setAllowNegotiation] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -64,6 +65,7 @@ export function CommunityTradeCreateModalV9({
     setPrimaryId('');
     setSpecificId('');
     setQuantity(1);
+    setAllowNegotiation(true);
     setError('');
   }, [open]);
   useEffect(() => {
@@ -107,6 +109,7 @@ export function CommunityTradeCreateModalV9({
         desiredCondition: condition,
         cashAmountEuros: exchangeMode === 'money' ? amount : undefined,
         notes,
+        allowNegotiation,
       }, collectionAssets, catalogAssets);
       onClose();
       notify(postKind === 'offering_card'
@@ -294,6 +297,22 @@ export function CommunityTradeCreateModalV9({
           rows={3}
           placeholder="Condition details, meetup availability, or what you are flexible about…"
         />
+      </label>
+
+      <label className="community-trade-negotiation-toggle-v6">
+        <input
+          type="checkbox"
+          checked={allowNegotiation}
+          onChange={(event) => setAllowNegotiation(event.target.checked)}
+        />
+        <span>
+          <strong>Allow negotiations & counter-offers</strong>
+          <small>
+            {allowNegotiation
+              ? 'Members can submit private counter-offers on this post.'
+              : 'Terms are firm. The negotiation box will be hidden on your post.'}
+          </small>
+        </span>
       </label>
 
       {error && <p className="form-error" role="alert"><Icon name="info"/>{error}</p>}

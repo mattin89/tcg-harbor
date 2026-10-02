@@ -13,6 +13,8 @@ const repository = readFileSync(
   'utf8',
 );
 const app = readFileSync(new URL('../App.tsx', import.meta.url), 'utf8');
+const modal = readFileSync(new URL('../components/AssetDetailModal.tsx', import.meta.url), 'utf8');
+const appOrModal = `${app}\n${modal}`;
 
 describe('archived collection quantity guard', () => {
   it('checks every card catalog ancestor only for positive quantity deltas', () => {
@@ -50,8 +52,8 @@ describe('archived collection quantity guard', () => {
   it('marks archived holdings and disables only the increase control', () => {
     expect(repository).toContain('catalogArchived: holdingCatalogIsArchived(item)');
     expect(repository).toContain('(product.card_set !== null && product.card_set.archived_at !== null)');
-    expect(app).toMatch(/(?:selected|asset)\.catalogArchived \? 'Archived item · decrease or remove only'/);
-    expect(app).toMatch(/disabled=\{(?:productionCollection\?\.mutating \|\| selected|mutating \|\| asset)\.catalogArchived\}/);
-    expect(app).toContain('aria-label="Decrease quantity">−</Button>');
+    expect(appOrModal).toMatch(/(?:selected|asset)\.catalogArchived \? 'Archived item · decrease or remove only'/);
+    expect(appOrModal).toMatch(/disabled=\{(?:productionCollection\?\.mutating \|\| selected|mutating \|\| asset)\.catalogArchived\}/);
+    expect(appOrModal).toContain('aria-label="Decrease quantity">−</Button>');
   });
 });

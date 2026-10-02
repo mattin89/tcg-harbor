@@ -516,6 +516,215 @@
   gap: 9px;
 }
 
+.trade-card-status-cluster {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.community-trade-card-inspect-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.community-trade-card-inspect-btn:hover {
+  background: color-mix(in srgb, var(--surface-raised) 70%, transparent);
+}
+
+.community-trade-card-inspect-btn:focus-visible {
+  outline: 2px solid var(--accent, #3b82f6);
+  outline-offset: 2px;
+}
+
+.inspect-card-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 2px 7px;
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  font-style: normal;
+}
+
+.community-trade-specific-inspect-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 8px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.community-trade-specific-inspect-btn:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-raised);
+}
+
+.inspect-specific-prompt {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.community-trade-negotiation-box {
+  margin: 0 18px 14px;
+  padding: 12px 14px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.negotiation-box-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-strong);
+  font-size: 0.85rem;
+}
+
+.negotiation-box-heading svg {
+  color: #d97706;
+}
+
+.negotiation-box-input-group {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.negotiation-box-input-group input {
+  padding: 7px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-strong);
+  font-size: 0.85rem;
+}
+
+.negotiation-box-hint {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-subtle);
+  font-size: 0.78rem;
+}
+
+.community-trade-negotiation-toggle-v6 {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.community-trade-negotiation-toggle-v6 input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.community-trade-negotiation-toggle-v6 span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.community-trade-negotiation-toggle-v6 strong {
+  font-size: 0.88rem;
+  color: var(--text-strong);
+}
+
+.community-trade-negotiation-toggle-v6 small {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.trade-context-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  background: color-mix(in srgb, #2563eb 10%, var(--surface-raised));
+  border: 1px solid color-mix(in srgb, #2563eb 30%, var(--border));
+  border-radius: 10px;
+}
+
+.trade-context-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.trade-context-info svg {
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+.trade-context-info small {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+.trade-context-info strong {
+  display: block;
+  font-size: 0.88rem;
+  color: var(--text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trade-context-dismiss {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.trade-context-dismiss:hover {
+  background: var(--surface);
+  color: var(--text-strong);
+}
+
 @media (max-width: 760px) {
   .community-v6-intro,
   .community-v6-header,
@@ -541,5 +750,9 @@
   .community-trade-card-v6 > footer {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .negotiation-box-input-group {
+    grid-template-columns: 1fr;
   }
 }

@@ -2,6 +2,7 @@ import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
 import type { DemoAsset } from '../../data/demo';
 import {
   initialsV6,
+  parseTradeNotesAndNegotiationV6,
   validateCommunityTradeDraftV6,
   type CommunityTradeDraftV6,
   type CommunityTradeExchangeModeV6,
@@ -195,13 +196,41 @@ export class SupabaseCommunityTradingRepositoryV6 {
     if (postsResult.error) throw databaseErrorV6('Load community trade posts', postsResult.error);
     if (profilesResult.error) throw databaseErrorV6('Load community member names', profilesResult.error);
 
-    const profiles = new Map(
-      ((profilesResult.data ?? []) as ProfileRowV6[]).map((row) => [
-        `${row.community_id}:${row.user_id}`,
-        row.display_name?.trim() || row.username,
-      ]),
-    );
-    const posts = ((postsResult.data ?? []) as unknown as TradePostRowV6[]).map((row) => {
+    const profileByCommunityAndUserId = new Map<string, { username?: string; displayName?: string | null }>();
+    const profileByUserId = new Map<string, { username?: string; displayName?: string | null }>();
+
+    for (const row of ((profilesResult.data ?? []) as ProfileRowV6[])) {
+      const info = {
+        username: row.username?.trim(),
+        displayName: row.display_name?.trim() || null,
+      };
+      profileByCommunityAndUserId.set(`${row.community_id}:${row.user_id}`, info);
+      if (!profileByUserId.has(row.user_id)) {
+        profileByUserId.set(row.user_id, info);
+      }
+    }
+
+    const tradePostRows = (postsResult.data ?? []) as unknown as TradePostRowV6[];
+    const authorIds = Array.from(new Set(
+      tradePostRows.map((row) => row.author_id).filter(Boolean),
+    ));
+    const missingAuthorIds = authorIds.filter((id) => !profileByUserId.has(id));
+    if (missingAuthorIds.length > 0) {
+      const userProfilesResult = await this.client
+        .from('user_profiles')
+        .select('user_id,username,display_name')
+        .in('user_id', missingAuthorIds);
+      if (!userProfilesResult.error && userProfilesResult.data) {
+        for (const row of userProfilesResult.data as { user_id: string; username?: string; display_name?: string | null }[]) {
+          profileByUserId.set(row.user_id, {
+            username: row.username?.trim(),
+            displayName: row.display_name?.trim() || null,
+          });
+        }
+      }
+    }
+
+    const posts = tradePostRows.map((row) => {
       const offered = rowsV6(row.offered_items)[0];
       const wanted = rowsV6(row.wanted_items)[0];
       const primary = row.post_kind === 'offering_card' ? offered : wanted;
@@ -212,12 +241,17 @@ export class SupabaseCommunityTradingRepositoryV6 {
       if (!primaryAssetId) {
         throw new Error('A community trade post is missing its verified card catalog mapping.');
       }
-      const authorName = profiles.get(`${row.community_id}:${row.author_id}`) ?? 'Collector';
+      const profile = profileByCommunityAndUserId.get(`${row.community_id}:${row.author_id}`)
+        ?? profileByUserId.get(row.author_id);
+      const authorUsername = profile?.username || undefined;
+      const authorName = authorUsername || profile?.displayName || 'Trader';
+      const parsedNotes = parseTradeNotesAndNegotiationV6(row.notes);
       return {
         id: row.id,
         communityId: row.community_id,
         authorId: row.author_id,
         authorName,
+        authorUsername,
         authorInitials: initialsV6(authorName),
         postKind: row.post_kind,
         exchangeMode: row.exchange_mode,
@@ -231,7 +265,8 @@ export class SupabaseCommunityTradingRepositoryV6 {
         quantity: Number(primary?.quantity ?? 1),
         condition: String(primary?.condition ?? primary?.desired_condition ?? 'near_mint'),
         language: String(primary?.language ?? primary?.desired_language ?? ''),
-        notes: row.notes ?? '',
+        notes: parsedNotes.notes,
+        allowNegotiation: parsedNotes.allowNegotiation,
         status: row.status,
         createdAt: row.created_at,
         own: row.author_id === expectedOwnerId,

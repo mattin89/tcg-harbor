@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import type { DemoAsset, Store } from '../data/demo';
+import type { DemoAsset, Market, Store } from '../data/demo';
 import { catalogAssets } from '../data/demo';
+import type { UserCardPriceHistory } from '../domain/cardPriceHistory';
 import {
   availableTradeQuantityV8,
   tradeActionLabelV6,
@@ -11,6 +12,8 @@ import {
   type CommunityTradeStatusV6,
 } from '../domain/communityTradingV6';
 import type { ProductionCommunityTradingRuntimeV6 } from '../services/supabase/useProductionCommunityTradingV6';
+import type { ProductionDirectMessagesRuntimeV2 } from '../services/supabase/useProductionDirectMessagesV2';
+import { AssetDetailModal } from './AssetDetailModal';
 import { CommunityTradeCreateModalV9 } from './CommunityTradeCreateModalV9';
 import { Icon } from './Icon';
 import { Avatar, Button, CardArt, Chip, EmptyState, Modal, Segmented } from './ui';
@@ -22,6 +25,13 @@ interface CommunityBasePropsV6 {
   readonly collectionAssets: readonly DemoAsset[];
   readonly navigate: (path: string) => void;
   readonly notify: (message: string) => void;
+}
+
+export interface ProductionCommunityTradingBoardV6Props extends CommunityBasePropsV6 {
+  readonly communityId: string;
+  readonly market?: Market;
+  readonly priceHistory?: UserCardPriceHistory;
+  readonly directMessagesRuntime?: ProductionDirectMessagesRuntimeV2;
 }
 
 function supportedCardsV6(assets: readonly DemoAsset[]): DemoAsset[] {
@@ -99,9 +109,14 @@ export function ProductionCommunityTradingBoardV6({
   collectionAssets,
   navigate,
   notify,
-}: CommunityBasePropsV6 & { readonly communityId: string }) {
+  market = 'cardmarket',
+  priceHistory,
+  directMessagesRuntime,
+}: ProductionCommunityTradingBoardV6Props) {
   const store = stores.find((candidate) => candidate.communityId === communityId);
   const [createOpen, setCreateOpen] = useState(false);
+  const [inspectAsset, setInspectAsset] = useState<DemoAsset | null>(null);
+  const [contactingPostId, setContactingPostId] = useState<string | null>(null);
   const [status, setStatus] = useState<CommunityTradeStatusV6 | 'active' | 'all'>('active');
   const [query, setQuery] = useState('');
   const historicalPostCount = runtime.posts.filter((post) => (
@@ -142,6 +157,31 @@ export function ProductionCommunityTradingBoardV6({
     }
   };
 
+  const handleContactAuthor = async (post: CommunityTradePostV6, customMessage?: string) => {
+    const authorTag = post.authorUsername ? `@${post.authorUsername}` : post.authorName;
+    const primary = assetForV6(post.primaryAssetId, collectionAssets);
+    const cardTitle = primary ? `${primary.name} (${primary.number ?? primary.variant ?? ''})` : 'Card';
+    const direction = post.postKind === 'offering_card' ? 'Offer' : 'Wanted';
+    const postRef = `${direction}: ${cardTitle} · Post by ${authorTag}`;
+    const defaultDraft = customMessage || `Hi ${authorTag}, regarding your ${direction.toLowerCase()} post for ${cardTitle}:`;
+
+    setContactingPostId(post.id);
+    try {
+      if (directMessagesRuntime) {
+        const conversationId = await directMessagesRuntime.createConversation(post.authorId, communityId);
+        if (conversationId) {
+          navigate(`/messages/${conversationId}?ref=${encodeURIComponent(postRef)}&draft=${encodeURIComponent(defaultDraft)}`);
+          return;
+        }
+      }
+      navigate(`/messages?ref=${encodeURIComponent(postRef)}&draft=${encodeURIComponent(defaultDraft)}`);
+    } catch (reason) {
+      notify(reason instanceof Error ? reason.message : 'Could not open conversation with this member.');
+    } finally {
+      setContactingPostId(null);
+    }
+  };
+
   if (!store) return <div className="page"><EmptyState icon="store" title="Community not found" detail="This community is unavailable or its store is no longer approved." action={<Button onClick={() => navigate('/stores')}>Back to stores</Button>}/></div>;
   if (!runtime.isMember(communityId)) {
     return <div className="page community-v6-locked"><button className="back-link" onClick={() => navigate(`/stores/${store.id}`)}><Icon name="chevron"/>Back to store</button><section className="panel"><span><Icon name={store.communityJoinMode === 'open' ? 'users' : 'lock'} size={34}/></span><p className="eyebrow">{store.communityJoinMode === 'open' ? 'Open test community' : 'Members only'}</p><h2>{store.communityName ?? store.name}</h2><p>{store.communityJoinMode === 'open' ? 'This Dresden test community is open to every signed-in player. Join directly to create real account-scoped trade posts.' : 'Visit the physical store and scan its current QR code to join.'}</p>{store.communityJoinMode === 'open' ? <Button disabled={runtime.mutating} onClick={() => void join()} icon="users">Join without QR</Button> : <Button onClick={() => navigate('/scan')} icon="scan">Open scanner</Button>}</section></div>;
@@ -156,8 +196,27 @@ export function ProductionCommunityTradingBoardV6({
     {runtime.loading ? <EmptyState icon="refresh" title="Loading trade board" detail="Retrieving member-only posts…"/>
       : runtime.error ? <EmptyState icon="info" title="Trade board needs attention" detail={runtime.error} action={<Button onClick={() => void runtime.refresh()} icon="refresh">Try again</Button>}/>
       : posts.length === 0 ? <EmptyState icon="trade" title="No matching posts" detail={status === 'active' && historicalPostCount > 0 ? 'There are no active trades. Completed and closed posts remain available in history.' : 'Create the first offer or wanted-card post for this community.'} action={<Button onClick={() => status === 'active' && historicalPostCount > 0 ? setStatus('all') : setCreateOpen(true)}>{status === 'active' && historicalPostCount > 0 ? 'View history' : 'Create post'}</Button>}/>
-      : <div className="community-trade-grid-v6">{posts.map((post) => <CommunityTradeCardV6 key={post.id} post={post} collectionAssets={collectionAssets} mutating={runtime.mutating} onStatus={updateStatus}/>)}</div>}
+      : <div className="community-trade-grid-v6">{posts.map((post) => (
+          <CommunityTradeCardV6
+            key={post.id}
+            post={post}
+            collectionAssets={collectionAssets}
+            mutating={runtime.mutating}
+            onStatus={updateStatus}
+            onInspectAsset={setInspectAsset}
+            onContactAuthor={handleContactAuthor}
+            isContacting={contactingPostId === post.id}
+          />
+        ))}</div>}
     <CommunityTradeCreateModalV9 open={createOpen} onClose={() => setCreateOpen(false)} communityId={communityId} collectionAssets={collectionAssets} runtime={runtime} notify={notify}/>
+    {inspectAsset && (
+      <AssetDetailModal
+        asset={inspectAsset}
+        onClose={() => setInspectAsset(null)}
+        market={market}
+        priceHistory={priceHistory}
+      />
+    )}
   </div>;
 }
 
@@ -166,17 +225,159 @@ function CommunityTradeCardV6({
   collectionAssets,
   mutating,
   onStatus,
+  onInspectAsset,
+  onContactAuthor,
+  isContacting = false,
 }: {
   readonly post: CommunityTradePostV6;
   readonly collectionAssets: readonly DemoAsset[];
   readonly mutating: boolean;
   readonly onStatus: (postId: string, status: CommunityTradeStatusV6) => Promise<void>;
+  readonly onInspectAsset: (asset: DemoAsset) => void;
+  readonly onContactAuthor: (post: CommunityTradePostV6, customMessage?: string) => Promise<void> | void;
+  readonly isContacting?: boolean;
 }) {
+  const [counterOfferDraft, setCounterOfferDraft] = useState('');
   const primary = assetForV6(post.primaryAssetId, collectionAssets);
   const specific = assetForV6(post.specificAssetId, collectionAssets);
   if (!primary) return null;
   const condition = conditionLabelV6(post.condition);
-  return <article className="panel community-trade-card-v6"><header><Avatar initials={post.authorInitials} size="sm"/><span><strong>{post.authorName}</strong><small>{dateLabelV6(post.createdAt)} · {post.own ? 'Your post' : 'Community member'}</small></span><Chip tone={post.status === 'open' ? 'positive' : post.status === 'discussing' ? 'gold' : 'neutral'}>{conditionLabelV6(post.status)}</Chip></header><div className="community-trade-direction-v6"><p className={`eyebrow ${post.postKind === 'offering_card' ? 'offering' : 'looking'}`}><Icon name={post.postKind === 'offering_card' ? 'arrow-up' : 'search'}/>{post.postKind === 'offering_card' ? 'Offering' : 'Looking for'}</p><div className="community-trade-primary-v6"><CardArt asset={primary} size="md"/><span><strong>{primary.name}</strong><small>{primary.number} · {primary.setCode} · {primary.variant}</small><em>{condition} · {post.language} · Qty {post.quantity}</em></span></div></div><div className="community-trade-terms-v6"><span><Icon name={post.exchangeMode === 'money' ? 'chart' : post.exchangeMode === 'open' ? 'sparkle' : 'trade'}/></span><div><small>{post.postKind === 'offering_card' ? 'Requested in return' : 'Available action'}</small><strong>{tradeActionLabelV6(post)}</strong>{specific && <p><CardArt asset={specific} size="xs"/><span>{specific.name}<small>{specific.number} · {specific.variant}</small></span></p>}</div></div>{post.notes && <p className="community-trade-note-v6">“{post.notes}”</p>}<footer><span><Icon name="map"/>Meet at the approved community location</span>{post.own && post.status !== 'completed' && post.status !== 'closed' && <div><Button variant="ghost" size="sm" disabled={mutating} onClick={() => void onStatus(post.id, 'closed')}>Close</Button><Button variant="secondary" size="sm" disabled={mutating} onClick={() => void onStatus(post.id, 'completed')}>Mark complete</Button></div>}</footer></article>;
+  const authorDisplay = post.authorUsername ? `@${post.authorUsername}` : post.authorName;
+
+  return (
+    <article className="panel community-trade-card-v6">
+      <header>
+        <Avatar initials={post.authorInitials} size="sm" />
+        <span>
+          <strong className="trade-author-name">{authorDisplay}</strong>
+          <small>{dateLabelV6(post.createdAt)} · {post.own ? 'Your post' : 'Community member'}</small>
+        </span>
+        <div className="trade-card-status-cluster">
+          <Chip tone={post.status === 'open' ? 'positive' : post.status === 'discussing' ? 'gold' : 'neutral'}>
+            {conditionLabelV6(post.status)}
+          </Chip>
+          {post.allowNegotiation !== false ? (
+            <Chip tone="blue">Negotiable</Chip>
+          ) : (
+            <Chip tone="neutral">Firm terms</Chip>
+          )}
+        </div>
+      </header>
+
+      <div className="community-trade-direction-v6">
+        <p className={`eyebrow ${post.postKind === 'offering_card' ? 'offering' : 'looking'}`}>
+          <Icon name={post.postKind === 'offering_card' ? 'arrow-up' : 'search'} />
+          {post.postKind === 'offering_card' ? 'Offering' : 'Looking for'}
+        </p>
+        <button
+          type="button"
+          className="community-trade-card-inspect-btn"
+          onClick={() => onInspectAsset(primary)}
+          title="Click to view card profile and live market prices"
+          aria-label={`View card profile for ${primary.name}`}
+        >
+          <div className="community-trade-primary-v6">
+            <CardArt asset={primary} size="md" />
+            <span>
+              <strong>{primary.name}</strong>
+              <small>{primary.number} · {primary.setCode} · {primary.variant}</small>
+              <em>{condition} · {post.language} · Qty {post.quantity}</em>
+              <span className="inspect-card-prompt">
+                <Icon name="search" size={12} />
+                <span>Card profile & prices</span>
+              </span>
+            </span>
+          </div>
+        </button>
+      </div>
+
+      <div className="community-trade-terms-v6">
+        <span>
+          <Icon name={post.exchangeMode === 'money' ? 'chart' : post.exchangeMode === 'open' ? 'sparkle' : 'trade'} />
+        </span>
+        <div>
+          <small>{post.postKind === 'offering_card' ? 'Requested in return' : 'Available action'}</small>
+          <strong>{tradeActionLabelV6(post)}</strong>
+          {specific && (
+            <button
+              type="button"
+              className="community-trade-specific-inspect-btn"
+              onClick={() => onInspectAsset(specific)}
+              title="Click to view card profile and live market prices"
+              aria-label={`View card profile for ${specific.name}`}
+            >
+              <CardArt asset={specific} size="xs" />
+              <span>
+                <strong>{specific.name}</strong>
+                <small>{specific.number} · {specific.variant}</small>
+                <span className="inspect-specific-prompt">Card profile</span>
+              </span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {post.notes && <p className="community-trade-note-v6">“{post.notes}”</p>}
+
+      {post.allowNegotiation !== false && !post.own && (
+        <div className="community-trade-negotiation-box">
+          <div className="negotiation-box-heading">
+            <Icon name="sparkle" size={14} />
+            <span><strong>Propose counter-offer or alternative</strong></span>
+          </div>
+          <div className="negotiation-box-input-group">
+            <input
+              type="text"
+              placeholder="e.g. Can offer €35 or trade with OP05-119 instead…"
+              value={counterOfferDraft}
+              onChange={(event) => setCounterOfferDraft(event.target.value)}
+              maxLength={300}
+              aria-label="Counter-offer proposal"
+            />
+            <Button
+              size="sm"
+              disabled={isContacting || !counterOfferDraft.trim()}
+              onClick={() => {
+                if (!counterOfferDraft.trim()) return;
+                void onContactAuthor(post, counterOfferDraft.trim());
+              }}
+              icon="send"
+            >
+              Propose in private
+            </Button>
+          </div>
+          <small className="negotiation-box-hint">
+            Opens private chat with {authorDisplay} referencing this post.
+          </small>
+        </div>
+      )}
+
+      <footer>
+        <span><Icon name="map" />Meet at the approved community location</span>
+        {post.own && post.status !== 'completed' && post.status !== 'closed' && (
+          <div>
+            <Button variant="ghost" size="sm" disabled={mutating} onClick={() => void onStatus(post.id, 'closed')}>
+              Close
+            </Button>
+            <Button variant="secondary" size="sm" disabled={mutating} onClick={() => void onStatus(post.id, 'completed')}>
+              Mark complete
+            </Button>
+          </div>
+        )}
+        {!post.own && (
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={isContacting}
+            onClick={() => void onContactAuthor(post)}
+            icon="message"
+          >
+            Message {authorDisplay}
+          </Button>
+        )}
+      </footer>
+    </article>
+  );
 }
 
 function CommunityTradeCreateModalV6({

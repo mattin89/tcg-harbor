@@ -100,16 +100,22 @@ describe('legal compliance & EU data protection suite', () => {
     expect(ageSection?.content[1]).toContain('affirmatively confirm that you are at least 16 years of age');
   });
 
-  it('correctly sets Mario De Lorenzo as the operating entity across legal policies', () => {
+  it('correctly sets Mario De Lorenzo and active contact email across legal policies', () => {
     expect(LEGAL_CONFIG.operatorName).toBe('Mario De Lorenzo');
+    expect(LEGAL_CONFIG.supportEmail).toBe('delorenzomario9@gmail.com');
+    expect(LEGAL_CONFIG.legalEmail).toBe('delorenzomario9@gmail.com');
+    expect(LEGAL_CONFIG.privacyEmail).toBe('delorenzomario9@gmail.com');
+
     const privacy = getPrivacyPolicy(LEGAL_CONFIG);
     const impressum = getLegalNotice(LEGAL_CONFIG);
 
     const controllerSection = privacy.sections.find((s) => s.id === 'controller-identity');
     expect(controllerSection?.content.some((c) => c.includes('Mario De Lorenzo'))).toBe(true);
+    expect(controllerSection?.content.some((c) => c.includes('delorenzomario9@gmail.com'))).toBe(true);
 
     const providerSection = impressum.sections.find((s) => s.id === 'provider-info');
     expect(providerSection?.content.some((c) => c.includes('Mario De Lorenzo'))).toBe(true);
+    expect(providerSection?.content.some((c) => c.includes('delorenzomario9@gmail.com'))).toBe(true);
   });
 
   it('verifies client storage registry satisfies EU ePrivacy Directive Art. 5(3)', () => {

@@ -53,9 +53,9 @@ export const LEGAL_CONFIG: LegalConfig = Object.freeze({
   /** Operator & legal entity contact details (German DDG § 5 / MStV § 18) */
   operatorName: 'Mario De Lorenzo',
   operatorAddress: '[Street Address, Postal Code, City, Country]',
-  supportEmail: 'support@tcgharbor.com',
-  legalEmail: 'legal@tcgharbor.com',
-  privacyEmail: 'privacy@tcgharbor.com',
+  supportEmail: 'delorenzomario9@gmail.com',
+  legalEmail: 'delorenzomario9@gmail.com',
+  privacyEmail: 'delorenzomario9@gmail.com',
 
   /** Regulatory parameters */
   minimumAge: 16,

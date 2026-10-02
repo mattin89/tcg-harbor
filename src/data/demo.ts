@@ -7,6 +7,7 @@ import {
   applyDonMappings,
   donCounts,
 } from './catalogDonMappings';
+import type { CardLoanSummary } from '../domain/communityTradingV6';
 
 export type Market = 'cardmarket' | 'tcgplayer';
 export type Currency = 'EUR' | 'USD';
@@ -385,6 +386,7 @@ export interface DemoAsset {
   acquisitionLots?: AcquisitionLot[];
   isApproved?: boolean;
   approvedAt?: string;
+  loan?: CardLoanSummary;
 }
 
 export interface Store {

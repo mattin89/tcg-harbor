@@ -102,19 +102,21 @@ export function CommunityTradeCreateModalV9({
       await runtime.create({
         communityId,
         postKind,
-        exchangeMode,
+        exchangeMode: postKind === 'borrow_card' ? 'open' : exchangeMode,
         primaryAssetId: primaryId,
-        specificAssetId: exchangeMode === 'specific_card' ? specificId : undefined,
+        specificAssetId: exchangeMode === 'specific_card' && postKind !== 'borrow_card' ? specificId : undefined,
         quantity,
         desiredCondition: condition,
-        cashAmountEuros: exchangeMode === 'money' ? amount : undefined,
+        cashAmountEuros: exchangeMode === 'money' && postKind !== 'borrow_card' ? amount : undefined,
         notes,
-        allowNegotiation,
+        allowNegotiation: postKind === 'borrow_card' ? false : allowNegotiation,
       }, collectionAssets, catalogAssets);
       onClose();
       notify(postKind === 'offering_card'
         ? 'Card offer published.'
-        : 'Wanted-card post published.');
+        : postKind === 'borrow_card'
+          ? 'Card borrow request published.'
+          : 'Wanted-card post published.');
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'The post could not be created.');
     }
@@ -135,12 +137,13 @@ export function CommunityTradeCreateModalV9({
         options={[
           { value: 'offering_card', label: 'I am offering a card', icon: 'arrow-up' },
           { value: 'seeking_card', label: 'I am looking for a card', icon: 'search' },
+          { value: 'borrow_card', label: 'I want to borrow a card', icon: 'refresh' },
         ]}
       />
 
       <section className="community-trade-form-section-v6">
-        <p className={`eyebrow ${postKind === 'offering_card' ? 'offering' : 'looking'}`}>
-          {postKind === 'offering_card' ? 'Card from your collection' : 'Card you want'}
+        <p className={`eyebrow ${postKind === 'offering_card' ? 'offering' : postKind === 'borrow_card' ? 'borrowing' : 'looking'}`}>
+          {postKind === 'offering_card' ? 'Card from your collection' : postKind === 'borrow_card' ? 'Card you want to borrow' : 'Card you want'}
         </p>
         {postKind === 'offering_card' && availableOwnedCards.length === 0
           ? <div className="community-trade-empty-v6">
@@ -162,7 +165,9 @@ export function CommunityTradeCreateModalV9({
               onChange={setPrimaryId}
               label={postKind === 'offering_card'
                 ? 'Search your available collection cards'
-                : 'Search any card in the complete catalog'}
+                : postKind === 'borrow_card'
+                  ? 'Search any card to borrow'
+                  : 'Search any card in the complete catalog'}
               placeholder={postKind === 'offering_card'
                 ? 'Type a card name, number, set, or art'
                 : 'Try “Nami”, “OP01-016”, or “alternate art”'}
@@ -208,85 +213,99 @@ export function CommunityTradeCreateModalV9({
           </>}
       </section>
 
-      <fieldset className="community-trade-modes-v6">
-        <legend>{postKind === 'offering_card'
-          ? 'What do you want in return?'
-          : 'How do you want to get it?'}</legend>
-        {([
-          ['money', postKind === 'offering_card' ? 'Ask for money' : 'Buy it', 'chart'],
-          ['any_card', postKind === 'offering_card' ? 'Any card' : 'Trade with any card', 'cards'],
-          ['specific_card', postKind === 'offering_card' ? 'A specific card' : 'Trade a specific card', 'trade'],
-          ['open', 'Open to any action', 'sparkle'],
-        ] as const).map(([value, label, icon]) => <label
-          className={exchangeMode === value ? 'active' : ''}
-          key={value}
-        >
-          <input
-            type="radio"
-            name="exchange-mode"
-            value={value}
-            checked={exchangeMode === value}
-            onChange={() => setExchangeMode(value)}
-          />
-          <span><Icon name={icon}/><strong>{label}</strong></span>
-        </label>)}
-      </fieldset>
-
-      {exchangeMode === 'money' && <section className="community-money-v6">
-        <label>
-          {postKind === 'offering_card'
-            ? 'Asking price in EUR'
-            : 'Maximum budget in EUR (optional)'}
-          <span className="community-euro-input-v6">
-            <b>€</b>
-            <input
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-              inputMode="decimal"
-              placeholder={postKind === 'offering_card' ? '0.00' : 'Optional'}
-              required={postKind === 'offering_card'}
-              aria-describedby="community-money-help-v9"
-            />
-          </span>
-        </label>
-        <p id="community-money-help-v9">
-          <Icon name="info"/>
-          {postKind === 'offering_card'
-            ? '€0 means you are giving the card away for free.'
-            : 'Leave the budget empty to say only that you are looking to buy.'}
-          {' '}The market references above are context only; TCG Harbor does not process payment.
-        </p>
-      </section>}
-
-      {exchangeMode === 'specific_card' && <section className="community-trade-form-section-v6">
-        <p className="eyebrow">{postKind === 'offering_card'
-          ? 'Specific card wanted in return'
-          : 'Specific owned card offered in return'}</p>
-        {postKind === 'seeking_card' && availableOwnedCards.length === 0
-          ? <div className="community-trade-empty-v6">
-            <Icon name="collection"/>
-            <span>
-              <strong>No unreserved owned card is available</strong>
-              <small>Choose “Trade with any card” or another action, add a card, or close an active trade.</small>
-            </span>
+      {postKind === 'borrow_card' ? (
+        <section className="community-borrow-banner">
+          <div className="community-borrow-info">
+            <Icon name="sparkle" />
+            <div>
+              <strong>Borrow request terms</strong>
+              <p>Other community members who own this card can volunteer to lend it to you. You choose one person who replies to close the post and start the loan.</p>
+            </div>
           </div>
-          : <CommunityCardSearchPickerV9
-            key={`specific-${postKind}-${primaryIdentity ?? 'none'}`}
-            assets={specificSource}
-            value={specificId}
-            onChange={setSpecificId}
-            label={postKind === 'offering_card'
-              ? 'Search the exact card wanted'
-              : 'Search your collection for the exact return card'}
-            placeholder="Type a card name, number, set, or art"
-            helper={postKind === 'offering_card'
-              ? 'The wanted side can be any sourced non-German card printing in the catalog.'
-              : 'A promised return card must be owned by this account and not reserved elsewhere.'}
-            owned={postKind === 'seeking_card'}
-            availableQuantity={postKind === 'seeking_card' ? availableForTrade : undefined}
-            required
-          />}
-      </section>}
+        </section>
+      ) : (
+        <>
+          <fieldset className="community-trade-modes-v6">
+            <legend>{postKind === 'offering_card'
+              ? 'What do you want in return?'
+              : 'How do you want to get it?'}</legend>
+            {([
+              ['money', postKind === 'offering_card' ? 'Ask for money' : 'Buy it', 'chart'],
+              ['any_card', postKind === 'offering_card' ? 'Any card' : 'Trade with any card', 'cards'],
+              ['specific_card', postKind === 'offering_card' ? 'A specific card' : 'Trade a specific card', 'trade'],
+              ['open', 'Open to any action', 'sparkle'],
+            ] as const).map(([value, label, icon]) => <label
+              className={exchangeMode === value ? 'active' : ''}
+              key={value}
+            >
+              <input
+                type="radio"
+                name="exchange-mode"
+                value={value}
+                checked={exchangeMode === value}
+                onChange={() => setExchangeMode(value)}
+              />
+              <span><Icon name={icon}/><strong>{label}</strong></span>
+            </label>)}
+          </fieldset>
+
+          {exchangeMode === 'money' && <section className="community-money-v6">
+            <label>
+              {postKind === 'offering_card'
+                ? 'Asking price in EUR'
+                : 'Maximum budget in EUR (optional)'}
+              <span className="community-euro-input-v6">
+                <b>€</b>
+                <input
+                  value={amount}
+                  onChange={(event) => setAmount(event.target.value)}
+                  inputMode="decimal"
+                  placeholder={postKind === 'offering_card' ? '0.00' : 'Optional'}
+                  required={postKind === 'offering_card'}
+                  aria-describedby="community-money-help-v9"
+                />
+              </span>
+            </label>
+            <p id="community-money-help-v9">
+              <Icon name="info"/>
+              {postKind === 'offering_card'
+                ? '€0 means you are giving the card away for free.'
+                : 'Leave the budget empty to say only that you are looking to buy.'}
+              {' '}The market references above are context only; TCG Harbor does not process payment.
+            </p>
+          </section>}
+
+          {exchangeMode === 'specific_card' && <section className="community-trade-form-section-v6">
+            <p className="eyebrow">{postKind === 'offering_card'
+              ? 'Specific card wanted in return'
+              : 'Specific owned card offered in return'}</p>
+            {postKind === 'seeking_card' && availableOwnedCards.length === 0
+              ? <div className="community-trade-empty-v6">
+                <Icon name="collection"/>
+                <span>
+                  <strong>No unreserved owned card is available</strong>
+                  <small>Choose “Trade with any card” or another action, add a card, or close an active trade.</small>
+                </span>
+              </div>
+              : <CommunityCardSearchPickerV9
+                key={`specific-${postKind}-${primaryIdentity ?? 'none'}`}
+                assets={specificSource}
+                value={specificId}
+                onChange={setSpecificId}
+                label={postKind === 'offering_card'
+                  ? 'Search the exact card wanted'
+                  : 'Search your collection for the exact return card'}
+                placeholder="Type a card name, number, set, or art"
+                helper={postKind === 'offering_card'
+                  ? 'The wanted side can be any sourced non-German card printing in the catalog.'
+                  : 'A promised return card must be owned by this account and not reserved elsewhere.'}
+                owned={postKind === 'seeking_card'}
+                availableQuantity={postKind === 'seeking_card' ? availableForTrade : undefined}
+                required
+              />}
+          </section>}
+        </>
+      )}
 
       <label className="community-trade-notes-v6">
         Community note <small>{notes.length}/1000</small>
@@ -299,7 +318,7 @@ export function CommunityTradeCreateModalV9({
         />
       </label>
 
-      <label className="community-trade-negotiation-toggle-v6">
+      {postKind !== 'borrow_card' && <label className="community-trade-negotiation-toggle-v6">
         <input
           type="checkbox"
           checked={allowNegotiation}
@@ -313,7 +332,7 @@ export function CommunityTradeCreateModalV9({
               : 'Terms are firm. The negotiation box will be hidden on your post.'}
           </small>
         </span>
-      </label>
+      </label>}
 
       {error && <p className="form-error" role="alert"><Icon name="info"/>{error}</p>}
       <footer>

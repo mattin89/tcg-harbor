@@ -4,12 +4,14 @@ import { catalogAssets } from '../data/demo';
 import type { UserCardPriceHistory } from '../domain/cardPriceHistory';
 import {
   availableTradeQuantityV8,
+  initialsV6,
   tradeActionLabelV6,
   type CommunityTradeDraftV6,
   type CommunityTradeExchangeModeV6,
   type CommunityTradePostKindV6,
   type CommunityTradePostV6,
   type CommunityTradeStatusV6,
+  type LendingOfferSummary,
 } from '../domain/communityTradingV6';
 import type { ProductionCommunityTradingRuntimeV6 } from '../services/supabase/useProductionCommunityTradingV6';
 import type { ProductionDirectMessagesRuntimeV2 } from '../services/supabase/useProductionDirectMessagesV2';
@@ -234,6 +236,30 @@ export function ProductionCommunityTradingBoardV6({
     }
   };
 
+  const handleOfferToLend = async (post: CommunityTradePostV6) => {
+    try {
+      const primary = assetForV6(post.primaryAssetId, collectionAssets);
+      const ownedMatch = collectionAssets.find((a) => (
+        a.kind === 'card' && !a.loan && (a.id === post.primaryAssetId || (primary && a.name === primary.name && a.setCode === primary.setCode && a.number === primary.number))
+      ));
+      await runtime.offerToLend(post.id, ownedMatch?.collectionItemId);
+      notify('Your offer to lend this card has been sent to the player.');
+    } catch (reason) {
+      notify(reason instanceof Error ? reason.message : 'Could not submit lending offer.');
+    }
+  };
+
+  const handleAcceptLoan = async (post: CommunityTradePostV6, offer: LendingOfferSummary) => {
+    try {
+      const primary = assetForV6(post.primaryAssetId, collectionAssets);
+      const value = primary?.quote.cardmarket ?? primary?.pricing?.cardmarket?.trend ?? 0;
+      await runtime.acceptLendingOffer(offer.id, post.id, value);
+      notify(`Loan confirmed with @${offer.lenderUsername ?? offer.lenderName}! Card added to your Borrowed collection.`);
+    } catch (reason) {
+      notify(reason instanceof Error ? reason.message : 'Could not accept loan.');
+    }
+  };
+
   if (!store) return <div className="page"><EmptyState icon="store" title="Community not found" detail="This community is unavailable or its store is no longer approved." action={<Button onClick={() => navigate('/stores')}>Back to stores</Button>}/></div>;
   if (!runtime.isMember(communityId)) {
     return <div className="page community-v6-locked"><button className="back-link" onClick={() => navigate(`/stores/${store.id}`)}><Icon name="chevron"/>Back to store</button><section className="panel"><span><Icon name={store.communityJoinMode === 'open' ? 'users' : 'lock'} size={34}/></span><p className="eyebrow">{store.communityJoinMode === 'open' ? 'Open test community' : 'Members only'}</p><h2>{store.communityName ?? store.name}</h2><p>{store.communityJoinMode === 'open' ? 'This Dresden test community is open to every signed-in player. Join directly to create real account-scoped trade posts.' : 'Visit the physical store and scan its current QR code to join.'}</p>{store.communityJoinMode === 'open' ? <Button disabled={runtime.mutating} onClick={() => void join()} icon="users">Join without QR</Button> : <Button onClick={() => navigate('/scan')} icon="scan">Open scanner</Button>}</section></div>;
@@ -257,6 +283,8 @@ export function ProductionCommunityTradingBoardV6({
             onStatus={updateStatus}
             onInspectAsset={setInspectAsset}
             onContactAuthor={handleContactAuthor}
+            onOfferToLend={handleOfferToLend}
+            onAcceptLoan={handleAcceptLoan}
             isContacting={contactingPostId === post.id}
             isHighlighted={highlightedPostId === post.id}
           />
@@ -280,6 +308,8 @@ function CommunityTradeCardV6({
   onStatus,
   onInspectAsset,
   onContactAuthor,
+  onOfferToLend,
+  onAcceptLoan,
   isContacting = false,
   isHighlighted = false,
 }: {
@@ -289,6 +319,8 @@ function CommunityTradeCardV6({
   readonly onStatus: (postId: string, status: CommunityTradeStatusV6) => Promise<void>;
   readonly onInspectAsset: (asset: DemoAsset) => void;
   readonly onContactAuthor: (post: CommunityTradePostV6, customMessage?: string) => Promise<void> | void;
+  readonly onOfferToLend?: (post: CommunityTradePostV6) => Promise<void> | void;
+  readonly onAcceptLoan?: (post: CommunityTradePostV6, offer: LendingOfferSummary) => Promise<void> | void;
   readonly isContacting?: boolean;
   readonly isHighlighted?: boolean;
 }) {
@@ -323,9 +355,9 @@ function CommunityTradeCardV6({
       </header>
 
       <div className="community-trade-direction-v6">
-        <p className={`eyebrow ${post.postKind === 'offering_card' ? 'offering' : 'looking'}`}>
-          <Icon name={post.postKind === 'offering_card' ? 'arrow-up' : 'search'} />
-          {post.postKind === 'offering_card' ? 'Offering' : 'Looking for'}
+        <p className={`eyebrow ${post.postKind === 'offering_card' ? 'offering' : post.postKind === 'borrow_card' ? 'borrowing' : 'looking'}`}>
+          <Icon name={post.postKind === 'offering_card' ? 'arrow-up' : post.postKind === 'borrow_card' ? 'refresh' : 'search'} />
+          {post.postKind === 'offering_card' ? 'Offering' : post.postKind === 'borrow_card' ? 'Borrow request' : 'Looking for'}
         </p>
         <button
           type="button"
@@ -351,11 +383,14 @@ function CommunityTradeCardV6({
 
       <div className="community-trade-terms-v6">
         <span>
-          <Icon name={post.exchangeMode === 'money' ? 'chart' : post.exchangeMode === 'open' ? 'sparkle' : 'trade'} />
+          <Icon name={post.postKind === 'borrow_card' ? 'refresh' : post.exchangeMode === 'money' ? 'chart' : post.exchangeMode === 'open' ? 'sparkle' : 'trade'} />
         </span>
         <div>
-          <small>{post.postKind === 'offering_card' ? 'Requested in return' : 'Available action'}</small>
+          <small>{post.postKind === 'offering_card' ? 'Requested in return' : post.postKind === 'borrow_card' ? 'Borrowing terms' : 'Available action'}</small>
           <strong>{tradeActionLabelV6(post)}</strong>
+          {post.postKind === 'borrow_card' && (
+            <small className="borrow-note-hint">Open to offers from any member who owns this card.</small>
+          )}
           {specific && (
             <button
               type="button"
@@ -377,7 +412,49 @@ function CommunityTradeCardV6({
 
       {post.notes && <p className="community-trade-note-v6">“{post.notes}”</p>}
 
-      {post.allowNegotiation !== false && !post.own && (
+      {post.postKind === 'borrow_card' && (
+        <div className="community-lending-offers-panel">
+          <header className="lending-offers-header">
+            <Icon name="refresh" size={14} />
+            <span><strong>Offers to lend ({post.lendingOffers?.length ?? 0})</strong></span>
+          </header>
+          {(!post.lendingOffers || post.lendingOffers.length === 0) ? (
+            <p className="no-offers-note">
+              <Icon name="info" size={13} />
+              Waiting for community members to volunteer. The post stays open until you select a lender.
+            </p>
+          ) : (
+            <ul className="lending-offers-list">
+              {post.lendingOffers.map((offer) => (
+                <li key={offer.id} className="lending-offer-item">
+                  <div className="lending-offer-info">
+                    <Avatar initials={initialsV6(offer.lenderUsername ?? offer.lenderName)} size="sm" />
+                    <span>
+                      <strong>@{offer.lenderUsername ?? offer.lenderName}</strong>
+                      <small>Offered {dateLabelV6(offer.createdAt)}</small>
+                    </span>
+                  </div>
+                  {post.own && post.status === 'open' && (
+                    <Button
+                      size="sm"
+                      disabled={mutating}
+                      onClick={() => void onAcceptLoan?.(post, offer)}
+                      icon="check"
+                    >
+                      Accept loan
+                    </Button>
+                  )}
+                  {offer.status === 'accepted' && (
+                    <Chip tone="positive">Loan accepted</Chip>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {post.allowNegotiation !== false && !post.own && post.postKind !== 'borrow_card' && (
         <div className="community-trade-negotiation-box">
           <div className="negotiation-box-heading">
             <Icon name="sparkle" size={14} />
@@ -421,6 +498,21 @@ function CommunityTradeCardV6({
               Mark complete
             </Button>
           </div>
+        )}
+        {!post.own && post.postKind === 'borrow_card' && post.status === 'open' && (
+          post.lendingOffers?.some((o) => o.lenderUsername === 'you' || o.lenderName === 'You') ? (
+            <Chip tone="positive"><Icon name="check" size={13} /> You offered to lend</Chip>
+          ) : (
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={mutating}
+              onClick={() => void onOfferToLend?.(post)}
+              icon="cards"
+            >
+              I can lend this card
+            </Button>
+          )
         )}
         {!post.own && (
           <Button

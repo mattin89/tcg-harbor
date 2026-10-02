@@ -54,6 +54,16 @@ import {
   useProductionCommunityTradingV6,
   type ProductionCommunityTradingRuntimeV6,
 } from './services/supabase/useProductionCommunityTradingV6';
+import {
+  confirmLoanReturn,
+  createBorrowedAsset,
+  filterAssetsByTab,
+  loadLocalLoans,
+  markAssetAsLent,
+  restoreReturnedAsset,
+  saveLocalLoans,
+} from './domain/cardLoansManager';
+import type { CardLoanSummary } from './domain/communityTradingV6';
 import { LegalPortalPage } from './components/legal/LegalPortalPage';
 import { LEGAL_CONFIG } from './config/legalConfig';
 import {
@@ -468,7 +478,7 @@ export default function App({ identity, guest }: AppProps = {}) {
     : path.startsWith('/collection/add')
     ? <AddItemsPage key={`add-items:${identity?.userId ?? 'demo'}`} assets={assets} setAssets={setDemoAssets} productionCollection={identity ? productionCollection : undefined} onCollectionMutationCommitted={identity ? productionActivity.refresh : undefined} market={market} navigate={navigate} notify={notify} priceHistory={cardPriceHistory} />
     : path === '/collection'
-      ? <CollectionPage key={`collection:${identity?.userId ?? 'demo'}`} assets={assets} setAssets={setDemoAssets} productionCollection={identity ? productionCollection : undefined} onCollectionMutationCommitted={identity ? productionActivity.refresh : undefined} market={market} navigate={navigate} notify={notify} priceHistory={cardPriceHistory} />
+      ? <CollectionPage key={`collection:${identity?.userId ?? 'demo'}`} assets={assets} setAssets={setDemoAssets} productionCollection={identity ? productionCollection : undefined} onCollectionMutationCommitted={identity ? productionActivity.refresh : undefined} market={market} navigate={navigate} notify={notify} priceHistory={cardPriceHistory} productionTrading={productionCommunityTrading} currentUserId={identity?.userId} />
       : path === '/market-comparison'
         ? <MarketComparisonPage />
       : path === '/stores'
@@ -717,8 +727,32 @@ function HoldingRank({ title, icon, assets, market, onSelect, priceHistory }: { 
   })}</div></article>;
 }
 
-function CollectionPage({ assets, setAssets, productionCollection, onCollectionMutationCommitted, market, navigate, notify, priceHistory }: { assets: DemoAsset[]; setAssets: (assets: DemoAsset[]) => void; productionCollection?: ProductionCollectionRuntimeV2; onCollectionMutationCommitted?: () => void | Promise<void>; market: Market; navigate: (path: string) => void; notify: (message: string) => void; priceHistory?: UserCardPriceHistory }) {
-  const [tab, setTab] = useState<AssetKind>('card');
+type CollectionTab = 'card' | 'sealed' | 'lent' | 'borrowed';
+
+function CollectionPage({
+  assets,
+  setAssets,
+  productionCollection,
+  onCollectionMutationCommitted,
+  market,
+  navigate,
+  notify,
+  priceHistory,
+  productionTrading,
+  currentUserId,
+}: {
+  assets: DemoAsset[];
+  setAssets: (assets: DemoAsset[]) => void;
+  productionCollection?: ProductionCollectionRuntimeV2;
+  onCollectionMutationCommitted?: () => void | Promise<void>;
+  market: Market;
+  navigate: (path: string) => void;
+  notify: (message: string) => void;
+  priceHistory?: UserCardPriceHistory;
+  productionTrading?: ProductionCommunityTradingRuntimeV6;
+  currentUserId?: string;
+}) {
+  const [tab, setTab] = useState<CollectionTab>('card');
   const [view, setView] = useState<ViewMode>('grid');
   const [query, setQuery] = useState('');
   const [setFilter, setSetFilter] = useState('all');
@@ -728,6 +762,86 @@ function CollectionPage({ assets, setAssets, productionCollection, onCollectionM
   const [noteDraft, setNoteDraft] = useState('');
   const [removeTarget, setRemoveTarget] = useState<DemoAsset | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [localLoansTick, setLocalLoansTick] = useState(0);
+
+  const allLoans = useMemo(() => {
+    if (productionTrading?.loans && productionTrading.loans.length > 0) {
+      return productionTrading.loans;
+    }
+    return loadLocalLoans();
+  }, [productionTrading?.loans, localLoansTick]);
+
+  const effectiveAssets = useMemo(() => {
+    const activeLoans = allLoans.filter((l) => l.status === 'active');
+
+    const lentItemIds = new Map<string, CardLoanSummary>();
+    const lentVariantIds = new Map<string, CardLoanSummary>();
+
+    for (const loan of activeLoans) {
+      const isLender = currentUserId
+        ? loan.lenderId === currentUserId
+        : loan.role === 'lender' || loan.lenderId === 'demo-user';
+      if (isLender) {
+        if (loan.sourceCollectionItemId) {
+          lentItemIds.set(loan.sourceCollectionItemId, loan);
+        }
+        if (loan.cardVariantId) {
+          lentVariantIds.set(loan.cardVariantId, loan);
+        }
+      }
+    }
+
+    const mappedOwned: DemoAsset[] = assets.map((asset) => {
+      const loan = (asset.collectionItemId && lentItemIds.get(asset.collectionItemId))
+        || lentVariantIds.get(asset.id)
+        || (asset.loan?.status === 'active' && (asset.loan.role === 'lender' || (currentUserId && asset.loan.lenderId === currentUserId)) ? asset.loan : undefined);
+
+      if (loan) {
+        return markAssetAsLent(asset, loan);
+      }
+      if (asset.loan && asset.loan.status === 'returned') {
+        return restoreReturnedAsset(asset);
+      }
+      return asset;
+    });
+
+    const borrowedAssets: DemoAsset[] = [];
+    for (const loan of activeLoans) {
+      const isBorrower = currentUserId
+        ? loan.borrowerId === currentUserId
+        : loan.role === 'borrower' || loan.borrowerId === 'demo-user' || loan.borrowerId === 'user-me';
+      if (isBorrower) {
+        const catalogCard = catalogAssets.find((c) => c.id === loan.cardVariantId)
+          ?? assets.find((a) => a.id === loan.cardVariantId)
+          ?? {
+            id: loan.cardVariantId || 'borrowed-fallback',
+            name: 'Borrowed Card',
+            set: 'One Piece Card Game',
+            setCode: 'OP',
+            number: '',
+            rarity: 'Card',
+            variant: 'Standard',
+            kind: 'card' as const,
+            condition: 'Near Mint',
+            language: 'EN',
+            quantity: 1,
+            color: 'red',
+            addedAt: loan.lentAt,
+            quote: { cardmarket: loan.lentValueAmount, tcgplayer: loan.lentValueAmount },
+            change: { cardmarket: { '1D': 0, '1W': 0, '1M': 0 }, tcgplayer: { '1D': 0, '1W': 0, '1M': 0 } },
+          };
+        borrowedAssets.push(createBorrowedAsset(catalogCard, loan));
+      }
+    }
+
+    return [...mappedOwned, ...borrowedAssets];
+  }, [assets, allLoans, currentUserId]);
+
+  const cardsCount = filterAssetsByTab(effectiveAssets, 'card').length;
+  const sealedCount = filterAssetsByTab(effectiveAssets, 'sealed').length;
+  const lentCount = filterAssetsByTab(effectiveAssets, 'lent').length;
+  const borrowedCount = filterAssetsByTab(effectiveAssets, 'borrowed').length;
+
   const openAsset = (asset: DemoAsset) => {
     setSelected(asset);
     setNoteDraft(asset.note ?? '');
@@ -736,7 +850,9 @@ function CollectionPage({ assets, setAssets, productionCollection, onCollectionM
     const p = extractAssetAveragePrice(asset, market, priceHistory);
     return p > 0 ? p : asset.quote[market];
   };
-  const visible = assets.filter((asset) => asset.kind === tab)
+
+  const tabAssets = filterAssetsByTab(effectiveAssets, tab);
+  const visible = tabAssets
     .filter((asset) => !query || `${asset.name} ${asset.number} ${asset.set} ${asset.setCode}`.toLowerCase().includes(query.toLowerCase()))
     .filter((asset) => setFilter === 'all' || asset.setCode === setFilter)
     .filter((asset) => rarity === 'all' || asset.rarity === rarity)
@@ -745,16 +861,20 @@ function CollectionPage({ assets, setAssets, productionCollection, onCollectionM
       : sort === 'gain' ? (b.change[market]['1M'] ?? -999) - (a.change[market]['1M'] ?? -999)
       : sort === 'loss' ? (a.change[market]['1M'] ?? 999) - (b.change[market]['1M'] ?? 999)
       : sort === 'quantity' ? b.quantity - a.quantity : a.name.localeCompare(b.name));
-  const uniqueSets = [...new Set(assets.filter((a) => a.kind === tab).map((a) => a.setCode))];
-  const rarities = [...new Set(assets.filter((a) => a.kind === tab).map((a) => a.rarity))];
-  const collectionValuation = summarizePortfolioGrowth(assets, market, priceHistory);
+
+  const uniqueSets = [...new Set(tabAssets.map((a) => a.setCode))];
+  const rarities = [...new Set(tabAssets.map((a) => a.rarity))];
+  const ownedAssets = effectiveAssets.filter((a) => a.loan?.role !== 'borrower');
+  const collectionValuation = summarizePortfolioGrowth(ownedAssets, market, priceHistory);
   const marketRegion = market === 'cardmarket' ? 'EU' : 'US';
   const collectionValueLabel = collectionValuation.totalQuantity === 0
     ? 'No holdings yet'
     : collectionValuation.currentComplete
       ? `Current ${marketRegion} reference · all ${collectionValuation.totalQuantity} copies priced`
       : `Known current ${marketRegion} reference · ${collectionValuation.currentPricedQuantity} of ${collectionValuation.totalQuantity} copies priced`;
+
   const updateQty = async (asset: DemoAsset, delta: number) => {
+    if (asset.loan) return;
     const next = Math.max(1, asset.quantity + delta);
     const actualDelta = next - asset.quantity;
     if (actualDelta === 0) return;
@@ -794,8 +914,9 @@ function CollectionPage({ assets, setAssets, productionCollection, onCollectionM
     setSelected(updated);
     notify(actualDelta > 0 ? `Quantity updated to ${next} · current value captured` : `Quantity updated to ${next}`);
   };
+
   const confirmRemoval = async () => {
-    if (!removeTarget) return;
+    if (!removeTarget || removeTarget.loan) return;
     if (productionCollection) {
       try {
         const stillActive = await productionCollection.remove(removeTarget);
@@ -812,6 +933,7 @@ function CollectionPage({ assets, setAssets, productionCollection, onCollectionM
     setRemoveTarget(null);
     notify('Item removed from your collection');
   };
+
   const saveChanges = async () => {
     if (!selected) return;
     const privateNote = noteDraft.trim() || undefined;
@@ -832,14 +954,81 @@ function CollectionPage({ assets, setAssets, productionCollection, onCollectionM
     setSelected(updated);
     notify('Item details saved');
   };
+
+  const handleConfirmReturn = async (loanId: string) => {
+    try {
+      let outcome: 'partially_returned' | 'fully_returned' = 'partially_returned';
+      if (productionTrading) {
+        outcome = await productionTrading.confirmCardReturn(loanId);
+        await productionTrading.refresh();
+        await onCollectionMutationCommitted?.();
+      } else {
+        const local = loadLocalLoans();
+        const next = local.map((loan) => {
+          if (loan.id !== loanId) return loan;
+          const res = confirmLoanReturn(loan, currentUserId ?? 'demo-user');
+          if (res.isFullyReturned) outcome = 'fully_returned';
+          return res.updatedLoan;
+        });
+        saveLocalLoans(next);
+        setLocalLoansTick((prev) => prev + 1);
+      }
+      if (outcome === 'fully_returned') {
+        notify('Card returned to owner collection. Both players confirmed.');
+      } else {
+        notify('Return confirmed. Waiting for peer confirmation.');
+      }
+      setSelected(null);
+    } catch (reason) {
+      notify(reason instanceof Error ? reason.message : 'Return could not be processed.');
+    }
+  };
+
   return <div className="page collection-page">
-    <section className="collection-summary"><div><span className="summary-icon"><Icon name="lock"/></span><span><strong>{assets.filter((asset) => asset.kind === 'card').reduce((sum, asset) => sum + asset.quantity, 0)} cards</strong><small>Your full collection is never public</small></span></div><div><strong>{formatMoney(collectionValuation.currentKnownValue, market)}</strong><small>{collectionValueLabel}</small></div><Button onClick={() => navigate('/collection/add')} icon="plus">Add items</Button></section>
-    <div className="collection-tabs"><button className={tab === 'card' ? 'active' : ''} onClick={() => setTab('card')}><Icon name="cards"/>Cards <span>{assets.filter((asset) => asset.kind === 'card').length}</span></button><button className={tab === 'sealed' ? 'active' : ''} onClick={() => setTab('sealed')}><Icon name="box"/>Sealed products <span>{assets.filter((asset) => asset.kind === 'sealed').length}</span></button></div>
-    <section className="collection-toolbar"><label className="search-field"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${tab === 'card' ? 'name, set or card number' : 'sealed products'}`} aria-label="Search collection" />{query && <button onClick={() => setQuery('')} aria-label="Clear search"><Icon name="close" size={15}/></button>}</label><Button variant="secondary" onClick={() => setFiltersOpen((open) => !open)} icon="filter">Filters{(setFilter !== 'all' || rarity !== 'all') && <span className="filter-count">{Number(setFilter !== 'all') + Number(rarity !== 'all')}</span>}</Button><label className="select-field"><span>Sort</span><select value={sort} onChange={(event) => setSort(event.target.value)}><option value="value-desc">Highest value</option><option value="value-asc">Lowest value</option><option value="gain">Largest gain</option><option value="loss">Largest loss</option><option value="name">Name</option><option value="quantity">Quantity</option></select></label><Segmented value={view} onChange={setView} label="Collection view" options={[{ value: 'grid', label: '', icon: 'grid' }, { value: 'table', label: '', icon: 'list' }]} /></section>
+    <section className="collection-summary">
+      <div>
+        <span className="summary-icon"><Icon name="lock"/></span>
+        <span>
+          <strong>{cardsCount} cards{lentCount > 0 ? ` · ${lentCount} lent` : ''}</strong>
+          <small>Your full collection is never public</small>
+        </span>
+      </div>
+      <div>
+        <strong>{formatMoney(collectionValuation.currentKnownValue, market)}</strong>
+        <small>{collectionValueLabel}</small>
+      </div>
+      <Button onClick={() => navigate('/collection/add')} icon="plus">Add items</Button>
+    </section>
+    <div className="collection-tabs">
+      <button className={tab === 'card' ? 'active' : ''} onClick={() => setTab('card')}><Icon name="cards"/>Cards <span>{cardsCount}</span></button>
+      <button className={tab === 'sealed' ? 'active' : ''} onClick={() => setTab('sealed')}><Icon name="box"/>Sealed products <span>{sealedCount}</span></button>
+      <button className={tab === 'lent' ? 'active' : ''} onClick={() => setTab('lent')}><Icon name="trade"/>Lent <span>{lentCount}</span></button>
+      <button className={tab === 'borrowed' ? 'active' : ''} onClick={() => setTab('borrowed')}><Icon name="refresh"/>Borrowed <span>{borrowedCount}</span></button>
+    </div>
+    <section className="collection-toolbar">
+      <label className="search-field">
+        <Icon name="search"/>
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${tab === 'card' ? 'name, set or card number' : tab === 'sealed' ? 'sealed products' : tab === 'lent' ? 'lent cards' : 'borrowed cards'}`} aria-label="Search collection" />
+        {query && <button onClick={() => setQuery('')} aria-label="Clear search"><Icon name="close" size={15}/></button>}
+      </label>
+      <Button variant="secondary" onClick={() => setFiltersOpen((open) => !open)} icon="filter">Filters{(setFilter !== 'all' || rarity !== 'all') && <span className="filter-count">{Number(setFilter !== 'all') + Number(rarity !== 'all')}</span>}</Button>
+      <label className="select-field">
+        <span>Sort</span>
+        <select value={sort} onChange={(event) => setSort(event.target.value)}>
+          <option value="value-desc">Highest value</option>
+          <option value="value-asc">Lowest value</option>
+          <option value="gain">Largest gain</option>
+          <option value="loss">Largest loss</option>
+          <option value="name">Name</option>
+          <option value="quantity">Quantity</option>
+        </select>
+      </label>
+      <Segmented value={view} onChange={setView} label="Collection view" options={[{ value: 'grid', label: '', icon: 'grid' }, { value: 'table', label: '', icon: 'list' }]} />
+    </section>
     {filtersOpen && <section className="filter-panel"><label>Set<select value={setFilter} onChange={(event) => setSetFilter(event.target.value)}><option value="all">All sets</option>{uniqueSets.map((set) => <option key={set}>{set}</option>)}</select></label><label>{tab === 'card' ? 'Rarity' : 'Product availability'}<select value={rarity} onChange={(event) => setRarity(event.target.value)}><option value="all">All</option>{rarities.map((value) => <option key={value}>{value}</option>)}</select></label><label>Condition<select><option>All conditions</option><option>Near Mint</option><option>Excellent</option></select></label><label>Language<select><option>All languages</option><option>English</option><option>French</option><option>Japanese</option></select></label><Button variant="ghost" onClick={() => { setSetFilter('all'); setRarity('all'); }}>Clear filters</Button></section>}
-    <div className="result-meta"><span><strong>{visible.length}</strong> {tab === 'card' ? 'card entries' : 'sealed products'}</span><MarketDataBadge compact /></div>
-    {visible.length === 0 ? <EmptyState icon="search" title="No matching holdings" detail="Try removing a filter or search for another card." action={<Button variant="secondary" onClick={() => { setQuery(''); setSetFilter('all'); setRarity('all'); }}>Clear search</Button>} /> : view === 'grid' ? <div className="asset-grid">{visible.map((asset) => <button className="asset-card" key={asset.id} onClick={() => openAsset(asset)}><CardArt asset={asset} size="lg"/><div className="asset-card-body"><div className="asset-labels"><Chip tone="neutral">{asset.setCode}</Chip>{asset.variant !== 'Standard' && <Chip tone="gold">{asset.variant}</Chip>}</div><h3>{asset.name}</h3><p>{asset.number ?? asset.productType} · {asset.rarity}</p><div className="asset-price"><span><strong>{formatMoney(assetUnitPrice(asset), market)}</strong><small>Unit reference</small></span><Trend value={asset.change[market]['1M']} /></div><footer><span>Qty <strong>{asset.quantity}</strong></span><span>Total <strong>{formatMoney(assetUnitPrice(asset) === null ? null : assetUnitPrice(asset)! * asset.quantity, market)}</strong></span></footer>{assetUnitPrice(asset) === null && <div className="missing-price"><Icon name="info"/>Market price unavailable</div>}</div></button>)}</div>
-      : <div className="asset-table-wrap"><table className="asset-table"><thead><tr><th>Item</th><th>Set / number</th><th>Details</th><th>Qty</th><th>Unit value</th><th>1M change</th><th>Total</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>{visible.map((asset) => <tr key={asset.id} onClick={() => openAsset(asset)}><td><span className="table-item"><CardArt asset={asset} size="xs"/><strong>{asset.name}</strong></span></td><td>{asset.setCode}<small>{asset.number ?? asset.productType}</small></td><td>{asset.variant}<small>{asset.condition} · {asset.language}</small></td><td>{asset.quantity}</td><td>{formatMoney(assetUnitPrice(asset), market)}</td><td><Trend value={asset.change[market]['1M']}/></td><td><strong>{formatMoney(assetUnitPrice(asset) === null ? null : assetUnitPrice(asset)! * asset.quantity, market)}</strong></td><td><Icon name="chevron"/></td></tr>)}</tbody></table></div>}
+    <div className="result-meta"><span><strong>{visible.length}</strong> {tab === 'card' ? 'card entries' : tab === 'sealed' ? 'sealed products' : tab === 'lent' ? 'lent cards' : 'borrowed cards'}</span><MarketDataBadge compact /></div>
+    {visible.length === 0 ? <EmptyState icon="search" title="No matching holdings" detail="Try removing a filter or search for another card." action={<Button variant="secondary" onClick={() => { setQuery(''); setSetFilter('all'); setRarity('all'); }}>Clear search</Button>} /> : view === 'grid' ? <div className="asset-grid">{visible.map((asset) => <button className="asset-card" key={asset.id} onClick={() => openAsset(asset)}><CardArt asset={asset} size="lg"/><div className="asset-card-body"><div className="asset-labels"><Chip tone="neutral">{asset.setCode}</Chip>{asset.variant !== 'Standard' && <Chip tone="gold">{asset.variant}</Chip>}{asset.loan && <Chip tone={asset.loan.role === 'lender' ? 'blue' : 'gold'}>{asset.loan.role === 'lender' ? 'Lent' : 'Borrowed'}</Chip>}</div><h3>{asset.name}</h3><p>{asset.number ?? asset.productType} · {asset.rarity}</p>{asset.loan ? <div className="loan-card-info"><div><span>{asset.loan.role === 'lender' ? 'Lent to: ' : 'Borrowed from: '}</span><strong>{asset.loan.otherPartyUsername ? `@${asset.loan.otherPartyUsername}` : asset.loan.otherPartyName}</strong></div><div><span>Lent on: </span><strong>{new Date(asset.loan.lentAt).toLocaleDateString()}</strong></div><div><span>Initial value: </span><em>{formatMoney(asset.loan.lentValueAmount, 'EUR')}</em></div></div> : <div className="asset-price"><span><strong>{formatMoney(assetUnitPrice(asset), market)}</strong><small>Unit reference</small></span><Trend value={asset.change[market]['1M']} /></div>}<footer><span>Qty <strong>{asset.quantity}</strong></span><span>{asset.loan ? (asset.loan.role === 'lender' ? (asset.loan.lenderReturned ? '✓ Return confirmed' : 'Awaiting return') : (asset.loan.borrowerReturned ? '✓ Return confirmed' : 'Awaiting return')) : <>Total <strong>{formatMoney(assetUnitPrice(asset) === null ? null : assetUnitPrice(asset)! * asset.quantity, market)}</strong></>}</span></footer>{!asset.loan && assetUnitPrice(asset) === null && <div className="missing-price"><Icon name="info"/>Market price unavailable</div>}</div></button>)}</div>
+      : <div className="asset-table-wrap"><table className="asset-table"><thead><tr><th>Item</th><th>Set / number</th><th>Details</th><th>Qty</th><th>{tab === 'lent' || tab === 'borrowed' ? 'Lent value' : 'Unit value'}</th><th>{tab === 'lent' || tab === 'borrowed' ? 'Loan status' : '1M change'}</th><th>{tab === 'lent' || tab === 'borrowed' ? 'Counterparty' : 'Total'}</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>{visible.map((asset) => <tr key={asset.id} onClick={() => openAsset(asset)}><td><span className="table-item"><CardArt asset={asset} size="xs"/><strong>{asset.name}</strong></span></td><td>{asset.setCode}<small>{asset.number ?? asset.productType}</small></td><td>{asset.variant}<small>{asset.loan ? `Lent ${new Date(asset.loan.lentAt).toLocaleDateString()}` : `${asset.condition} · ${asset.language}`}</small></td><td>{asset.quantity}</td><td>{asset.loan ? formatMoney(asset.loan.lentValueAmount, 'EUR') : formatMoney(assetUnitPrice(asset), market)}</td><td>{asset.loan ? <Chip tone={asset.loan.role === 'lender' ? (asset.loan.lenderReturned ? 'neutral' : 'blue') : (asset.loan.borrowerReturned ? 'neutral' : 'gold')}>{asset.loan.role === 'lender' ? (asset.loan.lenderReturned ? 'Confirmed' : 'Lent out') : (asset.loan.borrowerReturned ? 'Confirmed' : 'Borrowed')}</Chip> : <Trend value={asset.change[market]['1M']}/>}</td><td>{asset.loan ? <strong>{asset.loan.otherPartyUsername ? `@${asset.loan.otherPartyUsername}` : asset.loan.otherPartyName}</strong> : <strong>{formatMoney(assetUnitPrice(asset) === null ? null : assetUnitPrice(asset)! * asset.quantity, market)}</strong>}</td><td><Icon name="chevron"/></td></tr>)}</tbody></table></div>}
     <AssetDetailModal
       asset={selected}
       onClose={() => setSelected(null)}
@@ -850,10 +1039,13 @@ function CollectionPage({ assets, setAssets, productionCollection, onCollectionM
       onUpdateQty={updateQty}
       onSaveChanges={saveChanges}
       onRequestRemove={(item) => {
+        if (item.loan) return;
         setSelected(null);
         setRemoveTarget(item);
       }}
-      mutating={productionCollection?.mutating}
+      mutating={productionCollection?.mutating || productionTrading?.mutating}
+      onConfirmReturn={handleConfirmReturn}
+      currentUserId={currentUserId}
     />
     <Modal open={!!removeTarget} onClose={() => setRemoveTarget(null)} title="Remove from collection?" eyebrow="Confirmation required"><div className="confirmation"><span className="danger-icon"><Icon name="trash"/></span><p>This removes <strong>{removeTarget?.name}</strong> from the active collection. Its private acquisition and valuation history remains in your account audit trail.</p><div><Button variant="secondary" onClick={() => setRemoveTarget(null)}>Keep item</Button><Button variant="danger" disabled={productionCollection?.mutating} onClick={() => void confirmRemoval()}>Remove item</Button></div></div></Modal>
   </div>;

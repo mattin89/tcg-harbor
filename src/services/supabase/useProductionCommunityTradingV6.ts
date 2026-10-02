@@ -1,10 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DemoAsset } from '../../data/demo';
-import type {
-  CommunityTradeDraftV6,
-  CommunityTradePostV6,
-  CommunityTradeStatusV6,
+import {
+  type CardLoanSummary,
+  type CommunityTradeDraftV6,
+  type CommunityTradePostV6,
+  type CommunityTradeStatusV6,
+  type LendingOfferSummary,
 } from '../../domain/communityTradingV6';
+import {
+  confirmLoanReturn,
+  loadLocalLoans,
+  saveLocalLoans,
+} from '../../domain/cardLoansManager';
 import { getSupabaseClient } from './client';
 import {
   SupabaseCommunityTradingRepositoryV6,
@@ -14,6 +21,7 @@ import {
 export interface ProductionCommunityTradingRuntimeV6 {
   readonly memberships: readonly CommunityMembershipV6[];
   readonly posts: readonly CommunityTradePostV6[];
+  readonly loans: readonly CardLoanSummary[];
   readonly loading: boolean;
   readonly mutating: boolean;
   readonly error: string | null;
@@ -26,6 +34,9 @@ export interface ProductionCommunityTradingRuntimeV6 {
     catalogAssets: readonly DemoAsset[],
   ) => Promise<void>;
   readonly setStatus: (tradePostId: string, status: CommunityTradeStatusV6) => Promise<void>;
+  readonly offerToLend: (tradePostId: string, collectionItemId?: string) => Promise<void>;
+  readonly acceptLendingOffer: (offerId: string, tradePostId: string, lentValueAmount?: number) => Promise<void>;
+  readonly confirmCardReturn: (loanId: string) => Promise<'fully_returned' | 'partially_returned'>;
   readonly clearError: () => void;
 }
 
@@ -40,6 +51,7 @@ export function useProductionCommunityTradingV6(
   );
   const [memberships, setMemberships] = useState<CommunityMembershipV6[]>([]);
   const [posts, setPosts] = useState<CommunityTradePostV6[]>([]);
+  const [loans, setLoans] = useState<CardLoanSummary[]>(() => loadLocalLoans());
   const [loading, setLoading] = useState(Boolean(enabled && ownerId));
   const [mutating, setMutating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +72,7 @@ export function useProductionCommunityTradingV6(
       if (current()) {
         setMemberships([]);
         setPosts([]);
+        setLoans(loadLocalLoans());
         setLoadedOwnerId(null);
         setLoading(false);
       }
@@ -70,6 +83,7 @@ export function useProductionCommunityTradingV6(
       if (current()) {
         setMemberships([]);
         setPosts([]);
+        setLoans(loadLocalLoans());
         setLoadedOwnerId(null);
         setError(message);
         setLoading(false);
@@ -89,6 +103,7 @@ export function useProductionCommunityTradingV6(
         }
         setMemberships(snapshot.memberships);
         setPosts(snapshot.posts);
+        setLoans(snapshot.loans.length > 0 ? snapshot.loans : loadLocalLoans());
         setLoadedOwnerId(expectedOwnerId);
       }
     } catch (reason) {
@@ -97,6 +112,7 @@ export function useProductionCommunityTradingV6(
         if (!quiet) {
           setMemberships([]);
           setPosts([]);
+          setLoans(loadLocalLoans());
           setLoadedOwnerId(null);
           setError(message);
         }
@@ -174,6 +190,76 @@ export function useProductionCommunityTradingV6(
     await mutate((expectedOwnerId) => repository.setStatus(tradePostId, status, expectedOwnerId));
   }, [mutate, repository]);
 
+  const offerToLend = useCallback(async (
+    tradePostId: string,
+    collectionItemId?: string,
+  ) => {
+    if (repository && enabled && ownerId) {
+      await mutate((expectedOwnerId) => repository.offerToLend(tradePostId, collectionItemId, expectedOwnerId));
+    } else {
+      setPosts((prev) => prev.map((post) => {
+        if (post.id !== tradePostId) return post;
+        const currentOffers = post.lendingOffers ?? [];
+        const myOffer: LendingOfferSummary = {
+          id: `offer-${Date.now()}`,
+          tradePostId,
+          lenderId: ownerId ?? 'demo-user',
+          lenderName: 'You',
+          lenderUsername: 'you',
+          lenderCollectionItemId: collectionItemId,
+          status: 'offered',
+          createdAt: new Date().toISOString(),
+        };
+        return {
+          ...post,
+          lendingOffers: [...currentOffers.filter((o) => o.lenderId !== (ownerId ?? 'demo-user')), myOffer],
+        };
+      }));
+    }
+  }, [enabled, mutate, ownerId, repository]);
+
+  const acceptLendingOffer = useCallback(async (
+    offerId: string,
+    tradePostId: string,
+    lentValueAmount?: number,
+  ) => {
+    if (repository && enabled && ownerId) {
+      await mutate((expectedOwnerId) => repository.acceptLendingOffer(offerId, lentValueAmount, expectedOwnerId));
+    } else {
+      setPosts((prev) => prev.map((post) => {
+        if (post.id !== tradePostId) return post;
+        return {
+          ...post,
+          status: 'completed',
+          lendingOffers: (post.lendingOffers ?? []).map((o) => ({
+            ...o,
+            status: o.id === offerId ? 'accepted' : 'declined',
+          })),
+        };
+      }));
+    }
+  }, [enabled, mutate, ownerId, repository]);
+
+  const confirmCardReturn = useCallback(async (
+    loanId: string,
+  ): Promise<'fully_returned' | 'partially_returned'> => {
+    if (repository && enabled && ownerId) {
+      return mutate((expectedOwnerId) => repository.confirmCardReturn(loanId, expectedOwnerId));
+    }
+    let outcome: 'fully_returned' | 'partially_returned' = 'partially_returned';
+    setLoans((prev) => {
+      const next = prev.map((loan) => {
+        if (loan.id !== loanId) return loan;
+        const res = confirmLoanReturn(loan, ownerId ?? 'demo-user');
+        if (res.isFullyReturned) outcome = 'fully_returned';
+        return res.updatedLoan;
+      });
+      saveLocalLoans(next);
+      return next;
+    });
+    return outcome;
+  }, [enabled, mutate, ownerId, repository]);
+
   const ownerReady = Boolean(enabled && ownerId && loadedOwnerId === ownerId);
   const visibleMemberships = ownerReady ? memberships : [];
   const membershipIds = new Set(visibleMemberships.map((membership) => membership.communityId));
@@ -225,6 +311,7 @@ export function useProductionCommunityTradingV6(
   return {
     memberships: visibleMemberships,
     posts: ownerReady ? posts : [],
+    loans,
     loading: loading || Boolean(enabled && ownerId && loadedOwnerId !== ownerId),
     mutating,
     error,
@@ -233,6 +320,9 @@ export function useProductionCommunityTradingV6(
     joinOpen,
     create,
     setStatus,
+    offerToLend,
+    acceptLendingOffer,
+    confirmCardReturn,
     clearError: () => setError(null),
   };
 }

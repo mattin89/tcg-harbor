@@ -518,3 +518,86 @@ input:disabled { background: #efefeb; color: var(--subtle); }
 .community-header { min-height: 142px; padding: 18px 22px; display: flex; align-items: center; gap: 17px; color: white; border-radius: 16px 16px 0 0; background: radial-gradient(circle at 20% 50%,rgba(233,141,97,.15),transparent 30%),linear-gradient(120deg,#0c1f2f,#17374c); }.community-header > .store-visual { width: 115px; min-height: 102px; }.community-header > div:nth-child(2) { flex: 1; }.community-header > div:nth-child(2) > div { display: flex; align-items: center; gap: 8px; }.community-header > div:nth-child(2) > div > span { color: #8fa7b4; font-size: 8px; }.community-header h2 { font-size: 26px; letter-spacing: -.04em; margin-top: 8px; }.community-header p { color: #8fa7b4; font-size: 9px; margin-top: 4px; }.online-cluster { display: flex; align-items: center; }.online-cluster .avatar + .avatar { margin-left: -8px; }.online-cluster small { color: #9ab0bb; font-size: 7px; margin-left: 6px; }.community-tabs { height: 53px; padding: 0 17px; display: flex; align-items: stretch; gap: 4px; background: var(--paper); border: 1px solid var(--line); border-top: 0; border-radius: 0 0 14px 14px; box-shadow: var(--shadow-sm); }.community-tabs button { min-width: 105px; padding: 0 13px; display: flex; align-items: center; justify-content: center; gap: 7px; background: transparent; color: var(--muted); font-size: 9px; font-weight: 700; border-bottom: 2px solid transparent; }.community-tabs button.active { color: var(--ink); border-color: var(--coral); }.community-tabs button.active svg { color: var(--coral); }.community-tabs button span { min-width: 17px; height: 17px; padding: 0 4px; display: grid; place-items: center; border-radius: 9px; color: white; background: var(--coral); font-size: 7px; }
 .community-overview { display: grid; grid-template-columns: minmax(0,1.45fr) minmax(280px,.65fr); gap: 17px; margin-top: 18px; }.community-feed { padding: 19px; }.feed-highlight { min-height: 104px; margin: 15px 0; padding: 13px; display: flex; align-items: center; gap: 13px; border-radius: 12px; background: linear-gradient(135deg,#fff2e8,#faf4e8); border: 1px solid #eddac7; }.feed-date { width: 53px; height: 63px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 9px; background: var(--navy-900); color: white; }.feed-date strong { align-self: end; color: #efa174; font-size: 8px; letter-spacing: .1em; }.feed-date em { align-self: start; font: 800 21px 'Manrope'; font-style: normal; }.feed-highlight > div { flex: 1; }.feed-highlight h3 { font-size: 11px; margin: 6px 0 3px; }.feed-highlight p { color: var(--muted); font-size: 8px; }.overview-chat { display: grid; }.overview-chat > div { min-height: 64px; padding: 8px 2px; display: flex; align-items: flex-start; gap: 9px; border-top: 1px solid var(--line); }.overview-chat span { flex: 1; }.overview-chat strong { font-size: 8px; }.overview-chat p { color: var(--muted); font-size: 9px; margin-top: 4px; }.overview-chat time { color: var(--subtle); font-size: 7px; }.community-side { display: grid; gap: 17px; align-content: start; }.community-side > .panel { padding: 17px; }.pulse-label { display: flex; align-items: center; gap: 4px; color: var(--green); font-size: 7px; }.pulse-label i { width: 5px; height: 5px; border-radius: 50%; background: var(--green); }.mini-trade { width: 100%; padding: 10px 0; display: flex; align-items: center; gap: 8px; background: transparent; text-align: left; border-bottom: 1px solid var(--line); }.mini-trade > span:nth-child(2) { min-width: 0; flex: 1; display: grid; gap: 2px; }.mini-trade small { color: var(--coral); font-size: 6px; font-weight: 800; text-transform: uppercase; }.mini-trade strong { font-size: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }.mini-trade em { color: var(--muted); font-size: 7px; font-style: normal; }.mini-trade > svg { color: var(--subtle); }.community-side .full-width { margin-top: 11px; }.community-guidelines { display: flex; align-items: flex-start; gap: 9px; color: #765e2d; background: var(--gold-soft); border-color: #ead8b3; }.community-guidelines > span { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 8px; background: white; }.community-guidelines strong { font-size: 9px; }.community-guidelines p { font-size: 7px; line-height: 1.5; margin-top: 3px; }
 .chat-layout { display: grid; grid-template-columns: minmax(0,1fr) 255px; gap: 17px; margin-top: 18px; }.chat-panel { overflow: hidden; }.chat-panel > header { height: 58px; padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }.chat-panel > header > div { display: grid; grid-template-columns: 13px 1fr; align-items: center; }.chat-panel > header strong { font-size: 10px; }.chat-panel > header small { grid-column: 2; color: var(--subtle); font-size: 7px; }.chat-date { display: flex; align-items: center; gap: 10px; color: var(--subtle); font-size: 7px; }.chat-date::before,.chat-date::after { content: ''; height: 1px; flex: 1; background: var(--line); }.chat-messages { height: 490px; padding: 8px 17px 16px; overflow-y: auto; }.chat-messages > .chat-date { margin: 8px 0 14px; }.chat-message { display: flex; align-items: flex-start; gap: 8px; margin: 11px 0; }.chat-message > div { max-width: 68%; }.chat-message > div > span { display: flex; gap: 7px; align-items: center; margin-bottom: 4px; }.chat-message strong { font-size: 8px; }.chat-message time { color: var(--subtle); font-size: 6px; }.chat-message p { width: fit-content; padding: 9px 11px; border-radius: 4px 11px 11px 11px; background: #f0efeb; color: #30414d; font-size: 9px; line-height: 1.5; }.chat-message.own { justify-content: flex-end; }.chat-message.own > div { display: grid; justify-items: end; }.chat-message.own > div > span { flex-direction: row-reverse; }.chat-message.own p { color: white; background: #17394e; border-radius: 11px 4px 11px 11px; }.message-actions { display: flex; gap: 7px; opacity: 0; transition: .15s; }.chat-message:hover .message-actions { opacity: 1; }.message-actions button { background: transparent; color: var(--subtle); font-size: 6px; padding: 3px; }.failed { display: flex; align-items: center; gap: 3px; color: var(--red); font-size: 7px; }.blocked-banner { margin: 0 15px 8px; padding: 8px 10px; display: flex; align-items: center; gap: 6px; color: var(--red); background: var(--red-soft); border-radius: 8px; font-size: 8px; }.blocked-banner button { margin-left: auto; background: transparent; color: var(--red); font-weight: 700; font-size: 8px; }.message-composer { min-height: 67px; padding: 10px 13px; display: flex; align-items: flex-end; gap: 8px; border-top: 1px solid var(--line); }.message-composer label { flex: 1; position: relative; }.message-composer textarea { min-height: 42px; max-height: 100px; padding-right: 45px; resize: none; }.message-composer label small { position: absolute; right: 8px; bottom: 7px; color: var(--subtle); font-size: 6px; }.realtime-note { padding: 0 14px 9px; display: flex; align-items: center; gap: 5px; color: var(--subtle); font-size: 6px; }.realtime-note .live-pulse { width: 5px; height: 5px; }.chat-context { align-self: start; overflow: hidden; }.chat-context > h3 { padding: 15px; font-size: 11px; border-bottom: 1px solid var(--line); }.online-members button { width: 100%; padding: 10px 13px; display: flex; align-items: center; gap: 8px; text-align: left; background: transparent; border-bottom: 1px solid var(--line); }.online-members button > span { flex: 1; display: grid; }.online-members strong { font-size: 8px; }.online-members small { color: var(--subtle); font-size: 7px; }.online-members i,.member-grid em i { width: 7px; height: 7px; border-radius: 50%; background: #b6bbb8; }.online-members i.online,.member-grid em i.online { background: #4e9a76; box-shadow: 0 0 0 3px rgba(78,154,118,.12); }.chat-rules { padding: 13px; display: flex; align-items: flex-start; gap: 7px; color: #755d2c; background: var(--gold-soft); }.chat-rules strong { font-size: 8px; }.chat-rules small { display: block; font-size: 7px; line-height: 1.4; margin-top: 2px; }
+
+/* Card Borrowing and Lending */
+.loan-detail-card {
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  background: var(--surface-raised, #f8f6f0);
+  border: 1px solid var(--border, #e2ded4);
+  border-radius: 10px;
+}
+
+.loan-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.loan-party-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ink, #1e293b);
+}
+
+.loan-party-info svg {
+  color: var(--coral, #e06847);
+}
+
+.loan-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--line, #ebe7df);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.loan-meta-grid div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.loan-meta-grid span {
+  font-size: 10px;
+  color: var(--muted, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.loan-meta-grid strong {
+  font-size: 12px;
+  color: var(--ink, #1e293b);
+}
+
+.loan-status-instruction {
+  font-size: 11px;
+  color: var(--muted, #64748b);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.loan-card-info {
+  margin-top: 6px;
+  display: grid;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--muted, #64748b);
+}
+
+.loan-card-info strong {
+  color: var(--ink, #1e293b);
+}
+
+.loan-card-info em {
+  font-style: normal;
+  color: var(--coral, #e06847);
+  font-weight: 700;
+}

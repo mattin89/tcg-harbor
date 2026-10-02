@@ -107,6 +107,8 @@ export interface AssetDetailModalProps {
   readonly onRequestRemove?: (asset: DemoAsset) => void;
   readonly mutating?: boolean;
   readonly onNavigateToCollection?: () => void;
+  readonly onConfirmReturn?: (loanId: string) => Promise<void> | void;
+  readonly currentUserId?: string;
 }
 
 export function AssetDetailModal({
@@ -121,6 +123,8 @@ export function AssetDetailModal({
   onRequestRemove,
   mutating = false,
   onNavigateToCollection,
+  onConfirmReturn,
+  currentUserId,
 }: AssetDetailModalProps) {
   if (!asset) return null;
   const cardmarketReference = resolveCardmarketArtworkReferenceV10(asset);
@@ -132,6 +136,21 @@ export function AssetDetailModal({
   const cardmarketDateLabel = (hasLivePrice || asset.pricing?.cardmarket?.trend != null) ? 'Daily market trend' : `${cardmarketReference?.label} · ${marketSourceDate('cardmarket')}`;
   const tcgplayerDateLabel = currentTcgplayerPrice > 0 ? 'Daily market price' : `Daily source snapshot · ${assetUsSourceDate(asset)}`;
   const isEditable = Boolean(onUpdateQty && onSaveChanges && onRequestRemove);
+
+  const isLender = currentUserId
+    ? currentUserId === asset.loan?.lenderId
+    : asset.loan?.role === 'lender';
+  const hasConfirmedReturn = isLender
+    ? Boolean(asset.loan?.lenderReturned)
+    : Boolean(asset.loan?.borrowerReturned);
+  const peerConfirmedReturn = isLender
+    ? Boolean(asset.loan?.borrowerReturned)
+    : Boolean(asset.loan?.lenderReturned);
+  const isLoanFullyReturned = Boolean(asset.loan?.lenderReturned && asset.loan?.borrowerReturned);
+
+  const eyebrowText = asset.loan
+    ? (asset.loan.role === 'lender' ? 'Lent card · Active loan' : 'Borrowed card · Active loan')
+    : (isEditable ? 'Private collection item' : 'Holding analysis');
 
   const isCmActive = market === 'cardmarket';
   const primaryPrice = isCmActive ? displayCardmarketValue : displayTcgplayerValue;
@@ -153,7 +172,7 @@ export function AssetDetailModal({
       open={!!asset}
       onClose={onClose}
       title={asset.name}
-      eyebrow={isEditable ? 'Private collection item' : 'Holding analysis'}
+      eyebrow={eyebrowText}
       wide
     >
       <div className="asset-detail">
@@ -180,9 +199,51 @@ export function AssetDetailModal({
             <Chip tone="neutral">{asset.rarity}</Chip>
             <Chip tone="gold">{asset.variant}</Chip>
             <Chip tone="blue">{asset.language}</Chip>
+            {asset.loan && (
+              <Chip tone={asset.loan.role === 'lender' ? 'blue' : 'gold'}>
+                {asset.loan.role === 'lender' ? 'Lent card' : 'Borrowed card'}
+              </Chip>
+            )}
           </div>
           <h3>{asset.set}</h3>
           <p className="detail-number">{asset.number ?? asset.productType} · One Piece Card Game</p>
+          {asset.loan && (
+            <div className="loan-detail-card">
+              <div className="loan-detail-header">
+                <span className="loan-party-info">
+                  <Icon name={asset.loan.role === 'lender' ? 'trade' : 'refresh'} size={18} />
+                  <strong>
+                    {asset.loan.role === 'lender' ? 'Lent to' : 'Borrowed from'}{' '}
+                    {asset.loan.otherPartyUsername ? `@${asset.loan.otherPartyUsername}` : asset.loan.otherPartyName}
+                  </strong>
+                </span>
+                <Chip tone={isLoanFullyReturned ? 'neutral' : peerConfirmedReturn ? 'gold' : 'blue'}>
+                  {isLoanFullyReturned
+                    ? 'Returned'
+                    : peerConfirmedReturn
+                      ? 'Peer confirmed return'
+                      : 'Active loan'}
+                </Chip>
+              </div>
+              <div className="loan-meta-grid">
+                <div>
+                  <span>Date lent</span>
+                  <strong>{new Date(asset.loan.lentAt).toLocaleDateString()}</strong>
+                </div>
+                <div>
+                  <span>Value when lent</span>
+                  <strong>{formatMoney(asset.loan.lentValueAmount, 'EUR')}</strong>
+                </div>
+              </div>
+              <p className="loan-status-instruction">
+                {hasConfirmedReturn
+                  ? 'You confirmed this card as returned. Waiting for peer confirmation.'
+                  : peerConfirmedReturn
+                    ? 'Peer marked this card as returned. Click Returned below to complete return.'
+                    : 'Both players must click Returned before this card returns to the owner’s collection.'}
+              </p>
+            </div>
+          )}
           {asset.kind === 'sealed' && asset.imageSourceRelationship === 'contained-unit' && (
             <p className="reference-note">
               <Icon name="box" />This is the real corresponding contained product, not a photo of the outer case.
@@ -287,6 +348,18 @@ export function AssetDetailModal({
                 </dd>
               </div>
             )}
+            {asset.loan && (
+              <>
+                <div>
+                  <dt>Date lent</dt>
+                  <dd>{new Date(asset.loan.lentAt).toLocaleDateString()}</dd>
+                </div>
+                <div>
+                  <dt>Value when lent</dt>
+                  <dd>{formatMoney(asset.loan.lentValueAmount, 'EUR')}</dd>
+                </div>
+              </>
+            )}
           </dl>
           {isEditable ? (
             <>
@@ -303,19 +376,33 @@ export function AssetDetailModal({
                   />
                 </span>
               </div>
-              <div className="quantity-editor">
-                <span>
-                  <strong>Quantity</strong>
-                  <small>{asset.catalogArchived ? 'Archived item · decrease or remove only' : 'Update copies held'}</small>
-                </span>
-                <div>
-                  <Button variant="secondary" size="icon" disabled={mutating} onClick={() => void onUpdateQty?.(asset, -1)} aria-label="Decrease quantity">−</Button>
-                  <strong>{asset.quantity}</strong>
-                  <Button variant="secondary" size="icon" disabled={mutating || asset.catalogArchived} onClick={() => void onUpdateQty?.(asset, 1)} aria-label={asset.catalogArchived ? 'Archived items cannot be increased' : 'Increase quantity'}>+</Button>
+              {!asset.loan && (
+                <div className="quantity-editor">
+                  <span>
+                    <strong>Quantity</strong>
+                    <small>{asset.catalogArchived ? 'Archived item · decrease or remove only' : 'Update copies held'}</small>
+                  </span>
+                  <div>
+                    <Button variant="secondary" size="icon" disabled={mutating} onClick={() => void onUpdateQty?.(asset, -1)} aria-label="Decrease quantity">−</Button>
+                    <strong>{asset.quantity}</strong>
+                    <Button variant="secondary" size="icon" disabled={mutating || asset.catalogArchived} onClick={() => void onUpdateQty?.(asset, 1)} aria-label={asset.catalogArchived ? 'Archived items cannot be increased' : 'Increase quantity'}>+</Button>
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="modal-actions">
-                <Button variant="danger" disabled={mutating} onClick={() => onRequestRemove?.(asset)} icon="trash">Remove</Button>
+                {asset.loan && onConfirmReturn && (
+                  <Button
+                    variant={hasConfirmedReturn ? 'secondary' : 'primary'}
+                    disabled={mutating || hasConfirmedReturn}
+                    onClick={() => void onConfirmReturn(asset.loan!.id)}
+                    icon={hasConfirmedReturn ? 'check' : 'refresh'}
+                  >
+                    {hasConfirmedReturn ? 'Return confirmed' : 'Returned'}
+                  </Button>
+                )}
+                {!asset.loan && (
+                  <Button variant="danger" disabled={mutating} onClick={() => onRequestRemove?.(asset)} icon="trash">Remove</Button>
+                )}
                 <Button disabled={mutating} onClick={() => void onSaveChanges?.()} icon="edit">Save changes</Button>
               </div>
             </>
@@ -331,6 +418,16 @@ export function AssetDetailModal({
                 </div>
               )}
               <div className="modal-actions">
+                {asset.loan && onConfirmReturn && (
+                  <Button
+                    variant={hasConfirmedReturn ? 'secondary' : 'primary'}
+                    disabled={mutating || hasConfirmedReturn}
+                    onClick={() => void onConfirmReturn(asset.loan!.id)}
+                    icon={hasConfirmedReturn ? 'check' : 'refresh'}
+                  >
+                    {hasConfirmedReturn ? 'Return confirmed' : 'Returned'}
+                  </Button>
+                )}
                 <Button variant="secondary" onClick={onClose}>Close</Button>
                 {onNavigateToCollection && (
                   <Button onClick={onNavigateToCollection} icon="collection">Open in collection</Button>

@@ -1,6 +1,43 @@
-export type CommunityTradePostKindV6 = 'offering_card' | 'seeking_card';
+export type CommunityTradePostKindV6 = 'offering_card' | 'seeking_card' | 'borrow_card';
 export type CommunityTradeExchangeModeV6 = 'money' | 'any_card' | 'specific_card' | 'open';
 export type CommunityTradeStatusV6 = 'open' | 'discussing' | 'completed' | 'closed';
+
+export interface CardLoanSummary {
+  readonly id: string;
+  readonly tradePostId?: string;
+  readonly communityId?: string;
+  readonly lenderId: string;
+  readonly lenderName: string;
+  readonly lenderUsername?: string;
+  readonly borrowerId: string;
+  readonly borrowerName: string;
+  readonly borrowerUsername?: string;
+  readonly cardVariantId?: string;
+  readonly sourceCollectionItemId?: string;
+  readonly role: 'lender' | 'borrower';
+  readonly otherPartyId: string;
+  readonly otherPartyName: string;
+  readonly otherPartyUsername?: string;
+  readonly lentAt: string;
+  readonly lentValueAmount: number;
+  readonly lentValueCurrency: string;
+  readonly lenderReturned: boolean;
+  readonly borrowerReturned: boolean;
+  readonly status: 'active' | 'returned';
+}
+
+export interface LendingOfferSummary {
+  readonly id: string;
+  readonly tradePostId: string;
+  readonly lenderId: string;
+  readonly lenderName: string;
+  readonly lenderUsername?: string;
+  readonly lenderCollectionItemId?: string;
+  readonly offeredCardName?: string;
+  readonly condition?: string;
+  readonly status: 'offered' | 'accepted' | 'declined' | 'cancelled';
+  readonly createdAt: string;
+}
 
 export interface CommunityTradeDraftV6 {
   readonly communityId: string;
@@ -37,6 +74,8 @@ export interface CommunityTradePostV6 {
   readonly status: CommunityTradeStatusV6;
   readonly createdAt: string;
   readonly own: boolean;
+  readonly lendingOffers?: readonly LendingOfferSummary[];
+  readonly loanId?: string;
 }
 
 export function activeTradeReservedQuantityV8(
@@ -106,10 +145,20 @@ export function validateCommunityTradeDraftV6(draft: CommunityTradeDraftV6): {
   if (!draft.primaryAssetId) {
     throw new Error(draft.postKind === 'offering_card'
       ? 'Choose a card from your collection.'
-      : 'Choose the card you are looking for.');
+      : draft.postKind === 'borrow_card'
+        ? 'Choose the card you want to borrow.'
+        : 'Choose the card you are looking for.');
   }
   if (!Number.isInteger(draft.quantity) || draft.quantity < 1 || draft.quantity > 100_000) {
     throw new Error('Quantity must be a whole number between 1 and 100,000.');
+  }
+  if (draft.postKind === 'borrow_card') {
+    let notes = draft.notes?.trim() || null;
+    if (notes && notes.length > 1_000) throw new Error('Keep the post note to 1,000 characters or fewer.');
+    if (draft.allowNegotiation === false) {
+      notes = notes ? `${notes}\n\n${FIRM_TERMS_TAG_V6}` : FIRM_TERMS_TAG_V6;
+    }
+    return { cashAmountCents: null, notes };
   }
   if (draft.exchangeMode === 'specific_card') {
     if (!draft.specificAssetId) throw new Error('Choose the specific card for the exchange.');
@@ -137,6 +186,9 @@ export function tradeActionLabelV6(post: Pick<
   CommunityTradePostV6,
   'postKind' | 'exchangeMode' | 'cashAmountCents'
 >): string {
+  if (post.postKind === 'borrow_card') {
+    return 'Looking to borrow card';
+  }
   if (post.exchangeMode === 'money') {
     if (post.postKind === 'seeking_card' && post.cashAmountCents === null) return 'Looking to buy';
     const amount = new Intl.NumberFormat('en-IE', {

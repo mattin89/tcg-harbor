@@ -4,11 +4,13 @@ import {
   initialsV6,
   parseTradeNotesAndNegotiationV6,
   validateCommunityTradeDraftV6,
+  type CardLoanSummary,
   type CommunityTradeDraftV6,
   type CommunityTradeExchangeModeV6,
   type CommunityTradePostKindV6,
   type CommunityTradePostV6,
   type CommunityTradeStatusV6,
+  type LendingOfferSummary,
 } from '../../domain/communityTradingV6';
 import { assertRowsOwnedByV3, requireAuthenticatedOwnerV3 } from './authSessionIsolationV3';
 
@@ -83,6 +85,7 @@ export interface CommunityTradingSnapshotV6 {
   readonly ownerId: string;
   readonly memberships: CommunityMembershipV6[];
   readonly posts: CommunityTradePostV6[];
+  readonly loans: CardLoanSummary[];
 }
 
 function rowsV6<T>(value: T[] | T | null | undefined): T[] {
@@ -177,7 +180,7 @@ export class SupabaseCommunityTradingRepositoryV6 {
       role: row.role,
     }));
     const communityIds = memberships.map((membership) => membership.communityId);
-    if (communityIds.length === 0) return { ownerId: expectedOwnerId, memberships, posts: [] };
+    if (communityIds.length === 0) return { ownerId: expectedOwnerId, memberships, posts: [], loans: [] };
 
     const [postsResult, profilesResult] = await Promise.all([
       this.client
@@ -211,9 +214,28 @@ export class SupabaseCommunityTradingRepositoryV6 {
     }
 
     const tradePostRows = (postsResult.data ?? []) as unknown as TradePostRowV6[];
-    const authorIds = Array.from(new Set(
-      tradePostRows.map((row) => row.author_id).filter(Boolean),
-    ));
+    const [offersResult, loansResult] = await Promise.all([
+      tradePostRows.length > 0
+        ? this.client
+            .from('community_card_lending_offers')
+            .select('id,trade_post_id,lender_id,lender_collection_item_id,status,created_at')
+            .in('trade_post_id', tradePostRows.map((r) => r.id))
+            .order('created_at', { ascending: true })
+        : Promise.resolve({ data: [], error: null }),
+      this.client
+        .from('community_card_loans')
+        .select('id,trade_post_id,community_id,lender_id,borrower_id,card_variant_id,condition,language,quantity,source_collection_item_id,lent_at,lent_value_amount,lent_value_currency,lender_returned_at,borrower_returned_at,status')
+        .or(`lender_id.eq.${expectedOwnerId},borrower_id.eq.${expectedOwnerId}`)
+        .order('created_at', { ascending: false }),
+    ]);
+
+    const offerLenderIds = (offersResult.data ?? []).map((o: { lender_id: string }) => o.lender_id);
+    const loanParticipantIds = (loansResult.data ?? []).flatMap((l: { lender_id: string; borrower_id: string }) => [l.lender_id, l.borrower_id]);
+    const authorIds = Array.from(new Set([
+      ...tradePostRows.map((row) => row.author_id),
+      ...offerLenderIds,
+      ...loanParticipantIds,
+    ].filter(Boolean)));
     const missingAuthorIds = authorIds.filter((id) => !profileByUserId.has(id));
     if (missingAuthorIds.length > 0) {
       const userProfilesResult = await this.client
@@ -227,6 +249,27 @@ export class SupabaseCommunityTradingRepositoryV6 {
             displayName: row.display_name?.trim() || null,
           });
         }
+      }
+    }
+
+    const offersByPostId = new Map<string, LendingOfferSummary[]>();
+    if (!offersResult.error && offersResult.data) {
+      for (const row of (offersResult.data as { id: string; trade_post_id: string; lender_id: string; lender_collection_item_id?: string | null; status: LendingOfferSummary['status']; created_at: string }[])) {
+        const profile = profileByUserId.get(row.lender_id);
+        const lenderUsername = profile?.username || undefined;
+        const lenderName = lenderUsername || profile?.displayName || 'Community Member';
+        const list = offersByPostId.get(row.trade_post_id) ?? [];
+        list.push({
+          id: row.id,
+          tradePostId: row.trade_post_id,
+          lenderId: row.lender_id,
+          lenderName,
+          lenderUsername,
+          lenderCollectionItemId: row.lender_collection_item_id ?? undefined,
+          status: row.status,
+          createdAt: row.created_at,
+        });
+        offersByPostId.set(row.trade_post_id, list);
       }
     }
 
@@ -270,10 +313,47 @@ export class SupabaseCommunityTradingRepositoryV6 {
         status: row.status,
         createdAt: row.created_at,
         own: row.author_id === expectedOwnerId,
+        lendingOffers: offersByPostId.get(row.id) ?? [],
       } satisfies CommunityTradePostV6;
     });
 
-    return { ownerId: expectedOwnerId, memberships, posts };
+    const loans: CardLoanSummary[] = [];
+    if (!loansResult.error && loansResult.data) {
+      for (const row of (loansResult.data as any[])) {
+        const isLender = row.lender_id === expectedOwnerId;
+        const otherPartyId = isLender ? row.borrower_id : row.lender_id;
+        const otherProfile = profileByUserId.get(otherPartyId);
+        const otherPartyUsername = otherProfile?.username || undefined;
+        const otherPartyName = otherPartyUsername || otherProfile?.displayName || 'Community Member';
+        const myProfile = profileByUserId.get(expectedOwnerId);
+
+        loans.push({
+          id: row.id,
+          tradePostId: row.trade_post_id ?? undefined,
+          communityId: row.community_id,
+          lenderId: row.lender_id,
+          lenderName: isLender ? (myProfile?.username || 'You') : otherPartyName,
+          lenderUsername: isLender ? myProfile?.username : otherPartyUsername,
+          borrowerId: row.borrower_id,
+          borrowerName: isLender ? otherPartyName : (myProfile?.username || 'You'),
+          borrowerUsername: isLender ? otherPartyUsername : myProfile?.username,
+          cardVariantId: row.card_variant_id,
+          sourceCollectionItemId: row.source_collection_item_id ?? undefined,
+          role: isLender ? 'lender' : 'borrower',
+          otherPartyId,
+          otherPartyName,
+          otherPartyUsername,
+          lentAt: row.lent_at,
+          lentValueAmount: Number(row.lent_value_amount) || 0,
+          lentValueCurrency: row.lent_value_currency || 'EUR',
+          lenderReturned: Boolean(row.lender_returned_at),
+          borrowerReturned: Boolean(row.borrower_returned_at),
+          status: row.status,
+        });
+      }
+    }
+
+    return { ownerId: expectedOwnerId, memberships, posts, loans };
   }
 
   async joinOpen(communityId: string, expectedOwnerId: string): Promise<'joined' | 'rejoined' | 'already_member'> {
@@ -355,6 +435,46 @@ export class SupabaseCommunityTradingRepositoryV6 {
       p_status: status,
     });
     if (error) throw databaseErrorV6('Update community trade post', error);
+  }
+
+  async offerToLend(
+    tradePostId: string,
+    collectionItemId: string | undefined,
+    expectedOwnerId: string,
+  ): Promise<string> {
+    await requireAuthenticatedOwnerV3(this.client, expectedOwnerId, 'Offer to lend card');
+    const { data, error } = await this.client.rpc('offer_to_lend_card_v1', {
+      p_trade_post_id: tradePostId,
+      p_collection_item_id: collectionItemId || null,
+    });
+    if (error) throw databaseErrorV6('Offer to lend card', error);
+    return typeof data === 'string' ? data : '';
+  }
+
+  async acceptLendingOffer(
+    offerId: string,
+    lentValueAmount: number | undefined,
+    expectedOwnerId: string,
+  ): Promise<string> {
+    await requireAuthenticatedOwnerV3(this.client, expectedOwnerId, 'Accept lending offer');
+    const { data, error } = await this.client.rpc('accept_lending_offer_v1', {
+      p_offer_id: offerId,
+      p_lent_value_amount: lentValueAmount ?? 0,
+    });
+    if (error) throw databaseErrorV6('Accept lending offer', error);
+    return typeof data === 'string' ? data : '';
+  }
+
+  async confirmCardReturn(
+    loanId: string,
+    expectedOwnerId: string,
+  ): Promise<'fully_returned' | 'partially_returned'> {
+    await requireAuthenticatedOwnerV3(this.client, expectedOwnerId, 'Confirm card return');
+    const { data, error } = await this.client.rpc('confirm_card_return_v1', {
+      p_loan_id: loanId,
+    });
+    if (error) throw databaseErrorV6('Confirm card return', error);
+    return data === 'fully_returned' ? 'fully_returned' : 'partially_returned';
   }
 
   async subscribe(

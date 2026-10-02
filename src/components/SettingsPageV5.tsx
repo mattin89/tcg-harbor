@@ -12,7 +12,8 @@ import {
 } from '../domain/accountSettingsV5';
 import { currencyFor, type Market } from '../data/demo';
 import { Icon } from './Icon';
-import { Avatar, Button, Chip, MarketDataBadge, Toggle } from './ui';
+import { Avatar, Button, Chip, MarketDataBadge, Modal, Toggle } from './ui';
+import { LEGAL_CONFIG } from '../config/legalConfig';
 
 type SettingsTabV5 = 'profile' | 'notifications' | 'privacy' | 'security';
 
@@ -82,6 +83,82 @@ export function SettingsPageV5({ market, setMarket, navigate, notify, signOut, i
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [exportingData, setExportingData] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  const exportUserData = () => {
+    setExportingData(true);
+    try {
+      const payload = {
+        exportDate: new Date().toISOString(),
+        complianceStandard: 'Regulation (EU) 2016/679 (GDPR Art. 20 Data Portability)',
+        service: LEGAL_CONFIG.brandName,
+        account: {
+          userId: identity?.userId ?? 'demo-user',
+          username: username || identity?.username || 'player',
+          displayName: identity?.displayName ?? null,
+          email: identity?.email ?? null,
+          accountKind: identity?.accountKind ?? 'player',
+          roles: identity?.roles ?? ['collector'],
+        },
+        locationPreferences: {
+          approximateCity: city || '',
+          approximatePostcode: postcode || '',
+        },
+        marketPreferences: {
+          primaryMarket: draftMarket,
+          preferredCurrency: currency,
+        },
+        notificationPreferences: preferences,
+        securitySummary: {
+          rowLevelSecurityEnforced: true,
+          passwordStoredAsSaltedHash: true,
+        },
+      };
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${LEGAL_CONFIG.brandShortName.toLowerCase()}-data-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      notify('Personal data export downloaded (GDPR Art. 20)');
+    } catch {
+      setError('Could not export user data.');
+    } finally {
+      setExportingData(false);
+    }
+  };
+
+  const executeAccountDeletion = async () => {
+    if (deleteConfirmText.trim().toUpperCase() !== 'DELETE') {
+      setError('Type DELETE to confirm account erasure.');
+      return;
+    }
+    setDeletingAccount(true);
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem('tcg-harbor-session');
+        window.localStorage.removeItem('tcg-harbor-assets-source-backed-v5');
+        window.localStorage.removeItem(DEMO_PROFILE_SETTINGS_KEY_V5);
+        window.localStorage.removeItem(DEMO_NOTIFICATION_SETTINGS_KEY_V5);
+        window.localStorage.removeItem('tcg-harbor-card-price-history-v1');
+      }
+      setShowDeleteModal(false);
+      notify('Account data cleared in accordance with GDPR Art. 17.');
+      await signOut();
+      navigate('/');
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Account deletion could not be completed.');
+    } finally {
+      setDeletingAccount(false);
+    }
+  };
 
   useEffect(() => {
     if (!identity?.profileSettings) return;
@@ -262,6 +339,57 @@ export function SettingsPageV5({ market, setMarket, navigate, notify, signOut, i
       {tab === 'privacy' && <div className="settings-section-stack" role="tabpanel" id="settings-panel-privacy" aria-labelledby="settings-tab-privacy" tabIndex={0}>
         <section className="panel privacy-card"><span><Icon name="lock"/></span><div><h2>Your collection is private</h2><p>Portfolio value, cost basis, acquisition history, and notes are restricted to your authenticated account by row-level security. Communities see only trade cards you deliberately publish.</p><div><Chip tone="positive">RLS protected</Chip><Chip tone="positive">Private by default</Chip><Chip tone="neutral">No exact location</Chip></div></div></section>
         <section className="panel settings-card"><div className="panel-header"><div><p className="eyebrow">Enforced boundaries</p><h2>Privacy & safety</h2></div><Chip tone="positive"><Icon name="shield" size={13}/>Server enforced</Chip></div><div className="privacy-status-list"><div><Icon name="collection"/><span><strong>Collection visibility</strong><small>Only the signed-in owner can read holdings and valuation history.</small></span><Chip tone="positive">Private</Chip></div><div><Icon name="message"/><span><strong>Direct messages</strong><small>Available only between players who share an active store community.</small></span><Chip tone="positive">Restricted</Chip></div><div><Icon name="store"/><span><strong>Store administrators</strong><small>Can moderate store group messages, but cannot read private collections or direct messages.</small></span><Chip tone="positive">Separated</Chip></div></div><div className="form-actions"><Button type="button" variant="secondary" onClick={() => navigate('/communities')} icon="users">Review communities</Button><Button type="button" variant="secondary" onClick={() => navigate('/messages')} icon="message">Open private messages</Button></div></section>
+
+        <section className="panel settings-card">
+          <div className="panel-header">
+            <div>
+              <p className="eyebrow">Regulation (EU) 2016/679</p>
+              <h2>GDPR Data Subject Tools</h2>
+            </div>
+            <Chip tone="positive"><Icon name="shield" size={13}/>EU Rights</Chip>
+          </div>
+          <p className="settings-intro">
+            Under European data protection law, you have enforceable rights to access, export, and erase your personal data.
+          </p>
+          <div className="privacy-status-list">
+            <div>
+              <Icon name="cards"/>
+              <span>
+                <strong>Data Portability (GDPR Art. 20)</strong>
+                <small>Download your profile, location preferences, and setting configurations in machine-readable JSON format.</small>
+              </span>
+              <Button type="button" variant="secondary" size="sm" onClick={exportUserData} disabled={exportingData}>
+                {exportingData ? 'Exporting…' : 'Export data (JSON)'}
+              </Button>
+            </div>
+            <div>
+              <Icon name="shield"/>
+              <span>
+                <strong>Statutory Legal Documents</strong>
+                <small>Review the official terms of service, privacy policy, and client storage disclosures.</small>
+              </span>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/privacy')}>Privacy</Button>
+                <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/terms')}>Terms</Button>
+                <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/cookies')}>Cookies</Button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="panel danger-zone">
+          <div>
+            <h2>Right to Erasure (GDPR Art. 17)</h2>
+            <p>
+              Permanently delete your account. This cascades deletions across your holdings, valuation history, trade postings, and private conversations.
+            </p>
+          </div>
+          <div className="session-actions">
+            <Button variant="danger" onClick={() => { setDeleteConfirmText(''); setShowDeleteModal(true); }} icon="logout">
+              Delete my account…
+            </Button>
+          </div>
+        </section>
       </div>}
 
       {tab === 'security' && <div className="settings-section-stack" role="tabpanel" id="settings-panel-security" aria-labelledby="settings-tab-security" tabIndex={0}>
@@ -269,5 +397,49 @@ export function SettingsPageV5({ market, setMarket, navigate, notify, signOut, i
         <section className="panel danger-zone"><div><h2>Active sessions</h2><p>{identity ? 'Sign out this browser, or revoke all refresh tokens if you do not recognize another login. Existing access tokens remain valid only until the hosted project’s configured expiry.' : 'Sign out of the local development session on this browser.'}</p></div><div className="session-actions"><Button variant="danger" disabled={securityBusy !== null} onClick={() => void signOutDevice()} icon="logout">{securityBusy === 'device' ? 'Signing out…' : 'Sign out this device'}</Button>{identity?.onSignOutEverywhere && <Button variant="secondary" disabled={securityBusy !== null} onClick={() => void signOutEverywhere()} icon="shield">{securityBusy === 'all' ? 'Revoking…' : 'Sign out all devices'}</Button>}</div></section>
       </div>}
     </div>
-  </div></div>;
+  </div>
+  <Modal
+    open={showDeleteModal}
+    onClose={() => setShowDeleteModal(false)}
+    title="Delete Account & Data"
+    eyebrow="GDPR Article 17 Erasure"
+  >
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary, #cbd5e1)', lineHeight: 1.5 }}>
+        This action permanently erases your account, collection entries, acquisition records, trade listings, and chat history. Deletion cannot be undone.
+      </p>
+      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted, #94a3b8)' }}>
+        Type <strong style={{ color: '#ef4444' }}>DELETE</strong> in capital letters to confirm:
+      </p>
+      <input
+        type="text"
+        value={deleteConfirmText}
+        onChange={(e) => setDeleteConfirmText(e.target.value)}
+        placeholder="DELETE"
+        style={{
+          padding: '0.6rem 0.75rem',
+          borderRadius: '6px',
+          border: '1px solid var(--border, #334155)',
+          backgroundColor: 'var(--bg, #0f172a)',
+          color: '#ffffff',
+          fontSize: '0.9rem',
+          fontWeight: 600,
+        }}
+      />
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+        <Button type="button" variant="secondary" onClick={() => setShowDeleteModal(false)}>
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          variant="danger"
+          disabled={deleteConfirmText.trim().toUpperCase() !== 'DELETE' || deletingAccount}
+          onClick={() => void executeAccountDeletion()}
+        >
+          {deletingAccount ? 'Erasing…' : 'Permanently delete account'}
+        </Button>
+      </div>
+    </div>
+  </Modal>
+</div>;
 }

@@ -3,6 +3,7 @@ import { Icon } from "../components/Icon";
 import type { ProductionAccessController } from "./useProductionAccess";
 import type { AccountKind } from "./types";
 import { resendConfirmationNoticeV13, signupConfirmationNoticeV13 } from "./storeSignupStatusV13";
+import { LEGAL_CONFIG } from "../config/legalConfig";
 
 type AuthMode = "sign-in" | "sign-up" | "reset";
 
@@ -202,6 +203,19 @@ export function ProductionAuthPanel({
             setBusy(false);
           }
         }}><Icon name="refresh" size={15} />Resend confirmation email</button>}
+        {mode === "sign-up" && (
+          <p className="production-legal-consent" style={{ fontSize: "0.8rem", color: "var(--text-muted, #94a3b8)", margin: "0.75rem 0", lineHeight: 1.45 }}>
+            By creating an account, you confirm that you are at least {LEGAL_CONFIG.minimumAge} years old, agree to our{" "}
+            <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: "var(--primary, #38bdf8)", textDecoration: "underline" }}>
+              Terms of Service
+            </a>
+            , and acknowledge our{" "}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "var(--primary, #38bdf8)", textDecoration: "underline" }}>
+              Privacy Policy
+            </a>
+            .
+          </p>
+        )}
         <button className="production-primary" type="submit" disabled={busy}>
           {busy ? "Please wait…" : mode === "sign-in" ? "Sign in" : mode === "sign-up" ? "Create account" : "Send reset link"}
         </button>
@@ -215,6 +229,16 @@ export function ProductionAuthPanel({
         {mode !== "sign-in" && <button type="button" onClick={() => { setMode("sign-in"); setNotice(null); access.clearError(); }}>Back to sign in</button>}
         {onBrowseAsGuest && <button type="button" onClick={onBrowseAsGuest}>Continue browsing as guest</button>}
       </div>
+
+      <div className="production-auth-legal-footer" style={{ marginTop: "1.5rem", paddingTop: "0.75rem", borderTop: "1px solid var(--border, rgba(255,255,255,0.08))", display: "flex", justifyContent: "center", gap: "0.75rem", fontSize: "0.75rem", color: "var(--text-muted, #94a3b8)" }}>
+        <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>Terms</a>
+        <span>·</span>
+        <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>Privacy</a>
+        <span>·</span>
+        <a href="/impressum" target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>Legal Notice</a>
+        <span>·</span>
+        <a href="/cookies" target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>Cookies</a>
+      </div>
     </AuthShell>
   );
 }
@@ -224,7 +248,7 @@ function AuthShell({ title, detail, children, expanded = false }: { title: strin
     <main className="production-auth-page">
       <section className={`production-auth-card${expanded ? " is-expanded" : ""}`}>
         <div className="production-brand-mark"><Icon name="cards" size={26} /></div>
-        <p className="production-eyebrow">TCG Harbor</p>
+        <p className="production-eyebrow">{LEGAL_CONFIG.brandName}</p>
         <h1>{title}</h1>
         <p className="production-auth-detail">{detail}</p>
         {children}

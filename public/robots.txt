@@ -3,6 +3,11 @@
 User-agent: *
 Allow: /cards
 Allow: /stores
+Allow: /legal
+Allow: /terms
+Allow: /privacy
+Allow: /cookies
+Allow: /impressum
 Disallow: /dashboard
 Disallow: /collection
 Disallow: /market-comparison
@@ -20,6 +25,11 @@ User-agent: OAI-SearchBot
 User-agent: Claude-SearchBot
 Allow: /cards
 Allow: /stores
+Allow: /legal
+Allow: /terms
+Allow: /privacy
+Allow: /cookies
+Allow: /impressum
 Disallow: /dashboard
 Disallow: /collection
 Disallow: /market-comparison

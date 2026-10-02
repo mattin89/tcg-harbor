@@ -8,6 +8,11 @@ export const DEFAULT_PUBLIC_SITE_ORIGIN_V1 = 'https://tcg-harbor.onrender.com';
 export const PUBLIC_CANONICAL_PATHS_V1 = Object.freeze([
   '/cards',
   '/stores',
+  '/legal',
+  '/terms',
+  '/privacy',
+  '/cookies',
+  '/impressum',
 ]);
 
 export const PRIVATE_ROUTE_PREFIXES_V1 = Object.freeze([

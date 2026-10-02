@@ -2,7 +2,15 @@ import { copyFile, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-export const STATIC_SPA_ENTRYPOINT_ROUTES_V1 = Object.freeze(['/cards', '/stores']);
+export const STATIC_SPA_ENTRYPOINT_ROUTES_V1 = Object.freeze([
+  '/cards',
+  '/stores',
+  '/legal',
+  '/terms',
+  '/privacy',
+  '/cookies',
+  '/impressum',
+]);
 
 export function staticSpaEntrypointPathV1(route) {
   const normalized = String(route ?? '').trim();

@@ -25,11 +25,20 @@ function normalizedPathV4(pathname: string): string {
   return withLeadingSlash.replace(/\/+$/, '') || '/';
 }
 
+export const PUBLIC_LEGAL_PATHS = Object.freeze([
+  '/legal',
+  '/terms',
+  '/privacy',
+  '/cookies',
+  '/impressum',
+]);
+
 export function isGuestPublicPathV4(pathname: string): boolean {
   const path = normalizedPathV4(pathname);
   return path === '/cards'
     || path === '/stores'
-    || /^\/stores\/[^/]+$/.test(path);
+    || /^\/stores\/[^/]+$/.test(path)
+    || PUBLIC_LEGAL_PATHS.includes(path);
 }
 
 /**

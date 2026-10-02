@@ -48,6 +48,8 @@ import {
   useProductionCommunityTradingV6,
   type ProductionCommunityTradingRuntimeV6,
 } from './services/supabase/useProductionCommunityTradingV6';
+import { LegalPortalPage } from './components/legal/LegalPortalPage';
+import { LEGAL_CONFIG } from './config/legalConfig';
 import {
   assetById,
   catalogAssets,
@@ -487,6 +489,9 @@ export default function App({ identity, guest }: AppProps = {}) {
   };
 
   if (!authenticated) {
+    if (path === '/legal' || path === '/terms' || path === '/privacy' || path === '/cookies' || path === '/impressum') {
+      return <LegalPortalPage activeSlug={path === '/terms' ? 'terms' : path === '/privacy' ? 'privacy' : path === '/cookies' ? 'cookies' : path === '/impressum' ? 'impressum' : 'disclaimers'} navigate={navigate} isAuthenticated={false} />;
+    }
     if (path.startsWith('/join/')) sessionStorage.setItem('tcg-harbor-pending-join', path);
     return <AuthPage onSignIn={signIn} />;
   }
@@ -503,6 +508,7 @@ export default function App({ identity, guest }: AppProps = {}) {
     : path === '/communities' ? ['Your communities', 'Trade and connect where you play']
     : path.startsWith('/messages/') || path === '/messages' ? ['Private messages', 'Available only between collectors who share a community']
     : path === '/settings' ? ['Profile & settings', 'Control your market, privacy, and notifications']
+    : path === '/legal' || path === '/terms' || path === '/privacy' || path === '/cookies' || path === '/impressum' ? ['Legal & Compliance', 'Terms of service, GDPR privacy policy, client storage disclosures, and statutory notices']
     : path === '/inventory' ? (isPlatformAdministrator ? ['Catalog inventory & diagnostics', 'Review cards, sealed products, and resolve errors'] : ['Access restricted', 'Platform administration only'])
     : path === '/store-admin' ? [isPlatformAdministrator ? 'Store approvals' : isApprovedStoreAdministrator ? 'Store administration' : 'Register your store', isPlatformAdministrator ? 'Review store applications and protect community access' : 'Manage store identity and community access after approval']
     : path === '/scan' ? ['Scan a store code', 'Join a community while you are physically at the store']
@@ -533,6 +539,8 @@ export default function App({ identity, guest }: AppProps = {}) {
                 : <CommunityPage communityId={path.split('/')[2]} joinedIds={joinedIds} assets={assets} messages={communityMessages} setMessages={setCommunityMessages} trades={tradePosts} setTrades={setTradePosts} market={market} navigate={navigate} notify={notify} isStoreManager={!identity} pendingRequests={storeJoinRequests.filter(r => r.storeId === (path.split('/')[2]) && r.status === 'pending')} onAcceptJoinRequest={(id) => setStoreJoinRequests(prev => prev.filter(r => r.id !== id))} onRejectJoinRequest={(id) => setStoreJoinRequests(prev => prev.filter(r => r.id !== id))} profileName={profileName} profileInitials={profileInitials} />
               : path === '/messages' || path.startsWith('/messages/')
                 ? <MessagesPage conversationId={path.split('/')[2]} conversations={conversations} setConversations={setConversations} productionMessages={identity ? productionDirectMessages : undefined} navigate={navigate} notify={notify} />
+                : path === '/legal' || path === '/terms' || path === '/privacy' || path === '/cookies' || path === '/impressum'
+                  ? <LegalPortalPage activeSlug={path === '/terms' ? 'terms' : path === '/privacy' ? 'privacy' : path === '/cookies' ? 'cookies' : path === '/impressum' ? 'impressum' : 'disclaimers'} navigate={navigate} isAuthenticated={Boolean(identity)} />
                 : path === '/inventory'
                   ? (isPlatformAdministrator ? <PlatformInventoryPanel /> : <AdminAccessDenied navigate={navigate} />)
                 : path === '/settings'
@@ -551,7 +559,7 @@ export default function App({ identity, guest }: AppProps = {}) {
 
   return <div className={`app-shell${isGuest ? ' guest-shell' : ''}`}>
     <aside className="sidebar">
-      <button className="brand" onClick={() => navigate(isGuest ? '/cards' : '/dashboard')} aria-label={isGuest ? 'TCG Harbor card catalog' : 'TCG Harbor dashboard'}><span className="brand-mark"><span /></span><span><strong>TCG Harbor</strong><small>Collector community</small></span></button>
+      <button className="brand" onClick={() => navigate(isGuest ? '/cards' : '/dashboard')} aria-label={isGuest ? `${LEGAL_CONFIG.brandName} card catalog` : `${LEGAL_CONFIG.brandName} dashboard`}><span className="brand-mark"><span /></span><span><strong>{LEGAL_CONFIG.brandName}</strong><small>Collector community</small></span></button>
       <nav aria-label="Primary navigation">{visibleNavItems.map((item) => <button key={item.path} className={activeNavPath === item.path ? 'active' : ''} aria-current={activeNavPath === item.path ? 'page' : undefined} onClick={() => navigate(item.path)}><Icon name={item.icon} /><span>{item.label}</span>{item.path === '/messages' && unreadMessageCount > 0 && <em>{unreadMessageCount}</em>}</button>)}</nav>
       <div className="sidebar-grow" />
       {isGuest ? <section className="guest-auth-card"><Icon name="lock"/><div><strong>Browsing as a guest</strong><small>Sign in to save cards or join a store community.</small></div><Button type="button" size="sm" onClick={guest?.onRequestAuthentication}>Sign in / Create account</Button></section> : <>
@@ -559,11 +567,20 @@ export default function App({ identity, guest }: AppProps = {}) {
         {isPlatformAdministrator && <button className={`side-utility ${path === '/inventory' ? 'active' : ''}`} aria-current={path === '/inventory' ? 'page' : undefined} onClick={() => navigate('/inventory')}><Icon name="box" /><span>Catalog inventory</span></button>}
         <button className={`profile-card ${path === '/settings' ? 'active' : ''}`} aria-current={path === '/settings' ? 'page' : undefined} onClick={() => navigate('/settings')}><Avatar initials={profileInitials} size="md" /><span><strong>{profileName}</strong><small>{accountLabel}</small></span><Icon name="more" size={18} /></button>
       </>}
+      <div className="sidebar-legal-links" style={{ fontSize: '0.75rem', color: 'var(--text-muted, #94a3b8)', margin: '0.5rem 0.75rem 0', display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+        <button type="button" onClick={() => navigate('/terms')} style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer', textDecoration: 'underline', fontSize: 'inherit' }}>Terms</button>
+        <span>·</span>
+        <button type="button" onClick={() => navigate('/privacy')} style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer', textDecoration: 'underline', fontSize: 'inherit' }}>Privacy</button>
+        <span>·</span>
+        <button type="button" onClick={() => navigate('/impressum')} style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer', textDecoration: 'underline', fontSize: 'inherit' }}>Notice</button>
+        <span>·</span>
+        <button type="button" onClick={() => navigate('/cookies')} style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer', textDecoration: 'underline', fontSize: 'inherit' }}>Cookies</button>
+      </div>
       <p className="unofficial">Unofficial collector/community {isGuest ? 'public preview' : identity ? 'platform' : 'demo'}<br />Not affiliated with any publisher or marketplace.</p>
     </aside>
     <div className="app-main">
       <header className="topbar">
-        <div><p className="eyebrow mobile-only">TCG Harbor</p><h1>{title[0]}</h1><p>{title[1]}</p></div>
+        <div><p className="eyebrow mobile-only">{LEGAL_CONFIG.brandName}</p><h1>{title[0]}</h1><p>{title[1]}</p></div>
         <div className="top-actions">{isGuest ? <div className="guest-top-actions"><Chip tone="neutral">Guest · browse only</Chip><Button type="button" size="sm" onClick={guest?.onRequestAuthentication}>Sign in / Create account</Button></div> : <>{!identity && <DemoBadge compact />}<button className="icon-button notification-button" onClick={() => setNotificationsOpen((open) => !open)} aria-label="Notifications"><Icon name="bell" />{unreadNotificationCount > 0 && <span>{unreadNotificationCount}</span>}</button><AccountMenuButton initials={profileInitials} active={path === '/settings'} onOpen={() => navigate('/settings')} /></>}</div>
       </header>
       <main id="main-content">
@@ -610,11 +627,11 @@ function AuthPage({ onSignIn }: { onSignIn: () => void }) {
   };
   return <main className="auth-page">
     <section className="auth-story">
-      <div className="auth-brand"><span className="brand-mark"><span /></span><strong>TCG Harbor</strong></div>
+      <div className="auth-brand"><span className="brand-mark"><span /></span><strong>{LEGAL_CONFIG.brandName}</strong></div>
       <div className="auth-copy"><DemoBadge /><p className="eyebrow">Your collection, in its element</p><h1>Know what you hold.<br /><em>Trade where you belong.</em></h1><p>Track your One Piece Card Game portfolio, discover local game stores, and trade within verified store communities.</p><div className="auth-proof"><span><Icon name="chart" /><strong>30 days</strong><small>price history</small></span><span><Icon name="store" /><strong>6 stores</strong><small>demo communities</small></span><span><Icon name="lock" /><strong>Private</strong><small>by default</small></span></div></div>
       <p className="auth-disclaimer">Unofficial collector/community preview. EU values use Cardmarket’s daily public feed; card metadata, art, and US references use OPTCG API and TCGCSV. Not affiliated with Bandai or any data provider.</p>
     </section>
-    <section className="auth-form-wrap"><form className="auth-form" onSubmit={submit}><div className="auth-mobile-brand"><span className="brand-mark"><span /></span><strong>TCG Harbor</strong></div><p className="eyebrow">Welcome aboard</p><h2>{mode === 'signin' ? 'Sign in to your harbor' : mode === 'signup' ? 'Create your collector profile' : 'Reset your password'}</h2><p>{mode === 'reset' ? 'We’ll send a secure reset link if an account exists.' : 'Your collection and portfolio value stay private.'}</p><label>Email address<input name="email" type="email" autoComplete="email" /></label>{mode !== 'reset' && <label>Password<input name="password" type="password" autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} minLength={8} /></label>}{error && <div className="form-error"><Icon name="info" />{error}</div>}<Button type="submit" className="full-width">{mode === 'signin' ? 'Sign in' : mode === 'signup' ? 'Create account' : 'Send reset link'}<Icon name="chevron" /></Button><div className="auth-links">{mode !== 'signin' ? <button type="button" onClick={() => { setMode('signin'); setError(''); }}>Back to sign in</button> : <><button type="button" onClick={() => setMode('signup')}>Create account</button><button type="button" onClick={() => setMode('reset')}>Forgot password?</button></>}</div></form></section>
+    <section className="auth-form-wrap"><form className="auth-form" onSubmit={submit}><div className="auth-mobile-brand"><span className="brand-mark"><span /></span><strong>{LEGAL_CONFIG.brandName}</strong></div><p className="eyebrow">Welcome aboard</p><h2>{mode === 'signin' ? 'Sign in to your harbor' : mode === 'signup' ? 'Create your collector profile' : 'Reset your password'}</h2><p>{mode === 'reset' ? 'We’ll send a secure reset link if an account exists.' : 'Your collection and portfolio value stay private.'}</p><label>Email address<input name="email" type="email" autoComplete="email" /></label>{mode !== 'reset' && <label>Password<input name="password" type="password" autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} minLength={8} /></label>}{error && <div className="form-error"><Icon name="info" />{error}</div>}{mode === 'signup' && <p className="auth-legal-consent" style={{ fontSize: '0.8rem', color: 'var(--text-muted, #94a3b8)', margin: '0.5rem 0', lineHeight: 1.45 }}>By creating an account, you confirm that you are at least {LEGAL_CONFIG.minimumAge} years old, agree to our <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary, #38bdf8)', textDecoration: 'underline' }}>Terms of Service</a>, and acknowledge our <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary, #38bdf8)', textDecoration: 'underline' }}>Privacy Policy</a>.</p>}<Button type="submit" className="full-width">{mode === 'signin' ? 'Sign in' : mode === 'signup' ? 'Create account' : 'Send reset link'}<Icon name="chevron" /></Button><div className="auth-links">{mode !== 'signin' ? <button type="button" onClick={() => { setMode('signin'); setError(''); }}>Back to sign in</button> : <><button type="button" onClick={() => setMode('signup')}>Create account</button><button type="button" onClick={() => setMode('reset')}>Forgot password?</button></>}</div><div style={{ marginTop: '1.25rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border, rgba(255,255,255,0.08))', display: 'flex', justifyContent: 'center', gap: '0.75rem', fontSize: '0.75rem', color: 'var(--text-muted, #94a3b8)' }}><a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>Terms</a><span>·</span><a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy</a><span>·</span><a href="/impressum" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>Legal Notice</a><span>·</span><a href="/cookies" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>Cookies</a></div></form></section>
   </main>;
 }
 

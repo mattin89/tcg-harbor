@@ -15,6 +15,11 @@ describe('guest access v4', () => {
     ['/stores', '/stores'],
     ['/stores/', '/stores'],
     ['/stores/store-123', '/stores/store-123'],
+    ['/legal', '/legal'],
+    ['/terms', '/terms'],
+    ['/privacy', '/privacy'],
+    ['/cookies', '/cookies'],
+    ['/impressum', '/impressum'],
   ])('keeps public guest route %s available', (requestedPath, expectedPath) => {
     expect(isGuestPublicPathV4(requestedPath)).toBe(true);
     expect(resolveViewerPathV4(requestedPath, 'guest')).toBe(expectedPath);

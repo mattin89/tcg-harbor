@@ -129,3 +129,22 @@ An architectural flaw existed in `cardmarketProductUrl`:
    * Direct canonical singles URLs increased from **40** cards to **5,574 cards (90.4% of the entire 6,163 catalog)**.
    * Only unnumbered DON cards and sealed boxes (which have no single slug) fall back to targeted search.
 
+---
+
+## 8. Catalog-Wide Cardmarket Price Guide Refresh (1,892 Price Updates)
+
+### The Discrepancy
+The user observed that **Monkey.D.Luffy OP16-022 (`890624`)** displayed a daily market trend of `37.51 €` in the app, whereas Cardmarket showed `38.05 €`.
+
+### Root Cause
+1. **Weekend Price Movement:** The app's dataset was captured on Saturday morning, October 3, 2026 (02:42 UTC+2), when the official trend was 37.51 €. Over the weekend, completed transactions nudged the 1-day/7-day rolling trend to 38.05 €.
+2. **Upstream Daily Sync Halt:** The automated GitHub Actions sync on October 4 safely halted because Bandai's archive website temporarily returned duplicate product records for `OP-06`, preventing automated publication.
+
+### Solution & Deployment
+1. Built [`scripts/update-cardmarket-prices.mjs`](file:///c:/Users/delor/Documents/Codex/Projects/tcg-harbor/scripts/update-cardmarket-prices.mjs) to ingest the fresh official Cardmarket price guide (`price_guide_18.json`, 13,384 products).
+2. Refreshed all 4,411 Cardmarket-linked assets in [`src/data/generated/onepiece-market-v10.json`](file:///c:/Users/delor/Documents/Codex/Projects/tcg-harbor/src/data/generated/onepiece-market-v10.json):
+   * **1,892 card prices updated** to the latest numbers.
+   * **Monkey.D.Luffy OP16-022 (`890624`):** Updated from `37.51 €` to **`38.05 €`**, with rolling 1D (-2.34%), 1W (-4.68%), and 1M (-7.91%) trend metrics synchronized.
+   * **All candidate references & artwork tracking:** Maintained exact parity between `quote.cardmarket`, `pricing.cardmarket.trend`, and `cardmarketCandidates`.
+3. Verified all 527 unit tests pass, completed production build, and deployed to Render.
+

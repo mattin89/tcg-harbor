@@ -1,0 +1,26 @@
+/*
+  X-Robots-Tag: noai, noimageai
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  X-Permitted-Cross-Domain-Policies: none
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+
+/assets/*
+  X-Robots-Tag: noai, noimageai
+  Cache-Control: public, max-age=31536000, immutable
+
+/catalog/*
+  X-Robots-Tag: noindex, nofollow, noai, noimageai
+  Cache-Control: private, no-transform
+
+/*.json
+  X-Robots-Tag: noindex, nofollow, noai, noimageai
+  Cache-Control: no-store, private
+
+/.well-known/tdmrep.json
+  Content-Type: application/json; charset=utf-8
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=86400

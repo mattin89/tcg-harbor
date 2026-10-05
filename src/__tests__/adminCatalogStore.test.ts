@@ -189,8 +189,12 @@ describe('adminCatalogStore', () => {
     expect(applied[0].approvedAt).toBeDefined();
     expect(applied[1].isApproved).toBe(false);
 
-    // Exporting and re-importing preserves approved IDs
+    // Exporting and re-importing preserves approved IDs and attaches provenance watermark
     const exported = exportCatalogOverridesJson();
+    const parsedExport = JSON.parse(exported);
+    expect(parsedExport.provenance?.watermarkId).toContain('TCG-HARBOR');
+    expect(parsedExport.provenance?.databaseRightDirective).toContain('96/9/EC');
+
     clearAllAdminCatalogOverrides();
     expect(getAdminApprovedAssetIds().size).toBe(0);
 

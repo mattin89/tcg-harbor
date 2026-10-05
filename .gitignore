@@ -18,3 +18,4 @@ src/data/generated/onepiece-market-v6.json
 
 # Local scripts cache
 scripts/data/cache/
+scratch/

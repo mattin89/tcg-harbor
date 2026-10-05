@@ -100,6 +100,22 @@ describe('legal compliance & EU data protection suite', () => {
     expect(ageSection?.content[1]).toContain('affirmatively confirm that you are at least 16 years of age');
   });
 
+  it('explicitly asserts EU sui generis database rights and DSM Directive Art. 4(3) AI opt-out', () => {
+    const terms = getTermsOfService(LEGAL_CONFIG);
+    const dbSection = terms.sections.find((s) => s.id === 'database-protection-ai-reservation');
+    expect(dbSection).toBeDefined();
+    expect(dbSection?.title).toContain('Database Rights');
+    expect(dbSection?.content[0]).toContain('Directive 96/9/EC');
+    expect(dbSection?.content[0]).toContain('sui generis database rights');
+    expect(dbSection?.content[2]).toContain('Article 4(3) of Directive (EU) 2019/790');
+    expect(dbSection?.content[4]).toContain('.well-known/tdmrep.json');
+
+    const prohibitedSection = terms.sections.find((s) => s.id === 'prohibited-conduct');
+    expect(prohibitedSection).toBeDefined();
+    expect(prohibitedSection?.listItems?.some((item) => item.includes('large language models (LLMs)'))).toBe(true);
+    expect(prohibitedSection?.listItems?.some((item) => item.includes('clone websites'))).toBe(true);
+  });
+
   it('correctly sets Mario De Lorenzo and active contact email across legal policies', () => {
     expect(LEGAL_CONFIG.operatorName).toBe('Mario De Lorenzo');
     expect(LEGAL_CONFIG.supportEmail).toBe('delorenzomario9@gmail.com');

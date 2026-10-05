@@ -76,12 +76,14 @@ export function getTermsOfService(config: LegalConfig = LEGAL_CONFIG): LegalDocu
       },
       {
         id: 'prohibited-conduct',
-        title: '7. Prohibited Activities',
+        title: '7. Prohibited Activities and Anti-Scraping Rules',
         content: [
           'You agree not to misuse the platform or assist others in doing so. Prohibited activities include:',
         ],
         listItems: [
-          'Scraping, harvesting, or extracting bulk data without our prior written consent.',
+          'Extracting, harvesting, or scraping platform data, card listings, pricing tables, or user directories via bots, crawlers, spiders, or automated scripts, with the exception of standard web search crawlers indexing public URLs in compliance with our robots.txt.',
+          'Feeding, tokenizing, or ingesting platform code, visual layouts, curated card catalog records, or price correlation models into machine learning pipelines, large language models (LLMs), or generative AI training datasets.',
+          'Decompiling, reverse engineering, disassembling, or creating clone websites, derivative platforms, competing aggregators, or automated mirrors of our catalog and services.',
           'Posting counterfeit, stolen, or misrepresented cards or merchandise.',
           'Harassing, threatening, stalking, or defaming other members or store managers.',
           'Attempting to bypass authentication gates, probe server vulnerabilities, or flood platform infrastructure.',
@@ -90,8 +92,20 @@ export function getTermsOfService(config: LegalConfig = LEGAL_CONFIG): LegalDocu
         ],
       },
       {
+        id: 'database-protection-ai-reservation',
+        title: '8. Database Rights and Text & Data Mining (AI) Reservation',
+        content: [
+          `Under Directive 96/9/EC of the European Parliament and of the Council on the legal protection of databases, ${config.brandName} holds sui generis database rights over the compilation, verification, and presentation of card catalog records, pricing indexes, cross-market artwork correlations, and store directories.`,
+          'We expended substantial human and computational resources verifying and structuring this data.',
+          'Under Article 4(3) of Directive (EU) 2019/790 (DSM Directive), we expressly reserve all rights against text and data mining, automated harvesting, and machine learning ingestion.',
+          'This opt-out governs every page, static manifest, image, and API response.',
+          'We declare this reservation in machine-readable format via the W3C TDM Reservation Protocol (.well-known/tdmrep.json), robots.txt Content-Signal headers, and X-Robots-Tag HTTP responses.',
+          'Unauthorized extraction or AI ingestion infringes European database law and breaches these Terms.',
+        ],
+      },
+      {
         id: 'user-content',
-        title: '8. User Content and License',
+        title: '9. User Content and License',
         content: [
           'You retain ownership of any text, images, or trade listings you submit. By uploading content to public or community areas, you grant us a worldwide, non-exclusive, royalty-free license to host, display, and format that content solely to operate the platform.',
           'We reserve the right to remove any content that violates these Terms or applicable laws.',
@@ -99,7 +113,7 @@ export function getTermsOfService(config: LegalConfig = LEGAL_CONFIG): LegalDocu
       },
       {
         id: 'liability-limits',
-        title: '9. Limitation of Liability',
+        title: '10. Limitation of Liability',
         content: [
           `To the maximum extent permitted by applicable law in ${config.governingLaw}, ${config.brandName} and its operators provide the service on an "as is" and "as available" basis without warranties of any kind.`,
           'We are liable only for damages caused by willful misconduct or gross negligence. Statutory liability for bodily injury, life, health, or claims under mandatory consumer protection legislation remains unaffected.',
@@ -107,7 +121,7 @@ export function getTermsOfService(config: LegalConfig = LEGAL_CONFIG): LegalDocu
       },
       {
         id: 'termination-severability',
-        title: '10. Suspension, Termination, and Severability',
+        title: '11. Suspension, Termination, and Severability',
         content: [
           'We may suspend or terminate your access if you breach these Terms. You may delete your account at any time through your account settings.',
           'If any provision in these Terms is deemed invalid or unenforceable, that provision will be severed, and the remaining provisions will continue in full force and effect.',

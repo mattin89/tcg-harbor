@@ -1,4 +1,5 @@
 import type { DemoAsset } from '../data/demo';
+import { CATALOG_PROVENANCE_SIGNATURE } from '../domain/catalogWatermark';
 import seedAdminCatalogOverrides from '../data/seedAdminCatalogOverrides.json';
 
 export interface AdminCatalogOverride {
@@ -410,7 +411,11 @@ export function diagnoseCatalogItem(
 export function exportCatalogOverridesJson(): string {
   const overrides = getAdminCatalogOverrides();
   const approvedIds = Array.from(getAdminApprovedAssetIds());
-  return JSON.stringify({ overrides, approvedIds }, null, 2);
+  return JSON.stringify({
+    provenance: CATALOG_PROVENANCE_SIGNATURE,
+    overrides,
+    approvedIds,
+  }, null, 2);
 }
 
 /**

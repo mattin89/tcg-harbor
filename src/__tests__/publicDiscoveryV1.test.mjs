@@ -15,6 +15,7 @@ import {
   renderAgentSkillsIndexV1,
   renderRobotsTxtV1,
   renderSitemapXmlV1,
+  renderTdmRepJsonV1,
 } from '../../scripts/generate-public-discovery-v1.mjs';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -91,5 +92,18 @@ describe('public discovery v1', () => {
 
     expect(renderAgentSkillsIndexV1({ skillContents: crlf }))
       .toBe(renderAgentSkillsIndexV1({ skillContents: lf }));
+  });
+
+  it('publishes valid W3C TDM Reservation Protocol metadata and robots reservation headers', async () => {
+    const robots = await readFile(resolve(publicRoot, 'robots.txt'), 'utf8');
+    expect(robots).toContain('tdm-reservation: 1');
+    expect(robots).toContain(`tdm-policy: ${DEFAULT_PUBLIC_SITE_ORIGIN_V1}/terms#database-protection-ai-reservation`);
+
+    const tdmrepRaw = (await readFile(resolve(publicRoot, '.well-known/tdmrep.json'), 'utf8')).replace(/\r\n/g, '\n');
+    expect(tdmrepRaw).toBe(renderTdmRepJsonV1());
+    const tdmrep = JSON.parse(tdmrepRaw);
+    expect(tdmrep.version).toBe('1.0');
+    expect(tdmrep['tdm-reservation']).toBe(1);
+    expect(tdmrep.policy).toBe(`${DEFAULT_PUBLIC_SITE_ORIGIN_V1}/terms#database-protection-ai-reservation`);
   });
 });

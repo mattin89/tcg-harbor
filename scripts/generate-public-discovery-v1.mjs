@@ -26,6 +26,8 @@ export const PRIVATE_ROUTE_PREFIXES_V1 = Object.freeze([
   '/scan',
   '/join',
   '/signin',
+  '/catalog',
+  '/data',
 ]);
 
 export const SEARCH_DISCOVERY_AGENTS_V1 = Object.freeze([
@@ -35,15 +37,31 @@ export const SEARCH_DISCOVERY_AGENTS_V1 = Object.freeze([
 
 export const RESTRICTED_AI_AGENTS_V1 = Object.freeze([
   'GPTBot',
+  'ChatGPT-User',
   'Claude-Web',
   'ClaudeBot',
-  'Google-Extended',
-  'Amazonbot',
   'anthropic-ai',
+  'Google-Extended',
+  'GoogleOther',
+  'Amazonbot',
   'Bytespider',
   'CCBot',
   'Applebot-Extended',
   'meta-externalagent',
+  'Diffbot',
+  'FacebookBot',
+  'Omgilibot',
+  'cohere-ai',
+  'PerplexityBot',
+  'YouBot',
+  'Timpibot',
+  'ImagesiftBot',
+  'PetalBot',
+  'SeekportBot',
+  'TurnitinBot',
+  'DataForSeoBot',
+  'Scrapy',
+  'Webzio-Extended',
 ]);
 
 export const PUBLIC_AGENT_SKILL_V1 = Object.freeze({
@@ -83,6 +101,10 @@ export function renderRobotsTxtV1(origin = DEFAULT_PUBLIC_SITE_ORIGIN_V1) {
   return [
     '# TCG Harbor public discovery policy.',
     '# robots.txt controls crawler access; authenticated routes remain server-protected.',
+    '# EU Directive 2019/790 Article 4(3) Text and Data Mining Reservation.',
+    'tdm-reservation: 1',
+    `tdm-policy: ${normalizedOrigin}/terms#database-protection-ai-reservation`,
+    '',
     'User-agent: *',
     publicRules,
     contentSignal,
@@ -92,7 +114,7 @@ export function renderRobotsTxtV1(origin = DEFAULT_PUBLIC_SITE_ORIGIN_V1) {
     publicRules,
     contentSignal,
     '',
-    '# Automated model-training and bulk AI corpus crawlers are not permitted.',
+    '# Automated model-training, commercial scrapers, and AI corpus harvesters are forbidden.',
     ...RESTRICTED_AI_AGENTS_V1.map((agent) => `User-agent: ${agent}`),
     'Disallow: /',
     'Content-Signal: ai-train=no, search=no, ai-input=no',
@@ -100,6 +122,15 @@ export function renderRobotsTxtV1(origin = DEFAULT_PUBLIC_SITE_ORIGIN_V1) {
     `Sitemap: ${normalizedOrigin}/sitemap.xml`,
     '',
   ].join('\n');
+}
+
+export function renderTdmRepJsonV1(origin = DEFAULT_PUBLIC_SITE_ORIGIN_V1) {
+  const normalizedOrigin = normalizePublicSiteOriginV1(origin);
+  return `${JSON.stringify({
+    version: '1.0',
+    'tdm-reservation': 1,
+    policy: `${normalizedOrigin}/terms#database-protection-ai-reservation`,
+  }, null, 2)}\n`;
 }
 
 export function renderSitemapXmlV1(origin = DEFAULT_PUBLIC_SITE_ORIGIN_V1) {
@@ -176,6 +207,7 @@ export async function generatePublicDiscoveryV1({
       '.well-known/agent-skills/index.json',
       renderAgentSkillsIndexV1({ origin: normalizedOrigin, skillContents }),
     ],
+    ['.well-known/tdmrep.json', renderTdmRepJsonV1(normalizedOrigin)],
   ];
 
   const changed = [];

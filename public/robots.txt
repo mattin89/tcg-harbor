@@ -1,5 +1,9 @@
 # TCG Harbor public discovery policy.
 # robots.txt controls crawler access; authenticated routes remain server-protected.
+# EU Directive 2019/790 Article 4(3) Text and Data Mining Reservation.
+tdm-reservation: 1
+tdm-policy: https://tcg-harbor.onrender.com/terms#database-protection-ai-reservation
+
 User-agent: *
 Allow: /cards
 Allow: /stores
@@ -18,6 +22,8 @@ Disallow: /store-admin
 Disallow: /scan
 Disallow: /join
 Disallow: /signin
+Disallow: /catalog
+Disallow: /data
 Content-Signal: ai-train=no, search=yes, ai-input=yes
 
 # Search discovery is allowed for public cards and approved stores.
@@ -40,19 +46,37 @@ Disallow: /store-admin
 Disallow: /scan
 Disallow: /join
 Disallow: /signin
+Disallow: /catalog
+Disallow: /data
 Content-Signal: ai-train=no, search=yes, ai-input=yes
 
-# Automated model-training and bulk AI corpus crawlers are not permitted.
+# Automated model-training, commercial scrapers, and AI corpus harvesters are forbidden.
 User-agent: GPTBot
+User-agent: ChatGPT-User
 User-agent: Claude-Web
 User-agent: ClaudeBot
-User-agent: Google-Extended
-User-agent: Amazonbot
 User-agent: anthropic-ai
+User-agent: Google-Extended
+User-agent: GoogleOther
+User-agent: Amazonbot
 User-agent: Bytespider
 User-agent: CCBot
 User-agent: Applebot-Extended
 User-agent: meta-externalagent
+User-agent: Diffbot
+User-agent: FacebookBot
+User-agent: Omgilibot
+User-agent: cohere-ai
+User-agent: PerplexityBot
+User-agent: YouBot
+User-agent: Timpibot
+User-agent: ImagesiftBot
+User-agent: PetalBot
+User-agent: SeekportBot
+User-agent: TurnitinBot
+User-agent: DataForSeoBot
+User-agent: Scrapy
+User-agent: Webzio-Extended
 Disallow: /
 Content-Signal: ai-train=no, search=no, ai-input=no
 

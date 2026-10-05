@@ -123,10 +123,13 @@ export function getAdminApprovedAssetIds(): Set<string> {
  */
 export function ensureSeedCatalogOverridesLoaded(): { imported: number; error: string | null } {
   const current = getAdminCatalogOverrides();
-  if (Object.keys(current).length > 0) {
+  const seedKeys = Object.keys(seedAdminCatalogOverridesMap);
+  const currentKeys = Object.keys(current);
+  if (currentKeys.length >= seedKeys.length && seedKeys.length > 0) {
     return { imported: 0, error: null };
   }
-  return importCatalogOverridesJson(JSON.stringify(seedAdminCatalogOverridesMap));
+  const merged = { ...seedAdminCatalogOverridesMap, ...current };
+  return importCatalogOverridesJson(JSON.stringify(merged));
 }
 
 /**

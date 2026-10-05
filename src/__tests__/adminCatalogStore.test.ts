@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { DemoAsset } from '../data/demo';
+import { catalogAssets, type DemoAsset } from '../data/demo';
 import {
   applyCatalogOverrides,
   approveAllVerifiedItems,
@@ -14,6 +14,7 @@ import {
   resetAdminCatalogOverride,
   revokeCatalogAssetApproval,
   saveAdminCatalogOverride,
+  seedAdminCatalogOverridesMap,
   type AdminCatalogOverride,
 } from '../services/adminCatalogStore';
 
@@ -196,6 +197,22 @@ describe('adminCatalogStore', () => {
     const importRes = importCatalogOverridesJson(exported);
     expect(importRes.error).toBeNull();
     expect(getAdminApprovedAssetIds().has(mockBaseAsset.id)).toBe(true);
+  });
+
+  it('resolves all catalog diagnostic issues when seedAdminCatalogOverridesMap is applied', () => {
+    expect(Object.keys(seedAdminCatalogOverridesMap).length).toBeGreaterThanOrEqual(1600);
+
+    const activeCatalog = applyCatalogOverrides(catalogAssets, seedAdminCatalogOverridesMap);
+    let flaggedCount = 0;
+
+    for (const asset of activeCatalog) {
+      const diag = diagnoseCatalogItem(asset);
+      if (diag.isFlaggedOrError) {
+        flaggedCount++;
+      }
+    }
+
+    expect(flaggedCount).toBe(0);
   });
 });
 

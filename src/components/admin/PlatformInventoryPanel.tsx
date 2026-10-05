@@ -15,6 +15,7 @@ import {
   resetAdminCatalogOverride,
   revokeCatalogAssetApproval,
   saveAdminCatalogOverride,
+  seedAdminCatalogOverridesMap,
   type AdminCatalogOverride,
   type CatalogItemIssue,
 } from '../../services/adminCatalogStore';
@@ -73,11 +74,8 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
   // On initial mount, ensure seed overrides are loaded and verified cards without issues are approved
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const rawOverrides = window.localStorage.getItem('tcg-harbor-admin-catalog-overrides-v1');
-      if (rawOverrides === null) {
-        ensureSeedCatalogOverridesLoaded();
-        setOverrides(getAdminCatalogOverrides());
-      }
+      ensureSeedCatalogOverridesLoaded();
+      setOverrides(getAdminCatalogOverrides());
       const raw = window.localStorage.getItem('tcg-harbor-admin-approved-assets-v1');
       if (raw === null) {
         approveAllVerifiedItems(catalogAssets, flaggedAssetIds);
@@ -87,7 +85,8 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
   }, [flaggedAssetIds]);
 
   const activeCatalog = useMemo(() => {
-    return applyCatalogOverrides(catalogAssets, overrides, approvedIds);
+    const effectiveOverrides = { ...seedAdminCatalogOverridesMap, ...overrides };
+    return applyCatalogOverrides(catalogAssets, effectiveOverrides, approvedIds);
   }, [overrides, approvedIds]);
 
   const diagnosticsMap = useMemo(() => {

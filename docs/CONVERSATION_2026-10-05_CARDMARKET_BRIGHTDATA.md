@@ -103,3 +103,29 @@ Cardmarket uses irregular expansion naming rules:
    * Automated bundle secret scan cleared cleanly.
 3. **Git Integration:** Rebased onto `origin/main` (incorporating automated daily catalog updates from `tcg-harbor-data-bot`), committed (`3308e64`), and pushed to GitHub.
 4. **Render Deployment:** Triggered deployment `dep-db1lcqqd0e5s738a7fv0`. Status reached `live` at 07:49:52 UTC. Verified HTTP 200 response from `https://tcg-harbor.onrender.com`.
+
+---
+
+## 7. Catalog-Wide Expansion & Elimination of Short-Circuit Fallback
+
+### The Issue with Products 732763 & 890624
+When testing cards outside the initial 40 inventory items, the user noticed:
+* **Product 732763 · OP01-078 (Boa Hancock in Kingdoms of Intrigue):** Still opened `Search?idProduct=732763`.
+* **Product 890624 · OP16-022 (Monkey D. Luffy in OP16):** Still opened `Search?idProduct=890624`.
+
+### Code Investigation & Solution
+An architectural flaw existed in `cardmarketProductUrl`:
+* Any card having a numeric `cardmarketProductId` was intercepted by an eager fallback check placed **before** the slug generation logic:
+  `if (asset.cardmarketProductId) return .../Search?idProduct=${asset.cardmarketProductId};`
+* This line prevented 4,411 catalog cards from ever reaching the slug generator.
+
+### Changes Applied:
+1. **Added Scraped Mappings:**
+   * `"732763": "Kingdoms-of-Intrigue/Boa-Hancock-OP01-078"`
+   * `"890624": "OP16/MonkeyDLuffy-OP16-022-V2"`
+2. **Special Expansions Map:** Defined `SPECIAL_EXPANSIONS` for all Extra Boosters (`EB01`–`EB04`), `PRB01`–`PRB02`, and Starter Decks (`ST01`–`ST28`).
+3. **Precedence Reordering:** Moved `Search?idProduct=...` to the fallback position after slug building.
+4. **Catalog Coverage Impact:**
+   * Direct canonical singles URLs increased from **40** cards to **5,574 cards (90.4% of the entire 6,163 catalog)**.
+   * Only unnumbered DON cards and sealed boxes (which have no single slug) fall back to targeted search.
+

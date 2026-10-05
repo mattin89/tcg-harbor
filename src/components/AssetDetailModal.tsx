@@ -39,6 +39,37 @@ export function initialAcquisition(asset: DemoAsset): AcquisitionLot | undefined
   return asset.acquisitionLots?.[0];
 }
 
+const SPECIAL_EXPANSIONS: Record<string, string> = {
+  EB01: 'Memorial-Collection',
+  EB02: 'Anime-25th-Collection',
+  EB03: 'Heroines-Edition',
+  EB04: 'The-Azure-Seas-Seven',
+  PRB01: 'The-Best',
+  PRB02: 'The-Best-Vol2',
+  ST01: 'Starter-Deck-Straw-Hat-Crew',
+  ST02: 'Starter-Deck-Worst-Generation',
+  ST03: 'Starter-Deck-The-Seven-Warlords-of-The-Sea',
+  ST04: 'Starter-Deck-Animal-Kingdom-Pirates',
+  ST05: 'Starter-Deck-Film-Edition',
+  ST06: 'Starter-Deck-Absolute-Justice',
+  ST07: 'Starter-Deck-Big-Mom-Pirates',
+  ST08: 'Starter-Deck-MonkeyDLuffy',
+  ST09: 'Starter-Deck-Yamato',
+  ST10: 'Ultra-Deck-The-Three-Captains',
+  ST11: 'Starter-Deck-Uta',
+  ST12: 'Starter-Deck-Zoro-and-Sanji',
+  ST13: 'Ultra-Deck-The-Three-Brothers',
+  ST14: 'Starter-Deck-3D2Y',
+  ST15: 'Starter-Deck-RED-Edward-Newgate',
+  ST16: 'Starter-Deck-GREEN-Uta',
+  ST17: 'Starter-Deck-BLUE-Donquixote-Doflamingo',
+  ST18: 'Starter-Deck-PURPLE-Monkey-D-Luffy',
+  ST19: 'Starter-Deck-BLACK-Smoker',
+  ST20: 'Starter-Deck-YELLOW-Charlotte-Katakuri',
+  ST22: 'Starter-Deck-EX-Ace-Newgate',
+  ST28: 'Starter-Deck-Green-Yellow-Yamato',
+};
+
 export function cardmarketProductUrl(asset: DemoAsset): string {
   const lang = typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('de') ? 'de' : 'en';
 
@@ -46,10 +77,6 @@ export function cardmarketProductUrl(asset: DemoAsset): string {
   if (asset.cardmarketProductId && canonicalMap[String(asset.cardmarketProductId)]) {
     const slug = canonicalMap[String(asset.cardmarketProductId)];
     return `https://www.cardmarket.com/${lang}/OnePiece/Products/Singles/${slug}`;
-  }
-
-  if (asset.cardmarketProductId && Number.isFinite(asset.cardmarketProductId) && asset.cardmarketProductId > 0) {
-    return `https://www.cardmarket.com/${lang}/OnePiece/Products/Search?idProduct=${asset.cardmarketProductId}`;
   }
 
   if (asset.kind === 'card' && asset.number && asset.number !== 'DON!!') {
@@ -60,11 +87,14 @@ export function cardmarketProductUrl(asset: DemoAsset): string {
       if (match) expansion = match[1];
     }
     if (!expansion && asset.setCode) {
-      expansion = asset.setCode.replace(/[^a-zA-Z0-9]/g, '');
+      expansion = SPECIAL_EXPANSIONS[asset.setCode] || asset.setCode.replace(/[^a-zA-Z0-9]/g, '');
     }
     if (!expansion) {
       const prefixMatch = asset.number.match(/^([A-Za-z]+[-]?\d+)/);
-      if (prefixMatch) expansion = prefixMatch[1].replace(/[^a-zA-Z0-9]/g, '');
+      if (prefixMatch) {
+        const prefix = prefixMatch[1].replace(/[^a-zA-Z0-9]/g, '');
+        expansion = SPECIAL_EXPANSIONS[prefix] || prefix;
+      }
     }
 
     if (expansion) {
@@ -88,6 +118,10 @@ export function cardmarketProductUrl(asset: DemoAsset): string {
         return `https://www.cardmarket.com/${lang}/OnePiece/Products/Singles/${expansion}/${cleanName}-${cleanNumber}-${version}`;
       }
     }
+  }
+
+  if (asset.cardmarketProductId && Number.isFinite(asset.cardmarketProductId) && asset.cardmarketProductId > 0) {
+    return `https://www.cardmarket.com/${lang}/OnePiece/Products/Search?idProduct=${asset.cardmarketProductId}`;
   }
 
   const query = asset.number ?? asset.name;

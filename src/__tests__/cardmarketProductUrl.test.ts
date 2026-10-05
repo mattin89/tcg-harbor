@@ -104,15 +104,39 @@ describe('cardmarketProductUrl generalized logic', () => {
     expect(luffyUrl).toMatch(/\/OnePiece\/Products\/Singles\/Special-Tournaments-Promos\/MonkeyDLuffy-P-041-V4$/);
   });
 
-  it('falls back to search for unmapped cardmarketProductId', () => {
+  it('falls back to search for unmapped cardmarketProductId on unnumbered products', () => {
     const unmappedAsset = createMockAsset({
-      name: 'Unmapped Single',
-      setCode: 'OP99',
-      number: 'OP99-999',
+      kind: 'sealed',
+      name: 'Special Tournament Prize Pack',
       cardmarketProductId: 999999999,
+      number: undefined,
     });
     const url = cardmarketProductUrl(unmappedAsset);
     expect(url).toContain('/OnePiece/Products/Search?idProduct=999999999');
+  });
+
+  it('resolves product 732763 (Boa Hancock OP01-078) to Kingdoms of Intrigue', () => {
+    const boaAsset = createMockAsset({
+      name: 'Boa Hancock',
+      setCode: 'OP04',
+      number: 'OP01-078',
+      variant: 'Special art · P2',
+      cardmarketProductId: 732763,
+    });
+    const url = cardmarketProductUrl(boaAsset);
+    expect(url).toMatch(/\/OnePiece\/Products\/Singles\/Kingdoms-of-Intrigue\/Boa-Hancock-OP01-078$/);
+  });
+
+  it('resolves product 890624 (Monkey D Luffy OP16-022) to OP16 V2', () => {
+    const luffyAsset = createMockAsset({
+      name: 'Monkey.D.Luffy (022)',
+      setCode: 'OP16',
+      number: 'OP16-022',
+      variant: 'Alternate art · P1',
+      cardmarketProductId: 890624,
+    });
+    const url = cardmarketProductUrl(luffyAsset);
+    expect(url).toMatch(/\/OnePiece\/Products\/Singles\/OP16\/MonkeyDLuffy-OP16-022-V2$/);
   });
 
   it('falls back to search for sealed booster boxes', () => {

@@ -84,6 +84,37 @@ describe('cardmarketProductUrl generalized logic', () => {
     expect(url).toMatch(/\/OnePiece\/Products\/Singles\/OP02\/PortgasDAce-OP02-013-V3$/);
   });
 
+  it('resolves canonical Cardmarket URL for inventory cards mapped in canonical dictionary', () => {
+    const izoAsset = createMockAsset({
+      name: 'Izo',
+      setCode: 'EB01',
+      number: 'EB01-002',
+      cardmarketProductId: 767955,
+    });
+    const url = cardmarketProductUrl(izoAsset);
+    expect(url).toMatch(/\/OnePiece\/Products\/Singles\/Memorial-Collection\/Izo-EB01-002$/);
+
+    const luffyAsset = createMockAsset({
+      name: 'Monkey.D.Luffy',
+      setCode: 'STP',
+      number: 'P-041',
+      cardmarketProductId: 748120,
+    });
+    const luffyUrl = cardmarketProductUrl(luffyAsset);
+    expect(luffyUrl).toMatch(/\/OnePiece\/Products\/Singles\/Special-Tournaments-Promos\/MonkeyDLuffy-P-041-V4$/);
+  });
+
+  it('falls back to search for unmapped cardmarketProductId', () => {
+    const unmappedAsset = createMockAsset({
+      name: 'Unmapped Single',
+      setCode: 'OP99',
+      number: 'OP99-999',
+      cardmarketProductId: 999999999,
+    });
+    const url = cardmarketProductUrl(unmappedAsset);
+    expect(url).toContain('/OnePiece/Products/Search?idProduct=999999999');
+  });
+
   it('falls back to search for sealed booster boxes', () => {
     const sealedAsset = createMockAsset({
       kind: 'sealed',

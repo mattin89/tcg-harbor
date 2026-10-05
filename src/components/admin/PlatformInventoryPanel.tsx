@@ -7,6 +7,7 @@ import {
   approveCatalogAsset,
   clearAllAdminCatalogOverrides,
   diagnoseCatalogItem,
+  ensureSeedCatalogOverridesLoaded,
   exportCatalogOverridesJson,
   getAdminApprovedAssetIds,
   getAdminCatalogOverrides,
@@ -69,9 +70,14 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
     return ids;
   }, []);
 
-  // On initial mount, ensure all verified cards without issues are approved
+  // On initial mount, ensure seed overrides are loaded and verified cards without issues are approved
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      const rawOverrides = window.localStorage.getItem('tcg-harbor-admin-catalog-overrides-v1');
+      if (rawOverrides === null) {
+        ensureSeedCatalogOverridesLoaded();
+        setOverrides(getAdminCatalogOverrides());
+      }
       const raw = window.localStorage.getItem('tcg-harbor-admin-approved-assets-v1');
       if (raw === null) {
         approveAllVerifiedItems(catalogAssets, flaggedAssetIds);

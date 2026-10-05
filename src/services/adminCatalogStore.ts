@@ -1,4 +1,5 @@
 import type { DemoAsset } from '../data/demo';
+import seedAdminCatalogOverrides from '../data/seedAdminCatalogOverrides.json';
 
 export interface AdminCatalogOverride {
   readonly id: string;
@@ -83,6 +84,8 @@ function removeRawStorageItem(key: string): void {
   delete memoryStorage[key];
 }
 
+export const seedAdminCatalogOverridesMap: Record<string, AdminCatalogOverride> = (seedAdminCatalogOverrides ?? {}) as Record<string, AdminCatalogOverride>;
+
 /**
  * Retrieve all persisted catalog overrides from local storage.
  */
@@ -113,6 +116,17 @@ export function getAdminApprovedAssetIds(): Set<string> {
   } catch {
     return new Set();
   }
+}
+
+/**
+ * Automatically load verified seed overrides into local storage if no overrides exist yet.
+ */
+export function ensureSeedCatalogOverridesLoaded(): { imported: number; error: string | null } {
+  const current = getAdminCatalogOverrides();
+  if (Object.keys(current).length > 0) {
+    return { imported: 0, error: null };
+  }
+  return importCatalogOverridesJson(JSON.stringify(seedAdminCatalogOverridesMap));
 }
 
 /**

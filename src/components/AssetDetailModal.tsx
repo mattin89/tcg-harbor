@@ -13,6 +13,7 @@ import {
   type UserCardPriceHistory,
 } from '../domain/cardPriceHistory';
 import { resolveCardmarketArtworkReferenceV10 } from '../domain/cardmarketSearchReferenceV10';
+import cardmarketCanonicalUrls from '../data/generated/cardmarket-canonical-urls.json';
 import { Icon } from './Icon';
 import { Button, CardArt, Chip, Modal, PriceChart, Trend } from './ui';
 
@@ -40,6 +41,12 @@ export function initialAcquisition(asset: DemoAsset): AcquisitionLot | undefined
 
 export function cardmarketProductUrl(asset: DemoAsset): string {
   const lang = typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('de') ? 'de' : 'en';
+
+  const canonicalMap = (cardmarketCanonicalUrls ?? {}) as Record<string, string>;
+  if (asset.cardmarketProductId && canonicalMap[String(asset.cardmarketProductId)]) {
+    const slug = canonicalMap[String(asset.cardmarketProductId)];
+    return `https://www.cardmarket.com/${lang}/OnePiece/Products/Singles/${slug}`;
+  }
 
   if (asset.cardmarketProductId && Number.isFinite(asset.cardmarketProductId) && asset.cardmarketProductId > 0) {
     return `https://www.cardmarket.com/${lang}/OnePiece/Products/Search?idProduct=${asset.cardmarketProductId}`;

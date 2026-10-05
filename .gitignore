@@ -15,3 +15,6 @@ test-results
 # Preserve locally, but publish only the active generated snapshot.
 src/data/generated/onepiece-market.json
 src/data/generated/onepiece-market-v6.json
+
+# Local scripts cache
+scripts/data/cache/

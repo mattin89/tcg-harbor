@@ -39,13 +39,39 @@ export function initialAcquisition(asset: DemoAsset): AcquisitionLot | undefined
   return asset.acquisitionLots?.[0];
 }
 
-const SPECIAL_EXPANSIONS: Record<string, string> = {
+export const SPECIAL_EXPANSIONS: Record<string, string> = {
+  // Mainline Boosters
+  OP01: 'Romance-Dawn',
+  OP02: 'Paramount-War',
+  OP03: 'Pillars-of-Strength',
+  OP04: 'Kingdoms-of-Intrigue',
+  OP05: 'Awakening-of-the-New-Era',
+  OP06: 'Wings-of-the-Captain',
+  OP07: '500-Years-into-the-Future',
+  OP08: 'Two-Legends',
+  OP09: 'Emperors-in-the-New-World',
+  OP10: 'Royal-Blood',
+  OP11: 'A-Fist-of-Divine-Speed',
+  OP12: 'Legacy-of-the-Master',
+  OP13: 'Carrying-on-his-Will',
+  OP14: 'The-Azure-Seas-Seven',
+  'OP14-EB04': 'The-Azure-Seas-Seven',
+  OP15: 'Adventure-on-Kamis-Island',
+  'OP15-EB04': 'Adventure-on-Kamis-Island',
+  OP16: 'The-Time-of-Battle',
+  OP17: 'The-Worlds-Strongest-Warriors',
+
+  // Extra Boosters
   EB01: 'Memorial-Collection',
   EB02: 'Anime-25th-Collection',
   EB03: 'Heroines-Edition',
   EB04: 'The-Azure-Seas-Seven',
+
+  // Premium Boosters
   PRB01: 'The-Best',
   PRB02: 'The-Best-Vol2',
+
+  // Starter Decks
   ST01: 'Starter-Deck-Straw-Hat-Crew',
   ST02: 'Starter-Deck-Worst-Generation',
   ST03: 'Starter-Deck-The-Seven-Warlords-of-The-Sea',
@@ -66,9 +92,39 @@ const SPECIAL_EXPANSIONS: Record<string, string> = {
   ST18: 'Starter-Deck-PURPLE-Monkey-D-Luffy',
   ST19: 'Starter-Deck-BLACK-Smoker',
   ST20: 'Starter-Deck-YELLOW-Charlotte-Katakuri',
+  ST21: 'Starter-Deck-Red-MonkeyDLuffy',
   ST22: 'Starter-Deck-EX-Ace-Newgate',
+  ST23: 'Starter-Deck-Red-Shanks',
+  ST24: 'Starter-Deck-Green-Jewlery-Bonney',
+  ST25: 'Starter-Deck-Blue-Buggy',
+  ST26: 'Starter-Deck-Purple-Black-MonkeyDLuffy',
+  ST27: 'Starter-Deck-Black-MarshallDTeach',
   ST28: 'Starter-Deck-Green-Yellow-Yamato',
+  ST29: 'Starter-Deck-Egghead',
+  ST30: 'Starter-Deck-EX-Luffy-Ace',
+  ST31: 'Starter-Deck-Red-MonkeyDLuffy',
+  ST32: 'Starter-Deck-Green-Roronoa-Zoro',
+  ST33: 'Starter-Deck-Blue-Kuzan',
+  ST34: 'Starter-Deck-Purple-Charlotte-Katakuri',
+  ST35: 'Starter-Deck-Red-Black-Sabo',
+  ST36: 'Starter-Deck-Yellow-Eustass-Captain-Kid',
+
+  // Promos
+  P: 'Promos',
+  PROMO: 'Promos',
+  'OP-PR': 'Promos',
 };
+
+export function cleanCardmarketCardName(name: string): string {
+  let cleaned = name.replace(/\s*\([^)]*\)\s*$/, '').trim();
+  cleaned = cleaned.replace(/^[\s.·!?'"-]+/, '');
+  cleaned = cleaned.replace(/\./g, '-');
+  cleaned = cleaned.replace(/[\s_]+/g, '-');
+  cleaned = cleaned.replace(/['"!?/:;,#&()]/g, '');
+  cleaned = cleaned.replace(/-+/g, '-');
+  cleaned = cleaned.replace(/^-|-$/g, '');
+  return cleaned;
+}
 
 export function cardmarketProductUrl(asset: DemoAsset): string {
   const lang = typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('de') ? 'de' : 'en';
@@ -81,42 +137,38 @@ export function cardmarketProductUrl(asset: DemoAsset): string {
 
   if (asset.kind === 'card' && asset.number && asset.number !== 'DON!!') {
     let expansion = '';
-    const imgUrl = asset.cardmarketArtworkReference?.productImageUrl || asset.cardmarketRegularArtReference?.productImageUrl;
-    if (imgUrl) {
-      const match = imgUrl.match(/\/1621\/([^/]+)\//);
-      if (match) expansion = match[1];
-    }
-    if (!expansion && asset.setCode) {
-      expansion = SPECIAL_EXPANSIONS[asset.setCode] || asset.setCode.replace(/[^a-zA-Z0-9]/g, '');
+    if (asset.setCode) {
+      expansion = SPECIAL_EXPANSIONS[asset.setCode] || '';
     }
     if (!expansion) {
       const prefixMatch = asset.number.match(/^([A-Za-z]+[-]?\d+)/);
       if (prefixMatch) {
         const prefix = prefixMatch[1].replace(/[^a-zA-Z0-9]/g, '');
-        expansion = SPECIAL_EXPANSIONS[prefix] || prefix;
+        expansion = SPECIAL_EXPANSIONS[prefix] || '';
       }
     }
 
-    if (expansion) {
-      const baseName = asset.name.replace(/\s*\([^)]*\)\s*$/, '').trim();
-      const cleanName = baseName.replace(/[^a-zA-Z0-9]/g, '');
-      const cleanNumber = asset.number.trim();
+    const cleanName = cleanCardmarketCardName(asset.name);
+    const cleanNumber = asset.number.trim();
 
-      let version = 'V1';
-      const variant = asset.variant || '';
-      const pMatch = variant.match(/P(\d+)/i);
-      const vMatch = variant.match(/V[.]?(\d+)/i);
-      if (pMatch) {
-        version = `V${parseInt(pMatch[1], 10) + 1}`;
-      } else if (vMatch) {
-        version = `V${vMatch[1]}`;
-      } else if (/alternate art/i.test(variant)) {
-        version = 'V2';
-      }
+    let versionSuffix = '';
+    const variant = asset.variant || '';
+    const pMatch = variant.match(/P(\d+)/i);
+    const vMatch = variant.match(/V[.]?(\d+)/i);
+    if (pMatch) {
+      versionSuffix = `-V${parseInt(pMatch[1], 10) + 1}`;
+    } else if (vMatch && vMatch[1] !== '1') {
+      versionSuffix = `-V${vMatch[1]}`;
+    } else if (/alternate art/i.test(variant)) {
+      versionSuffix = '-V2';
+    }
 
-      if (cleanName && cleanNumber) {
-        return `https://www.cardmarket.com/${lang}/OnePiece/Products/Singles/${expansion}/${cleanName}-${cleanNumber}-${version}`;
+    if (cleanName && cleanNumber) {
+      const cardSlug = `${cleanName}-${cleanNumber}${versionSuffix}`;
+      if (expansion) {
+        return `https://www.cardmarket.com/${lang}/OnePiece/Products/Singles/${expansion}/${cardSlug}`;
       }
+      return `https://www.cardmarket.com/${lang}/OnePiece/Cards/${cardSlug}`;
     }
   }
 
@@ -127,6 +179,7 @@ export function cardmarketProductUrl(asset: DemoAsset): string {
   const query = asset.number ?? asset.name;
   return `https://www.cardmarket.com/${lang}/OnePiece/Products/Search?searchString=${encodeURIComponent(query)}`;
 }
+
 
 export function tcgplayerProductUrl(asset: DemoAsset): string {
   if (asset.tcgplayerProductId && Number.isFinite(asset.tcgplayerProductId) && asset.tcgplayerProductId > 0) {

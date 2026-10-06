@@ -45,10 +45,10 @@ describe('cardmarketProductUrl generalized logic', () => {
     });
 
     const url = cardmarketProductUrl(asset);
-    expect(url).toMatch(/\/OnePiece\/Products\/Singles\/OP16\/MonkeyDLuffy-OP16-022-V2$/);
+    expect(url).toMatch(/\/OnePiece\/Products\/Singles\/The-Time-of-Battle\/Monkey-D-Luffy-OP16-022-V2$/);
   });
 
-  it('generates the exact slug URL for OP16-022 Standard (V1)', () => {
+  it('generates the exact slug URL for OP16-022 Standard (without -V1)', () => {
     const asset = createMockAsset({
       name: 'Monkey.D.Luffy (022)',
       setCode: 'OP16',
@@ -57,7 +57,7 @@ describe('cardmarketProductUrl generalized logic', () => {
     });
 
     const url = cardmarketProductUrl(asset);
-    expect(url).toMatch(/\/OnePiece\/Products\/Singles\/OP16\/MonkeyDLuffy-OP16-022-V1$/);
+    expect(url).toMatch(/\/OnePiece\/Products\/Singles\/The-Time-of-Battle\/Monkey-D-Luffy-OP16-022$/);
   });
 
   it('generates slug URL for OP01-001 Alternate Art P1', () => {
@@ -69,7 +69,7 @@ describe('cardmarketProductUrl generalized logic', () => {
     });
 
     const url = cardmarketProductUrl(asset);
-    expect(url).toMatch(/\/OnePiece\/Products\/Singles\/OP01\/RoronoaZoro-OP01-001-V2$/);
+    expect(url).toMatch(/\/OnePiece\/Products\/Singles\/Romance-Dawn\/Roronoa-Zoro-OP01-001-V2$/);
   });
 
   it('generates slug URL for P2 Manga rare (V3)', () => {
@@ -81,7 +81,7 @@ describe('cardmarketProductUrl generalized logic', () => {
     });
 
     const url = cardmarketProductUrl(asset);
-    expect(url).toMatch(/\/OnePiece\/Products\/Singles\/OP02\/PortgasDAce-OP02-013-V3$/);
+    expect(url).toMatch(/\/OnePiece\/Products\/Singles\/Paramount-War\/Portgas-D-Ace-OP02-013-V3$/);
   });
 
   it('resolves canonical Cardmarket URL for inventory cards mapped in canonical dictionary', () => {
@@ -152,15 +152,91 @@ describe('cardmarketProductUrl generalized logic', () => {
     expect(url).toContain('/OnePiece/Products/Search?searchString=The%20Time%20of%20Battle%20Booster%20Box');
   });
 
-  it('falls back to search for DON!! cards', () => {
-    const donAsset = createMockAsset({
-      kind: 'card',
-      name: 'DON!! Card (Shanks)',
-      number: 'DON!!',
-      setCode: 'DON',
+  it('resolves verified canonical URL for EB01-050 (...I Want to Live!!)', () => {
+    const asset = createMockAsset({
+      name: '...I Want to Live!!',
+      setCode: 'EB01',
+      number: 'EB01-050',
+      cardmarketProductId: 768017,
+      variant: 'Standard',
     });
+    const url = cardmarketProductUrl(asset);
+    expect(url).toBe('https://www.cardmarket.com/en/OnePiece/Products/Singles/Memorial-Collection/I-Want-to-Live-EB01-050');
+  });
 
-    const url = cardmarketProductUrl(donAsset);
-    expect(url).toContain('/OnePiece/Products/Search?searchString=DON!!');
+  it('resolves verified canonical URL for OP06-096 (...Nothing...at All!!!)', () => {
+    const asset = createMockAsset({
+      name: '...Nothing...at All!!!',
+      setCode: 'OP06',
+      number: 'OP06-096',
+      cardmarketProductId: 760599,
+      variant: 'Standard',
+    });
+    const url = cardmarketProductUrl(asset);
+    expect(url).toBe('https://www.cardmarket.com/en/OnePiece/Products/Singles/Wings-of-the-Captain/Nothingat-All-OP06-096');
+  });
+
+  it('resolves verified canonical URL for OP16-077 ("Buddha" Sengoku)', () => {
+    const asset = createMockAsset({
+      name: '"Buddha" Sengoku',
+      setCode: 'OP16',
+      number: 'OP16-077',
+      cardmarketProductId: 890771,
+      variant: 'Standard',
+    });
+    const url = cardmarketProductUrl(asset);
+    expect(url).toBe('https://www.cardmarket.com/en/OnePiece/Products/Singles/OP16/Buddha-Sengoku-OP16-077');
+  });
+
+  it('correctly constructs URLs across card types without canonical override', () => {
+    // Leader (ST01)
+    const leader = createMockAsset({
+      name: 'Monkey.D.Luffy',
+      setCode: 'ST01',
+      number: 'ST01-001',
+      variant: 'Standard',
+      cardmarketProductId: undefined,
+    });
+    expect(cardmarketProductUrl(leader)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Starter-Deck-Straw-Hat-Crew/Monkey-D-Luffy-ST01-001'
+    );
+
+    // Event (OP01)
+    const event = createMockAsset({
+      name: 'Gum-Gum Fire-Fist Pistol Red Hawk',
+      setCode: 'OP01',
+      number: 'OP01-026',
+      variant: 'Standard',
+      cardmarketProductId: undefined,
+    });
+    expect(cardmarketProductUrl(event)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Romance-Dawn/Gum-Gum-Fire-Fist-Pistol-Red-Hawk-OP01-026'
+    );
+
+    // Stage (EB01)
+    const stage = createMockAsset({
+      name: 'Mini Merry',
+      setCode: 'EB01',
+      number: 'EB01-011',
+      variant: 'Standard',
+      cardmarketProductId: undefined,
+    });
+    expect(cardmarketProductUrl(stage)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Memorial-Collection/Mini-Merry-EB01-011'
+    );
+  });
+
+  it('falls back to Card metacard URL when expansion is not mapped', () => {
+    const unknownSetCard = createMockAsset({
+      name: 'Custom Promotional Hero',
+      setCode: 'UNKNOWN99',
+      number: 'XX99-001',
+      variant: 'Standard',
+      cardmarketProductId: undefined,
+    });
+    expect(cardmarketProductUrl(unknownSetCard)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Cards/Custom-Promotional-Hero-XX99-001'
+    );
   });
 });
+

@@ -2,8 +2,21 @@ export interface CatalogSearchCardV5 {
   name: string;
   productName?: string;
   number?: string;
+  rulesCardId?: string;
+  id?: string;
   setCode: string;
   variant: string;
+}
+
+export function isDonCardV5(card: { rulesCardId?: string; number?: string }): boolean {
+  return card.rulesCardId === 'DON!!' || card.number === 'DON!!';
+}
+
+export function catalogCardGroupIdV5(card: { id: string; rulesCardId?: string; number?: string }): string {
+  if (isDonCardV5(card)) {
+    return card.id;
+  }
+  return card.rulesCardId ?? card.number ?? card.id;
 }
 
 export function normalizeCatalogQueryV5(query: string): string {

@@ -37,7 +37,11 @@ import {
 import { resolveActiveNavPathV2 } from './domain/navigationV2';
 import { resolveAccountBootstrapSeedsV2 } from './domain/accountBootstrapV2';
 import { resolveViewerPathV4, viewerMutationDecisionV4 } from './domain/guestAccessV4';
-import { normalizeCatalogQueryV5, selectCardGroupMatchV5 } from './domain/catalogSearchV5';
+import {
+  catalogCardGroupIdV5,
+  normalizeCatalogQueryV5,
+  selectCardGroupMatchV5,
+} from './domain/catalogSearchV5';
 import { registerPublicWebMcpV1 } from './domain/publicWebMcpV1';
 import {
   resolveCardmarketArtworkReferenceV10,
@@ -1069,7 +1073,7 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
     const grouped = new Map<string, DemoAsset[]>();
     for (const asset of catalogAssets) {
       if (asset.kind !== 'card' || asset.catalogAliasOf) continue;
-      const groupId = asset.rulesCardId ?? asset.number ?? asset.id;
+      const groupId = catalogCardGroupIdV5(asset);
       grouped.set(groupId, [...(grouped.get(groupId) ?? []), asset]);
     }
     return [...grouped.entries()].map(([id, arts]) => {
@@ -1105,7 +1109,7 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
       .filter((asset) => !normalizedQuery || `${asset.name} ${asset.set} ${asset.setCode} ${asset.productType ?? ''}`.toLocaleLowerCase('en-US').includes(normalizedQuery));
   const results = allResults.slice(0, resultLimit);
   const availableArts = selected?.kind === 'card'
-    ? cardGroupIndex.get(selected.rulesCardId ?? selected.number ?? selected.id) ?? [selected]
+    ? cardGroupIndex.get(catalogCardGroupIdV5(selected)) ?? [selected]
     : [];
   const selectedCardmarketReference = selected
     ? resolveCardmarketArtworkReferenceV10(selected)
@@ -1282,12 +1286,12 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
         <p className="catalog-hint">{tab === 'card' ? `${cardGroups.length.toLocaleString()} card numbers with every sourced art · try “Nami” or “OP01-016”` : `${allResults.length.toLocaleString()} released, source-backed sealed products · try “Booster Box”`}</p>
         <div className="catalog-results" aria-live="polite">
           {results.map((asset) => {
-            const groupId = asset.rulesCardId ?? asset.number ?? asset.id;
+            const groupId = catalogCardGroupIdV5(asset);
             const groupArts = tab === 'card' ? cardGroupIndex.get(groupId) ?? [asset] : [asset];
             const artCount = groupArts.length;
             const cardmarketReference = resolveCatalogCardmarketReferenceV10(asset, groupArts);
             const isSelected = tab === 'card'
-              ? selected?.kind === 'card' && (selected.rulesCardId ?? selected.number ?? selected.id) === groupId
+              ? selected?.kind === 'card' && catalogCardGroupIdV5(selected) === groupId
               : selected?.id === asset.id;
             return <button type="button" key={asset.id} className={isSelected ? 'selected' : ''} onClick={() => { setSelected(asset); setCondition(asset.kind === 'sealed' ? 'Factory sealed' : 'Near Mint'); setValidation(''); }}>
               <CardArt asset={asset} size="sm"/>

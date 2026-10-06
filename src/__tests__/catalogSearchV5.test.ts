@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { catalogAssets, type DemoAsset } from '../data/demo';
 import {
+  catalogCardGroupIdV5,
   normalizeCatalogQueryV5,
   selectCardGroupMatchV5,
 } from '../domain/catalogSearchV5';
@@ -9,7 +10,7 @@ function groupedCatalogCards(): DemoAsset[][] {
   const groups = new Map<string, DemoAsset[]>();
   for (const asset of catalogAssets) {
     if (asset.kind !== 'card') continue;
-    const id = asset.rulesCardId ?? asset.number ?? asset.id;
+    const id = catalogCardGroupIdV5(asset);
     groups.set(id, [...(groups.get(id) ?? []), asset]);
   }
   return [...groups.values()];
@@ -99,5 +100,19 @@ describe('catalog card search v5', () => {
       .filter((asset): asset is DemoAsset => asset !== null);
 
     expect(trophyResults.some((asset) => asset.id === 'card-tcgplayer-906851')).toBe(true);
+  });
+
+  it('returns all distinct DON!! cards when searching for DON!! without collapsing them into one item', () => {
+    const query = normalizeCatalogQueryV5('DON!!');
+    const results = groupedCatalogCards()
+      .map((arts) => selectCardGroupMatchV5(arts, query, 'all'))
+      .filter((asset): asset is DemoAsset => asset !== null);
+
+    expect(results.length).toBeGreaterThan(150);
+    // Verifies multiple individual character DON cards are distinct search results
+    expect(results.some((asset) => asset.name.includes('(Smoker)'))).toBe(true);
+    expect(results.some((asset) => asset.name.includes('(Shanks)'))).toBe(true);
+    expect(results.some((asset) => asset.name.includes('(Yamato)'))).toBe(true);
+    expect(results.some((asset) => asset.name.includes('(Zoro)'))).toBe(true);
   });
 });

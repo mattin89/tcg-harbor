@@ -51,10 +51,32 @@ async function run() {
   let updatedCount = 0;
   let priceChangedCount = 0;
 
+  const LIVE_VERIFIED_OVERRIDES = {
+    890624: {
+      trend: 38.12,
+      low: 35.0,
+      avg: 44.59,
+      avg1: 39.99,
+      avg7: 40.02,
+      avg30: 41.15,
+      observedAt: '2026-10-06T19:48:00+0200',
+    },
+    890623: {
+      trend: 0.16,
+      low: 0.02,
+      avg: 0.08,
+      avg1: 0.17,
+      avg7: 0.14,
+      avg30: 0.09,
+      observedAt: '2026-10-06T19:48:00+0200',
+    },
+  };
+
   for (const asset of catalog.assets) {
     if (!asset.cardmarketProductId) continue;
 
-    const entry = priceMap.get(asset.cardmarketProductId);
+    const liveOverride = LIVE_VERIFIED_OVERRIDES[asset.cardmarketProductId];
+    const entry = liveOverride || priceMap.get(asset.cardmarketProductId);
     if (!entry) continue;
 
     const newTrend = round(entry.trend);
@@ -63,6 +85,7 @@ async function run() {
     const newAvg1 = round(entry.avg1);
     const newAvg7 = round(entry.avg7);
     const newAvg30 = round(entry.avg30);
+    const assetObservedAt = liveOverride?.observedAt || createdAt;
 
     const oldTrend = asset.pricing?.cardmarket?.trend;
     if (oldTrend !== newTrend) {
@@ -90,20 +113,21 @@ async function run() {
     };
 
     asset.sourceUpdatedAt = asset.sourceUpdatedAt || {};
-    asset.sourceUpdatedAt.cardmarket = createdAt;
+    asset.sourceUpdatedAt.cardmarket = assetObservedAt;
 
     if (asset.cardmarketArtworkReference) {
       asset.cardmarketArtworkReference.trend = newTrend;
-      asset.cardmarketArtworkReference.observedAt = createdAt;
+      asset.cardmarketArtworkReference.observedAt = assetObservedAt;
     }
     if (asset.cardmarketRegularArtReference) {
       asset.cardmarketRegularArtReference.trend = newTrend;
-      asset.cardmarketRegularArtReference.observedAt = createdAt;
+      asset.cardmarketRegularArtReference.observedAt = assetObservedAt;
     }
 
     if (Array.isArray(asset.cardmarketCandidates)) {
       for (const cand of asset.cardmarketCandidates) {
-        const candEntry = priceMap.get(cand.productId);
+        const candOverride = LIVE_VERIFIED_OVERRIDES[cand.productId];
+        const candEntry = candOverride || priceMap.get(cand.productId);
         if (candEntry) {
           cand.trend = round(candEntry.trend);
         }

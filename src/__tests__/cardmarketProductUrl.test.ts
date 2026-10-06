@@ -139,6 +139,18 @@ describe('cardmarketProductUrl generalized logic', () => {
     expect(url).toMatch(/\/OnePiece\/Products\/Singles\/OP16\/MonkeyDLuffy-OP16-022-V2$/);
   });
 
+  it('resolves product 890623 (Monkey D Luffy OP16-022 Standard) to OP16 V1', () => {
+    const luffyAsset = createMockAsset({
+      name: 'Monkey.D.Luffy (022)',
+      setCode: 'OP16',
+      number: 'OP16-022',
+      variant: 'Standard',
+      cardmarketProductId: 890623,
+    });
+    const url = cardmarketProductUrl(luffyAsset);
+    expect(url).toMatch(/\/OnePiece\/Products\/Singles\/OP16\/MonkeyDLuffy-OP16-022-V1$/);
+  });
+
   it('falls back to search for sealed booster boxes', () => {
     const sealedAsset = createMockAsset({
       kind: 'sealed',

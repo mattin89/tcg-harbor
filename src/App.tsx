@@ -766,6 +766,7 @@ function CollectionPage({
   const [noteDraft, setNoteDraft] = useState('');
   const [removeTarget, setRemoveTarget] = useState<DemoAsset | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [languageFilter, setLanguageFilter] = useState('all');
   const [localLoansTick, setLocalLoansTick] = useState(0);
 
   const allLoans = useMemo(() => {
@@ -860,6 +861,7 @@ function CollectionPage({
     .filter((asset) => !query || `${asset.name} ${asset.number} ${asset.set} ${asset.setCode}`.toLowerCase().includes(query.toLowerCase()))
     .filter((asset) => setFilter === 'all' || asset.setCode === setFilter)
     .filter((asset) => rarity === 'all' || asset.rarity === rarity)
+    .filter((asset) => languageFilter === 'all' || asset.language === languageFilter)
     .sort((a, b) => sort === 'value-desc' ? (((assetUnitPrice(b) ?? -1)) * b.quantity) - (((assetUnitPrice(a) ?? -1)) * a.quantity)
       : sort === 'value-asc' ? (((assetUnitPrice(a) ?? Infinity)) * a.quantity) - (((assetUnitPrice(b) ?? Infinity)) * b.quantity)
       : sort === 'gain' ? (b.change[market]['1M'] ?? -999) - (a.change[market]['1M'] ?? -999)
@@ -1015,7 +1017,7 @@ function CollectionPage({
         <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${tab === 'card' ? 'name, set or card number' : tab === 'sealed' ? 'sealed products' : tab === 'lent' ? 'lent cards' : 'borrowed cards'}`} aria-label="Search collection" />
         {query && <button onClick={() => setQuery('')} aria-label="Clear search"><Icon name="close" size={15}/></button>}
       </label>
-      <Button variant="secondary" onClick={() => setFiltersOpen((open) => !open)} icon="filter">Filters{(setFilter !== 'all' || rarity !== 'all') && <span className="filter-count">{Number(setFilter !== 'all') + Number(rarity !== 'all')}</span>}</Button>
+      <Button variant="secondary" onClick={() => setFiltersOpen((open) => !open)} icon="filter">Filters{(setFilter !== 'all' || rarity !== 'all' || languageFilter !== 'all') && <span className="filter-count">{Number(setFilter !== 'all') + Number(rarity !== 'all') + Number(languageFilter !== 'all')}</span>}</Button>
       <label className="select-field">
         <span>Sort</span>
         <select value={sort} onChange={(event) => setSort(event.target.value)}>
@@ -1029,9 +1031,9 @@ function CollectionPage({
       </label>
       <Segmented value={view} onChange={setView} label="Collection view" options={[{ value: 'grid', label: '', icon: 'grid' }, { value: 'table', label: '', icon: 'list' }]} />
     </section>
-    {filtersOpen && <section className="filter-panel"><label>Set<select value={setFilter} onChange={(event) => setSetFilter(event.target.value)}><option value="all">All sets</option>{uniqueSets.map((set) => <option key={set}>{set}</option>)}</select></label><label>{tab === 'card' ? 'Rarity' : 'Product availability'}<select value={rarity} onChange={(event) => setRarity(event.target.value)}><option value="all">All</option>{rarities.map((value) => <option key={value}>{value}</option>)}</select></label><label>Condition<select><option>All conditions</option><option>Near Mint</option><option>Excellent</option></select></label><label>Language<select><option>All languages</option><option>English</option><option>French</option><option>Japanese</option></select></label><Button variant="ghost" onClick={() => { setSetFilter('all'); setRarity('all'); }}>Clear filters</Button></section>}
+    {filtersOpen && <section className="filter-panel"><label>Set<select value={setFilter} onChange={(event) => setSetFilter(event.target.value)}><option value="all">All sets</option>{uniqueSets.map((set) => <option key={set}>{set}</option>)}</select></label><label>{tab === 'card' ? 'Rarity' : 'Product availability'}<select value={rarity} onChange={(event) => setRarity(event.target.value)}><option value="all">All</option>{rarities.map((value) => <option key={value}>{value}</option>)}</select></label><label>Condition<select><option>All conditions</option><option>Near Mint</option><option>Excellent</option></select></label><label>Language<select value={languageFilter} onChange={(event) => setLanguageFilter(event.target.value)}><option value="all">All languages</option><option value="English">English</option><option value="Japanese">Japanese</option><option value="French">French</option></select></label><Button variant="ghost" onClick={() => { setSetFilter('all'); setRarity('all'); setLanguageFilter('all'); }}>Clear filters</Button></section>}
     <div className="result-meta"><span><strong>{visible.length}</strong> {tab === 'card' ? 'card entries' : tab === 'sealed' ? 'sealed products' : tab === 'lent' ? 'lent cards' : 'borrowed cards'}</span><MarketDataBadge compact /></div>
-    {visible.length === 0 ? <EmptyState icon="search" title="No matching holdings" detail="Try removing a filter or search for another card." action={<Button variant="secondary" onClick={() => { setQuery(''); setSetFilter('all'); setRarity('all'); }}>Clear search</Button>} /> : view === 'grid' ? <div className="asset-grid">{visible.map((asset) => <button className="asset-card" key={asset.id} onClick={() => openAsset(asset)}><CardArt asset={asset} size="lg"/><div className="asset-card-body"><div className="asset-labels"><Chip tone="neutral">{asset.setCode}</Chip>{asset.variant !== 'Standard' && <Chip tone="gold">{asset.variant}</Chip>}{asset.loan && <Chip tone={asset.loan.role === 'lender' ? 'blue' : 'gold'}>{asset.loan.role === 'lender' ? 'Lent' : 'Borrowed'}</Chip>}</div><h3>{asset.name}</h3><p>{asset.number ?? asset.productType} · {asset.rarity}</p>{asset.loan ? <div className="loan-card-info"><div><span>{asset.loan.role === 'lender' ? 'Lent to: ' : 'Borrowed from: '}</span><strong>{asset.loan.otherPartyUsername ? `@${asset.loan.otherPartyUsername}` : asset.loan.otherPartyName}</strong></div><div><span>Lent on: </span><strong>{new Date(asset.loan.lentAt).toLocaleDateString()}</strong></div><div><span>Initial value: </span><em>{formatMoney(asset.loan.lentValueAmount, 'EUR')}</em></div></div> : <div className="asset-price"><span><strong>{formatMoney(assetUnitPrice(asset), market)}</strong><small>Unit reference</small></span><Trend value={asset.change[market]['1M']} /></div>}<footer><span>Qty <strong>{asset.quantity}</strong></span><span>{asset.loan ? (asset.loan.role === 'lender' ? (asset.loan.lenderReturned ? '✓ Return confirmed' : 'Awaiting return') : (asset.loan.borrowerReturned ? '✓ Return confirmed' : 'Awaiting return')) : <>Total <strong>{formatMoney(assetUnitPrice(asset) === null ? null : assetUnitPrice(asset)! * asset.quantity, market)}</strong></>}</span></footer>{!asset.loan && assetUnitPrice(asset) === null && <div className="missing-price"><Icon name="info"/>Market price unavailable</div>}</div></button>)}</div>
+    {visible.length === 0 ? <EmptyState icon="search" title="No matching holdings" detail="Try removing a filter or search for another card." action={<Button variant="secondary" onClick={() => { setQuery(''); setSetFilter('all'); setRarity('all'); setLanguageFilter('all'); }}>Clear search</Button>} /> : view === 'grid' ? <div className="asset-grid">{visible.map((asset) => <button className="asset-card" key={asset.id} onClick={() => openAsset(asset)}><CardArt asset={asset} size="lg"/><div className="asset-card-body"><div className="asset-labels"><Chip tone="neutral">{asset.setCode}</Chip>{asset.language && asset.language !== 'English' && <Chip tone={asset.language === 'Japanese' ? 'violet' : asset.language === 'French' ? 'azure' : 'neutral'}>{asset.language}</Chip>}{asset.variant !== 'Standard' && <Chip tone="gold">{asset.variant}</Chip>}{asset.loan && <Chip tone={asset.loan.role === 'lender' ? 'blue' : 'gold'}>{asset.loan.role === 'lender' ? 'Lent' : 'Borrowed'}</Chip>}</div><h3>{asset.name}</h3><p>{asset.number ?? asset.productType} · {asset.rarity}</p>{asset.loan ? <div className="loan-card-info"><div><span>{asset.loan.role === 'lender' ? 'Lent to: ' : 'Borrowed from: '}</span><strong>{asset.loan.otherPartyUsername ? `@${asset.loan.otherPartyUsername}` : asset.loan.otherPartyName}</strong></div><div><span>Lent on: </span><strong>{new Date(asset.loan.lentAt).toLocaleDateString()}</strong></div><div><span>Initial value: </span><em>{formatMoney(asset.loan.lentValueAmount, 'EUR')}</em></div></div> : <div className="asset-price"><span><strong>{formatMoney(assetUnitPrice(asset), market)}</strong><small>Unit reference</small></span><Trend value={asset.change[market]['1M']} /></div>}<footer><span>Qty <strong>{asset.quantity}</strong></span><span>{asset.loan ? (asset.loan.role === 'lender' ? (asset.loan.lenderReturned ? '✓ Return confirmed' : 'Awaiting return') : (asset.loan.borrowerReturned ? '✓ Return confirmed' : 'Awaiting return')) : <>Total <strong>{formatMoney(assetUnitPrice(asset) === null ? null : assetUnitPrice(asset)! * asset.quantity, market)}</strong></>}</span></footer>{!asset.loan && assetUnitPrice(asset) === null && <div className="missing-price"><Icon name="info"/>Market price unavailable</div>}</div></button>)}</div>
       : <div className="asset-table-wrap"><table className="asset-table"><thead><tr><th>Item</th><th>Set / number</th><th>Details</th><th>Qty</th><th>{tab === 'lent' || tab === 'borrowed' ? 'Lent value' : 'Unit value'}</th><th>{tab === 'lent' || tab === 'borrowed' ? 'Loan status' : '1M change'}</th><th>{tab === 'lent' || tab === 'borrowed' ? 'Counterparty' : 'Total'}</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>{visible.map((asset) => <tr key={asset.id} onClick={() => openAsset(asset)}><td><span className="table-item"><CardArt asset={asset} size="xs"/><strong>{asset.name}</strong></span></td><td>{asset.setCode}<small>{asset.number ?? asset.productType}</small></td><td>{asset.variant}<small>{asset.loan ? `Lent ${new Date(asset.loan.lentAt).toLocaleDateString()}` : `${asset.condition} · ${asset.language}`}</small></td><td>{asset.quantity}</td><td>{asset.loan ? formatMoney(asset.loan.lentValueAmount, 'EUR') : formatMoney(assetUnitPrice(asset), market)}</td><td>{asset.loan ? <Chip tone={asset.loan.role === 'lender' ? (asset.loan.lenderReturned ? 'neutral' : 'blue') : (asset.loan.borrowerReturned ? 'neutral' : 'gold')}>{asset.loan.role === 'lender' ? (asset.loan.lenderReturned ? 'Confirmed' : 'Lent out') : (asset.loan.borrowerReturned ? 'Confirmed' : 'Borrowed')}</Chip> : <Trend value={asset.change[market]['1M']}/>}</td><td>{asset.loan ? <strong>{asset.loan.otherPartyUsername ? `@${asset.loan.otherPartyUsername}` : asset.loan.otherPartyName}</strong> : <strong>{formatMoney(assetUnitPrice(asset) === null ? null : assetUnitPrice(asset)! * asset.quantity, market)}</strong>}</td><td><Icon name="chevron"/></td></tr>)}</tbody></table></div>}
     <AssetDetailModal
       asset={selected}
@@ -1059,6 +1061,7 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
   const [tab, setTab] = useState<AssetKind>('card');
   const [query, setQuery] = useState('');
   const [catalogSet, setCatalogSet] = useState('all');
+  const [catalogLanguage, setCatalogLanguage] = useState('all');
   const [selected, setSelected] = useState<DemoAsset | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [condition, setCondition] = useState('Near Mint');
@@ -1101,21 +1104,33 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
   const normalizedQuery = normalizeCatalogQueryV5(query);
   const allResults = tab === 'card'
     ? cardGroups
-      .map((group) => selectCardGroupMatchV5(group.arts, normalizedQuery, catalogSet))
+      .map((group) => {
+        const eligibleArtsByLang = catalogLanguage === 'all'
+          ? group.arts
+          : group.arts.filter((art) => art.language === catalogLanguage);
+        if (eligibleArtsByLang.length === 0) return null;
+        return selectCardGroupMatchV5(eligibleArtsByLang, normalizedQuery, catalogSet);
+      })
       .filter((asset): asset is DemoAsset => asset !== null)
     : catalogAssets
       .filter((asset) => asset.kind === 'sealed')
+      .filter((asset) => catalogLanguage === 'all' || asset.language === catalogLanguage)
       .filter((asset) => catalogSet === 'all' || asset.setCode === catalogSet)
       .filter((asset) => !normalizedQuery || `${asset.name} ${asset.set} ${asset.setCode} ${asset.productType ?? ''}`.toLocaleLowerCase('en-US').includes(normalizedQuery));
   const results = allResults.slice(0, resultLimit);
-  const availableArts = selected?.kind === 'card'
+  const allGroupArts = selected?.kind === 'card'
     ? cardGroupIndex.get(catalogCardGroupIdV5(selected)) ?? [selected]
     : [];
+  const availableArts = catalogLanguage === 'all'
+    ? allGroupArts
+    : (allGroupArts.some((art) => art.language === catalogLanguage)
+      ? allGroupArts.filter((art) => art.language === catalogLanguage)
+      : allGroupArts);
   const selectedCardmarketReference = selected
     ? resolveCardmarketArtworkReferenceV10(selected)
     : null;
 
-  useEffect(() => { setResultLimit(40); }, [catalogSet, query, tab]);
+  useEffect(() => { setResultLimit(40); }, [catalogSet, catalogLanguage, query, tab]);
 
   const reset = () => { setSelected(null); setQuery(''); setQuantity(1); setPurchase(''); setNote(''); setValidation(''); };
   const save = async (merge = false) => {
@@ -1281,8 +1296,8 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
     <div className="add-layout">
       <section className="add-catalog panel">
         <div className="panel-header"><div><p className="eyebrow">One Piece Card Game</p><h2>Search the complete catalog</h2></div><div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><MarketDataBadge compact /></div></div>
-        <Segmented value={tab} onChange={(value) => { setTab(value); setSelected(null); setQuery(''); setCatalogSet('all'); setCondition(value === 'sealed' ? 'Factory sealed' : 'Near Mint'); }} label="Catalog type" options={[{ value: 'card', label: 'Individual card', icon: 'cards' }, { value: 'sealed', label: 'Sealed product', icon: 'box' }]} />
-        <div className="catalog-search-row"><label className="search-field catalog-search"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tab === 'card' ? 'Search card name, number, set code or art' : 'Search product, set or type'} aria-label="Search catalog" /></label><label className="select-field catalog-set-filter"><span>Set</span><select value={catalogSet} onChange={(event) => { setCatalogSet(event.target.value); setSelected(null); }}><option value="all">All current sets</option>{catalogSets.map((setCode) => <option key={setCode} value={setCode}>{setCode}</option>)}</select></label></div>
+        <Segmented value={tab} onChange={(value) => { setTab(value); setSelected(null); setQuery(''); setCatalogSet('all'); setCatalogLanguage('all'); setCondition(value === 'sealed' ? 'Factory sealed' : 'Near Mint'); }} label="Catalog type" options={[{ value: 'card', label: 'Individual card', icon: 'cards' }, { value: 'sealed', label: 'Sealed product', icon: 'box' }]} />
+        <div className="catalog-search-row"><label className="search-field catalog-search"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tab === 'card' ? 'Search card name, number, set code or art' : 'Search product, set or type'} aria-label="Search catalog" /></label><label className="select-field catalog-language-filter"><span>Language</span><select value={catalogLanguage} onChange={(event) => { setCatalogLanguage(event.target.value); setSelected(null); }}><option value="all">All languages</option><option value="English">English</option><option value="Japanese">Japanese</option><option value="French">French</option></select></label><label className="select-field catalog-set-filter"><span>Set</span><select value={catalogSet} onChange={(event) => { setCatalogSet(event.target.value); setSelected(null); }}><option value="all">All current sets</option>{catalogSets.map((setCode) => <option key={setCode} value={setCode}>{setCode}</option>)}</select></label></div>
         <p className="catalog-hint">{tab === 'card' ? `${cardGroups.length.toLocaleString()} card numbers with every sourced art · try “Nami” or “OP01-016”` : `${allResults.length.toLocaleString()} released, source-backed sealed products · try “Booster Box”`}</p>
         <div className="catalog-results" aria-live="polite">
           {results.map((asset) => {
@@ -1295,7 +1310,7 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
               : selected?.id === asset.id;
             return <button type="button" key={asset.id} className={isSelected ? 'selected' : ''} onClick={() => { setSelected(asset); setCondition(asset.kind === 'sealed' ? 'Factory sealed' : 'Near Mint'); setValidation(''); }}>
               <CardArt asset={asset} size="sm"/>
-              <span><strong>{asset.name}</strong><small>{asset.setCode} · {asset.number ?? asset.productType}</small><em>{tab === 'card' ? `${artCount} ${artCount === 1 ? 'art' : 'arts'} available` : `${asset.productType} · ${asset.language}`}</em></span>
+              <span><strong>{asset.name}</strong><small>{asset.setCode} · {asset.number ?? asset.productType} · {asset.language}</small><em>{tab === 'card' ? `${artCount} ${artCount === 1 ? 'art' : 'arts'} available` : `${asset.productType} · ${asset.language}`}</em></span>
               <span className="catalog-price" title={market === 'cardmarket' ? cardmarketReference.detail : undefined}><strong>{market === 'cardmarket' ? cardmarketReference.displayValue : (() => {
                 if (tab === 'card' && groupArts.length > 1) {
                   const tcgPrices = groupArts

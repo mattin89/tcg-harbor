@@ -128,6 +128,8 @@ a { color: inherit; }
 .chip-negative { background: var(--red-soft); color: var(--red); border: 1px solid #eccbc7; }
 .chip-gold { background: var(--gold-soft); color: #8a6729; border: 1px solid #ead8b2; }
 .chip-blue { background: var(--blue-soft); color: var(--blue); border: 1px solid #cfdee7; }
+.chip-violet { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+.chip-azure { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; }
 .segmented { display: flex; padding: 3px; border-radius: 9px; background: #eae9e5; border: 1px solid #deddd8; }
 .segmented button { min-height: 28px; padding: 0 10px; border-radius: 6px; background: transparent; color: var(--muted); font-size: 9px; font-weight: 700; display: flex; gap: 5px; align-items: center; justify-content: center; }
 .segmented button.active { background: var(--paper); color: var(--ink); box-shadow: 0 1px 4px rgba(9,24,39,.12); }

@@ -34,7 +34,7 @@ export function CardArt({ asset, size = 'md' }: { asset: DemoAsset; size?: 'xs' 
   </div>;
 }
 
-export function Chip({ children, tone = 'neutral', icon }: { children: ReactNode; tone?: 'neutral' | 'positive' | 'negative' | 'gold' | 'blue'; icon?: Parameters<typeof Icon>[0]['name'] }) {
+export function Chip({ children, tone = 'neutral', icon }: { children: ReactNode; tone?: 'neutral' | 'positive' | 'negative' | 'gold' | 'blue' | 'violet' | 'azure'; icon?: Parameters<typeof Icon>[0]['name'] }) {
   return <span className={`chip chip-${tone}`}>{icon && <Icon name={icon} size={13} />}{children}</span>;
 }
 

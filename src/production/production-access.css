@@ -59,7 +59,8 @@
 .production-field > span { color: #cdd8d9; font-size: 12px; font-weight: 750; letter-spacing: .02em; }
 .production-field > span small { color: #768c91; font-weight: 500; }
 .production-field input,
-.production-field textarea {
+.production-field textarea,
+.production-field select {
   width: 100%;
   box-sizing: border-box;
   border: 1px solid rgba(255, 255, 255, .12);
@@ -74,7 +75,8 @@
 }
 .production-field textarea { resize: vertical; line-height: 1.5; }
 .production-field input:focus,
-.production-field textarea:focus { border-color: #ec9a65; box-shadow: 0 0 0 3px rgba(236, 154, 101, .12); }
+.production-field textarea:focus,
+.production-field select:focus { border-color: #ec9a65; box-shadow: 0 0 0 3px rgba(236, 154, 101, .12); }
 .production-field input::placeholder,
 .production-field textarea::placeholder { color: #64787c; }
 
@@ -1248,6 +1250,22 @@
 .badge-pill.variant {
   background: rgba(240, 163, 107, 0.12);
   color: #f0b085;
+}
+
+.badge-pill.language-pill {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.badge-pill.lang-japanese {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border-color: rgba(168, 85, 247, 0.35);
+}
+
+.badge-pill.lang-french {
+  background: rgba(56, 189, 248, 0.15);
+  color: #7dd3fc;
+  border-color: rgba(56, 189, 248, 0.35);
 }
 
 .cell-set .set-code {

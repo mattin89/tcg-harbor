@@ -32,6 +32,7 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
   const [approvedIds, setApprovedIds] = useState<Set<string>>(() => getAdminApprovedAssetIds());
   const [activeTab, setActiveTab] = useState<TabMode>('all');
   const [issueFilter, setIssueFilter] = useState<'all' | CatalogItemIssue>('all');
+  const [languageFilter, setLanguageFilter] = useState<'all' | 'English' | 'Japanese' | 'French'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const pageSize = 30;
@@ -139,6 +140,7 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
         if (!diag?.isFlaggedOrError) return false;
         if (issueFilter !== 'all' && !diag.issues.includes(issueFilter)) return false;
       }
+      if (languageFilter !== 'all' && asset.language !== languageFilter) return false;
 
       // Query filter
       if (!query) return true;
@@ -149,15 +151,16 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
       const variantMatch = asset.variant ? asset.variant.toLowerCase().includes(query) : false;
       const cmMatch = asset.cardmarketProductId ? String(asset.cardmarketProductId).includes(query) : false;
       const tcgMatch = asset.tcgplayerProductId ? String(asset.tcgplayerProductId).includes(query) : false;
+      const langMatch = asset.language ? asset.language.toLowerCase().includes(query) : false;
 
-      return nameMatch || setMatch || numMatch || variantMatch || cmMatch || tcgMatch;
+      return nameMatch || setMatch || numMatch || variantMatch || cmMatch || tcgMatch || langMatch;
     });
-  }, [activeCatalog, activeTab, issueFilter, searchQuery, overrides, diagnosticsMap]);
+  }, [activeCatalog, activeTab, issueFilter, languageFilter, searchQuery, overrides, diagnosticsMap]);
 
   // Reset pagination on filter change
   useEffect(() => {
     setPage(1);
-  }, [activeTab, issueFilter, searchQuery]);
+  }, [activeTab, issueFilter, languageFilter, searchQuery]);
 
   const totalPages = Math.max(1, Math.ceil(filteredAssets.length / pageSize));
   const currentPageAssets = useMemo(() => {
@@ -367,19 +370,44 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
           )}
         </div>
 
-        <label className="production-search-field">
-          <Icon name="search" size={15} />
-          <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search card name, number, set code, Cardmarket ID, TCGplayer ID…"
-          />
-          {searchQuery && (
-            <button type="button" className="production-search-clear" onClick={() => setSearchQuery('')} aria-label="Clear search">
-              <Icon name="close" size={14} />
-            </button>
-          )}
-        </label>
+        <div className="production-inventory-controls" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <label className="production-search-field">
+            <Icon name="search" size={15} />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search card name, number, set code, Cardmarket ID, TCGplayer ID…"
+            />
+            {searchQuery && (
+              <button type="button" className="production-search-clear" onClick={() => setSearchQuery('')} aria-label="Clear search">
+                <Icon name="close" size={14} />
+              </button>
+            )}
+          </label>
+
+          <select
+            className="production-inventory-lang-select"
+            value={languageFilter}
+            onChange={(e) => setLanguageFilter(e.target.value as 'all' | 'English' | 'Japanese' | 'French')}
+            aria-label="Filter catalog by language"
+            style={{
+              minWidth: '135px',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '99px',
+              padding: '7px 14px',
+              color: '#e4eae8',
+              background: 'rgba(3, 14, 17, 0.55)',
+              font: 'inherit',
+              fontSize: '12px',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="all">All Languages</option>
+            <option value="English">English</option>
+            <option value="Japanese">Japanese</option>
+            <option value="French">French</option>
+          </select>
+        </div>
       </div>
 
       {/* Sub-filters when Flagged & Errors tab is active */}
@@ -462,6 +490,9 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
                           <span className="badge-pill">{asset.kind}</span>
                           {asset.rarity && <span className="badge-pill">{asset.rarity}</span>}
                           {asset.variant && <span className="badge-pill variant">{asset.variant}</span>}
+                          {asset.language && (
+                            <span className={`badge-pill language-pill lang-${asset.language.toLowerCase()}`}>{asset.language}</span>
+                          )}
                         </div>
                       </td>
 
@@ -823,6 +854,14 @@ function InventoryEditModal({ asset, existingOverride, onClose, onSave, onReset 
               <label className="production-field">
                 <span>Rarity</span>
                 <input value={rarity} onChange={(e) => setRarity(e.target.value)} placeholder="C, UC, R, SR, SEC, L, PR" />
+              </label>
+              <label className="production-field">
+                <span>Language</span>
+                <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+                  <option value="English">English</option>
+                  <option value="Japanese">Japanese</option>
+                  <option value="French">French</option>
+                </select>
               </label>
             </div>
           </fieldset>

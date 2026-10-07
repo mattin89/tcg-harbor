@@ -7,6 +7,10 @@ import {
   applyDonMappings,
   donCounts,
 } from './catalogDonMappings';
+import {
+  multilingualAssets,
+  multilingualCounts,
+} from './catalogMultilingual';
 import type { CardLoanSummary } from '../domain/communityTradingV6';
 
 export type Market = 'cardmarket' | 'tcgplayer';
@@ -561,6 +565,10 @@ const baseWithErrata: DemoAsset[] = baseCatalog.some((a) => a.id === op01eErrata
   ? baseCatalog
   : [...baseCatalog, ...allErrataAssets];
 
+const baseWithMultilingual: DemoAsset[] = baseWithErrata.some((a) => a.id === multilingualAssets[0]?.id)
+  ? baseWithErrata
+  : [...baseWithErrata, ...multilingualAssets];
+
 function applyDefaultVerifiedApprovals(assets: DemoAsset[]): DemoAsset[] {
   const verifiedApprovalTimestamp = '2026-09-21T00:00:00.000Z';
   return assets.map((asset) => {
@@ -580,7 +588,7 @@ function applyDefaultVerifiedApprovals(assets: DemoAsset[]): DemoAsset[] {
   });
 }
 
-export const catalogAssets: DemoAsset[] = applyDefaultVerifiedApprovals(applyDonMappings(baseWithErrata));
+export const catalogAssets: DemoAsset[] = applyDefaultVerifiedApprovals(applyDonMappings(baseWithMultilingual));
 export const initialAssets: DemoAsset[] = sourceBackedCatalog
   .filter((asset) => representativeHoldingIds.has(asset.id))
   .map((asset) => ({
@@ -598,18 +606,18 @@ export const initialAssets: DemoAsset[] = sourceBackedCatalog
 
 const patchedCatalogCounts: Record<string, number> = {
   ...marketSnapshot.provenance.catalogCounts,
-  cardPrintings: marketSnapshot.provenance.catalogCounts.cardPrintings + 1 + allErrataAssets.length,
-  optcgCorePrintings: marketSnapshot.provenance.catalogCounts.optcgCorePrintings + allErrataAssets.length,
+  cardPrintings: marketSnapshot.provenance.catalogCounts.cardPrintings + 1 + allErrataAssets.length + multilingualCounts.total,
+  optcgCorePrintings: marketSnapshot.provenance.catalogCounts.optcgCorePrintings + allErrataAssets.length + multilingualCounts.total,
   tcgcsvNumberedPromoProducts: marketSnapshot.provenance.catalogCounts.tcgcsvNumberedPromoProducts + 1,
-  cardPrintingsWithImages: marketSnapshot.provenance.catalogCounts.cardPrintingsWithImages + 1 + allErrataAssets.length,
-  totalAssets: marketSnapshot.provenance.catalogCounts.totalAssets + 1 + allErrataAssets.length,
+  cardPrintingsWithImages: marketSnapshot.provenance.catalogCounts.cardPrintingsWithImages + 1 + allErrataAssets.length + multilingualCounts.total,
+  totalAssets: marketSnapshot.provenance.catalogCounts.totalAssets + 1 + allErrataAssets.length + multilingualCounts.total,
   englishPromoPrintings: marketSnapshot.provenance.catalogCounts.englishPromoPrintings + 1,
   tcgcsvPromoPrintingsWithoutHeadlinePrice: marketSnapshot.provenance.catalogCounts.tcgcsvPromoPrintingsWithoutHeadlinePrice + 1,
   tcgcsvPromoPrintingsWithoutPriceRows: marketSnapshot.provenance.catalogCounts.tcgcsvPromoPrintingsWithoutPriceRows + 1,
-  cardmarketMappedCardPrintings: marketSnapshot.provenance.catalogCounts.cardmarketMappedCardPrintings + 1 + allErrataAssets.length + donCounts.mappedCount,
-  cardmarketPricedCardPrintings: marketSnapshot.provenance.catalogCounts.cardmarketPricedCardPrintings + allErrataAssets.length + donCounts.pricedCount,
-  cardmarketTrendUnavailableCardPrintings: marketSnapshot.provenance.catalogCounts.cardmarketTrendUnavailableCardPrintings + 1 + donCounts.trendUnavailableCount,
-  cardmarketUnmappedCardPrintings: marketSnapshot.provenance.catalogCounts.cardmarketUnmappedCardPrintings - donCounts.mappedCount,
+  cardmarketMappedCardPrintings: marketSnapshot.provenance.catalogCounts.cardmarketMappedCardPrintings + 1 + allErrataAssets.length + donCounts.mappedCount + multilingualCounts.mapped,
+  cardmarketPricedCardPrintings: marketSnapshot.provenance.catalogCounts.cardmarketPricedCardPrintings + allErrataAssets.length + donCounts.pricedCount + multilingualCounts.priced,
+  cardmarketTrendUnavailableCardPrintings: marketSnapshot.provenance.catalogCounts.cardmarketTrendUnavailableCardPrintings + 1 + donCounts.trendUnavailableCount + multilingualCounts.trendUnavailable,
+  cardmarketUnmappedCardPrintings: marketSnapshot.provenance.catalogCounts.cardmarketUnmappedCardPrintings - donCounts.mappedCount + multilingualCounts.unmapped,
 };
 
 export const marketDataMeta: MarketDataMeta = {

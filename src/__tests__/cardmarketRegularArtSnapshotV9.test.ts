@@ -89,7 +89,7 @@ describe('Cardmarket regular-art snapshot compatibility', () => {
   });
 
   it('uses the image-verified regular Fire Fist price without assigning its alternate-art value', () => {
-    const fireFist = cards.filter((asset) => asset.rulesCardId === 'OP03-018');
+    const fireFist = cards.filter((asset) => asset.rulesCardId === 'OP03-018' && (!asset.language || asset.language === 'English'));
     const regular = fireFist.find((asset) => asset.sourcePrintingId === 'OP03-018');
     const alternate = fireFist.find((asset) => asset.sourcePrintingId === 'OP03-018_p1');
     const view = resolveCatalogCardmarketReferenceV9(alternate!, fireFist);

@@ -280,6 +280,7 @@ describe('source-backed catalog snapshot', () => {
     const p041 = catalogAssets.filter(
       (asset) => asset.kind === 'card'
         && asset.rulesCardId === 'P-041'
+        && asset.language === 'English'
         && !asset.catalogAliasOf,
     );
     const promoArts = p041.filter((asset) => asset.id.startsWith('card-tcgplayer-'));
@@ -345,10 +346,10 @@ describe('source-backed catalog snapshot', () => {
     expect(englishPromos.every(
       (asset) => asset.languageEvidence === 'TCGplayer English-market product record',
     )).toBe(true);
-    expect(cards.filter((asset) => !asset.id.startsWith('card-tcgplayer-')).every(
+    expect(cards.filter((asset) => !asset.id.startsWith('card-tcgplayer-') && !asset.id.startsWith('card-multilingual-')).every(
       (asset) => asset.language === 'English',
     )).toBe(true);
-    expect(catalogAssets.every((asset) => ['English', 'French', 'Japanese'].includes(asset.language))).toBe(true);
+    expect(catalogAssets.every((asset) => ['English', 'French', 'Japanese', 'Chinese'].includes(asset.language))).toBe(true);
     expect(catalogAssets.some((asset) => asset.language === 'German')).toBe(false);
   });
 

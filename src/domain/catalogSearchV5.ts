@@ -45,7 +45,7 @@ export function selectCardGroupMatchV5<T extends CatalogSearchCardV5>(
 ): T | null {
   const eligibleArts = setCode === 'all'
     ? arts
-    : arts.filter((art) => art.setCode === setCode);
+    : arts.filter((art) => art.setCode === setCode || art.setCode.startsWith(`${setCode}-`));
 
   if (!normalizedQuery) return eligibleArts[0] ?? null;
 

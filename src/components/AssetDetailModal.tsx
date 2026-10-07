@@ -132,6 +132,21 @@ export function cardmarketProductUrl(asset: DemoAsset): string {
   const canonicalMap = (cardmarketCanonicalUrls ?? {}) as Record<string, string>;
   if (asset.cardmarketProductId && canonicalMap[String(asset.cardmarketProductId)]) {
     const slug = canonicalMap[String(asset.cardmarketProductId)];
+    if (slug.startsWith('http://') || slug.startsWith('https://')) {
+      return slug;
+    }
+    if (slug.startsWith('/Products/')) {
+      return `https://www.cardmarket.com/${lang}/OnePiece${slug}`;
+    }
+    if (
+      slug.startsWith('Boosters/') ||
+      slug.startsWith('Booster-Boxes/') ||
+      slug.startsWith('Preconstructed-Decks/') ||
+      slug.startsWith('Promo-Products/') ||
+      slug.startsWith('Singles/')
+    ) {
+      return `https://www.cardmarket.com/${lang}/OnePiece/Products/${slug}`;
+    }
     return `https://www.cardmarket.com/${lang}/OnePiece/Products/Singles/${slug}`;
   }
 

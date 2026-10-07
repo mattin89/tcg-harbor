@@ -379,12 +379,15 @@ export function diagnoseCatalogItem(
 ): CatalogItemDiagnostics {
   const issues: CatalogItemIssue[] = [];
 
-  if (asset.cardmarketPriceState === 'unmapped') {
-    issues.push('unmapped-cardmarket');
-  } else if (asset.cardmarketPriceState === 'ambiguous-artwork') {
-    issues.push('ambiguous-artwork');
-  } else if (asset.cardmarketPriceState === 'trend-unavailable') {
-    issues.push('trend-unavailable');
+  const isCardmarketApplicable = !asset.language || asset.language === 'English';
+  if (isCardmarketApplicable) {
+    if (asset.cardmarketPriceState === 'unmapped') {
+      issues.push('unmapped-cardmarket');
+    } else if (asset.cardmarketPriceState === 'ambiguous-artwork') {
+      issues.push('ambiguous-artwork');
+    } else if (asset.cardmarketPriceState === 'trend-unavailable') {
+      issues.push('trend-unavailable');
+    }
   }
 
   if (asset.imageState === 'unavailable' || !asset.imageUrl) {

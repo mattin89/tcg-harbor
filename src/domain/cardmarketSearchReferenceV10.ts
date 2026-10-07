@@ -26,6 +26,7 @@ export interface CatalogCardmarketAssetV10 extends CardmarketReferenceInputV8, C
   readonly id: string;
   readonly kind: 'card' | 'sealed';
   readonly variant: string;
+  readonly language?: string;
   readonly setCode: string;
   readonly number?: string;
   readonly rulesCardId?: string;
@@ -88,7 +89,7 @@ function originSetCode(asset: CatalogCardmarketAssetV10): string | null {
 }
 
 function isRegularArt(asset: CatalogCardmarketAssetV10): boolean {
-  return /^(?:standard|base art)$/i.test(asset.variant.trim());
+  return /^(?:standard|base art)$/i.test(asset.variant.trim()) && (!asset.language || asset.language === 'English');
 }
 
 function verifiedRegularIdentity(asset: CatalogCardmarketAssetV10): string | null {

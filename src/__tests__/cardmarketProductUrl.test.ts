@@ -238,16 +238,49 @@ describe('cardmarketProductUrl generalized logic', () => {
     );
   });
 
-  it('falls back to Card metacard URL when expansion is not mapped', () => {
-    const unknownSetCard = createMockAsset({
-      name: 'Custom Promotional Hero',
-      setCode: 'UNKNOWN99',
-      number: 'XX99-001',
-      variant: 'Standard',
-      cardmarketProductId: undefined,
+  it('resolves verified canonical URLs for sealed products across all categories', () => {
+    // 1. Boosters
+    const booster = createMockAsset({
+      kind: 'sealed',
+      name: '- ST15-ST20 Release Event Pack -',
+      productType: 'Booster',
+      cardmarketProductId: 794695,
     });
-    expect(cardmarketProductUrl(unknownSetCard)).toBe(
-      'https://www.cardmarket.com/en/OnePiece/Cards/Custom-Promotional-Hero-XX99-001'
+    expect(cardmarketProductUrl(booster)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Boosters/ST15-ST20-Release-Event-Pack'
+    );
+
+    // 2. Booster Boxes
+    const box = createMockAsset({
+      kind: 'sealed',
+      name: '500 Years into the Future Booster Box',
+      productType: 'Booster box',
+      cardmarketProductId: 750069,
+    });
+    expect(cardmarketProductUrl(box)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Booster-Boxes/500-Years-into-the-Future-Booster-Box'
+    );
+
+    // 3. Preconstructed Decks
+    const deck = createMockAsset({
+      kind: 'sealed',
+      name: 'Starter Deck: Edward.Newgate',
+      productType: 'Preconstructed deck',
+      cardmarketProductId: 767014,
+    });
+    expect(cardmarketProductUrl(deck)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Preconstructed-Decks/Starter-Deck-EdwardNewgate'
+    );
+
+    // 4. Promo Products
+    const promo = createMockAsset({
+      kind: 'sealed',
+      name: '1st Anniversary Set (English Version)',
+      productType: 'Promo Product',
+      cardmarketProductId: 753286,
+    });
+    expect(cardmarketProductUrl(promo)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Promo-Products/1st-Anniversary-Set-English-Version'
     );
   });
 });

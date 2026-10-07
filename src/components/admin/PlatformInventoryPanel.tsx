@@ -32,7 +32,7 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
   const [approvedIds, setApprovedIds] = useState<Set<string>>(() => getAdminApprovedAssetIds());
   const [activeTab, setActiveTab] = useState<TabMode>('all');
   const [issueFilter, setIssueFilter] = useState<'all' | CatalogItemIssue>('all');
-  const [languageFilter, setLanguageFilter] = useState<'all' | 'English' | 'Japanese' | 'French'>('all');
+  const [languageFilter, setLanguageFilter] = useState<'all' | 'English' | 'Japanese' | 'French' | 'Chinese'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const pageSize = 30;
@@ -388,7 +388,7 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
           <select
             className="production-inventory-lang-select"
             value={languageFilter}
-            onChange={(e) => setLanguageFilter(e.target.value as 'all' | 'English' | 'Japanese' | 'French')}
+            onChange={(e) => setLanguageFilter(e.target.value as 'all' | 'English' | 'Japanese' | 'French' | 'Chinese')}
             aria-label="Filter catalog by language"
             style={{
               minWidth: '135px',
@@ -406,6 +406,7 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
             <option value="English">English</option>
             <option value="Japanese">Japanese</option>
             <option value="French">French</option>
+            <option value="Chinese">Chinese</option>
           </select>
         </div>
       </div>

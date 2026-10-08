@@ -126,33 +126,58 @@ export function cleanCardmarketCardName(name: string): string {
   return cleaned;
 }
 
+export const CARDMARKET_LANG_PARAM: Record<string, number> = {
+  English: 1,
+  French: 2,
+  German: 3,
+  Spanish: 4,
+  Italian: 5,
+  Chinese: 6,
+  'Simplified Chinese': 6,
+  Japanese: 7,
+  Korean: 10,
+};
+
 export function cardmarketProductUrl(asset: DemoAsset): string {
   const lang = typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('de') ? 'de' : 'en';
 
   const canonicalMap = (cardmarketCanonicalUrls ?? {}) as Record<string, string>;
+  const langId = asset.language ? CARDMARKET_LANG_PARAM[asset.language] : undefined;
+
   if (asset.cardmarketProductId && canonicalMap[String(asset.cardmarketProductId)]) {
     const slug = canonicalMap[String(asset.cardmarketProductId)];
+    let fullUrl = '';
     if (slug.startsWith('http://') || slug.startsWith('https://')) {
-      return slug;
-    }
-    if (slug.startsWith('/Products/')) {
-      return `https://www.cardmarket.com/${lang}/OnePiece${slug}`;
-    }
-    if (
+      fullUrl = slug;
+    } else if (slug.startsWith('/Products/')) {
+      fullUrl = `https://www.cardmarket.com/${lang}/OnePiece${slug}`;
+    } else if (
       slug.startsWith('Boosters/') ||
       slug.startsWith('Booster-Boxes/') ||
       slug.startsWith('Preconstructed-Decks/') ||
       slug.startsWith('Promo-Products/') ||
       slug.startsWith('Singles/')
     ) {
-      return `https://www.cardmarket.com/${lang}/OnePiece/Products/${slug}`;
+      fullUrl = `https://www.cardmarket.com/${lang}/OnePiece/Products/${slug}`;
+    } else {
+      fullUrl = `https://www.cardmarket.com/${lang}/OnePiece/Products/Singles/${slug}`;
     }
-    return `https://www.cardmarket.com/${lang}/OnePiece/Products/Singles/${slug}`;
+
+    if (fullUrl.includes('/Singles/') && langId && langId !== 1 && !fullUrl.includes('language=')) {
+      return `${fullUrl}?language=${langId}`;
+    }
+    return fullUrl;
   }
 
   if (asset.kind === 'card' && asset.number && asset.number !== 'DON!!') {
+    const isAsianLanguage = asset.language === 'Japanese' || asset.language === 'Chinese' || asset.language === 'Simplified Chinese' || asset.language === 'Korean';
+
     let expansion = '';
-    if (asset.setCode) {
+    const cleanSetCode = (asset.setCode || '').replace(/-(?:JP|CN|KR|FR|EN)$/i, '').trim();
+    if (cleanSetCode) {
+      expansion = SPECIAL_EXPANSIONS[cleanSetCode] || '';
+    }
+    if (!expansion && asset.setCode) {
       expansion = SPECIAL_EXPANSIONS[asset.setCode] || '';
     }
     if (!expansion) {
@@ -161,6 +186,10 @@ export function cardmarketProductUrl(asset: DemoAsset): string {
         const prefix = prefixMatch[1].replace(/[^a-zA-Z0-9]/g, '');
         expansion = SPECIAL_EXPANSIONS[prefix] || '';
       }
+    }
+
+    if (expansion && isAsianLanguage && !expansion.endsWith('-Japanese')) {
+      expansion = `${expansion}-Japanese`;
     }
 
     const cleanName = cleanCardmarketCardName(asset.name);
@@ -180,19 +209,34 @@ export function cardmarketProductUrl(asset: DemoAsset): string {
 
     if (cleanName && cleanNumber) {
       const cardSlug = `${cleanName}-${cleanNumber}${versionSuffix}`;
+      let finalUrl: string;
       if (expansion) {
-        return `https://www.cardmarket.com/${lang}/OnePiece/Products/Singles/${expansion}/${cardSlug}`;
+        finalUrl = `https://www.cardmarket.com/${lang}/OnePiece/Products/Singles/${expansion}/${cardSlug}`;
+      } else {
+        finalUrl = `https://www.cardmarket.com/${lang}/OnePiece/Cards/${cardSlug}`;
       }
-      return `https://www.cardmarket.com/${lang}/OnePiece/Cards/${cardSlug}`;
+
+      if (langId && langId !== 1 && !finalUrl.includes('language=')) {
+        return `${finalUrl}?language=${langId}`;
+      }
+      return finalUrl;
     }
   }
 
   if (asset.cardmarketProductId && Number.isFinite(asset.cardmarketProductId) && asset.cardmarketProductId > 0) {
-    return `https://www.cardmarket.com/${lang}/OnePiece/Products/Search?idProduct=${asset.cardmarketProductId}`;
+    const searchByIdUrl = `https://www.cardmarket.com/${lang}/OnePiece/Products/Search?idProduct=${asset.cardmarketProductId}`;
+    if (langId && langId !== 1) {
+      return `${searchByIdUrl}&language=${langId}`;
+    }
+    return searchByIdUrl;
   }
 
   const query = asset.number ?? asset.name;
-  return `https://www.cardmarket.com/${lang}/OnePiece/Products/Search?searchString=${encodeURIComponent(query)}`;
+  let searchUrl = `https://www.cardmarket.com/${lang}/OnePiece/Products/Search?searchString=${encodeURIComponent(query)}`;
+  if (langId && langId !== 1) {
+    searchUrl += `&language=${langId}`;
+  }
+  return searchUrl;
 }
 
 

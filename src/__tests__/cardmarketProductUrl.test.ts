@@ -283,5 +283,68 @@ describe('cardmarketProductUrl generalized logic', () => {
       'https://www.cardmarket.com/en/OnePiece/Products/Promo-Products/1st-Anniversary-Set-English-Version'
     );
   });
+
+  it('correctly routes multilingual cards to their language-specific expansions and filter parameters', () => {
+    // 1. Chinese Adio (OP03-002) routes to Pillars-of-Strength-Japanese with ?language=6
+    const chineseAdio = createMockAsset({
+      name: 'Adio',
+      setCode: 'OP03-CN',
+      number: 'OP03-002',
+      variant: 'Standard',
+      language: 'Chinese',
+    });
+    expect(cardmarketProductUrl(chineseAdio)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Pillars-of-Strength-Japanese/Adio-OP03-002?language=6'
+    );
+
+    // 2. Japanese Adio (OP03-002) routes to Pillars-of-Strength-Japanese with ?language=7
+    const japaneseAdio = createMockAsset({
+      name: 'Adio',
+      setCode: 'OP03-JP',
+      number: 'OP03-002',
+      variant: 'Standard',
+      language: 'Japanese',
+    });
+    expect(cardmarketProductUrl(japaneseAdio)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Pillars-of-Strength-Japanese/Adio-OP03-002?language=7'
+    );
+
+    // 3. Korean Adio (OP03-002) routes to Pillars-of-Strength-Japanese with ?language=10
+    const koreanAdio = createMockAsset({
+      name: 'Adio',
+      setCode: 'OP03-KR',
+      number: 'OP03-002',
+      variant: 'Standard',
+      language: 'Korean',
+    });
+    expect(cardmarketProductUrl(koreanAdio)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Pillars-of-Strength-Japanese/Adio-OP03-002?language=10'
+    );
+
+    // 4. English Adio (OP03-002) routes to English Pillars-of-Strength without language query
+    const englishAdio = createMockAsset({
+      name: 'Adio',
+      setCode: 'OP03',
+      number: 'OP03-002',
+      variant: 'Standard',
+      language: 'English',
+    });
+    expect(cardmarketProductUrl(englishAdio)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Pillars-of-Strength/Adio-OP03-002'
+    );
+
+    // 5. French Uta (OP06-001) routes to European Wings-of-the-Captain with ?language=2
+    const frenchUta = createMockAsset({
+      name: 'Uta',
+      setCode: 'OP06-FR',
+      number: 'OP06-001',
+      variant: 'Standard',
+      language: 'French',
+    });
+    expect(cardmarketProductUrl(frenchUta)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Wings-of-the-Captain/Uta-OP06-001?language=2'
+    );
+  });
 });
+
 

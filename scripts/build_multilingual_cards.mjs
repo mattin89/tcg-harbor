@@ -356,6 +356,74 @@ for (const ex of chineseExclusives) {
   });
 }
 
+// 4. KOREAN CARDS
+// Korean releases cover mainline sets OP01 through OP06 and Starter Decks ST01 through ST06.
+console.log('Generating Korean cards (OP01-OP06, ST01-ST06)...');
+const koreanSetCodes = new Set([
+  'OP01', 'OP-01', 'OP02', 'OP-02', 'OP03', 'OP-03', 'OP04', 'OP-04', 'OP05', 'OP-05', 'OP06', 'OP-06',
+  'ST01', 'ST-01', 'ST02', 'ST-02', 'ST03', 'ST-03', 'ST04', 'ST-04', 'ST05', 'ST-05', 'ST06', 'ST-06'
+]);
+
+for (const [num, r] of cardsByNumber) {
+  const rawSet = (r.set_id || '').toUpperCase();
+  const cleanCode = normalizeSetCode(rawSet);
+
+  if (!koreanSetCodes.has(rawSet) && !koreanSetCodes.has(cleanCode)) {
+    continue;
+  }
+
+  const krSetCode = cleanCode.endsWith('-KR') ? cleanCode : `${cleanCode}-KR`;
+
+  const asset = {
+    id: `card-multilingual-kr-${num.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+    kind: 'card',
+    name: r.card_name,
+    productName: `${r.card_name} (${num}) [Korean]`,
+    set: r.set_name || 'One Piece Card Game Korea',
+    setCode: krSetCode,
+    number: num,
+    rulesCardId: normalizeRulesCardId(num),
+    printingId: `bandai-kr:${num}`,
+    rarity: r.rarity || 'Common',
+    variant: 'Standard',
+    language: 'Korean',
+    languageEvidence: 'Bandai official Korean One Piece Card Game printing',
+    condition: 'Near Mint',
+    quantity: 1,
+    addedAt: '2024-03-22T12:00:00.000Z',
+    color: getColorFromSetOrCard(r),
+    imageUrl: r.card_image || `https://optcgapi.com/media/static/Card_Images/${num}.jpg`,
+    imageState: 'available',
+    cardmarketProductId: null,
+    cardmarketExpansionId: null,
+    cardmarketPriceState: 'unmapped',
+    cardmarketPriceReason: 'Korean printing mirroring primary release; individual regional listing trends are tracked in native markets.',
+    quote: {
+      cardmarket: null,
+      tcgplayer: null
+    },
+    change: {
+      cardmarket: { '1D': null, '1W': null, '1M': null },
+      tcgplayer: { '1D': null, '1W': null, '1M': null }
+    },
+    pricing: {
+      cardmarket: {
+        trend: null,
+        low: null,
+        average: null,
+        average1Day: null,
+        average7Days: null,
+        average30Days: null
+      },
+      usMarket: {
+        market: null,
+        inventory: null
+      }
+    }
+  };
+  multilingualAssets.push(asset);
+}
+
 console.log(`\nGenerated ${multilingualAssets.length} total multilingual assets!`);
 const langCounts = {};
 for (const a of multilingualAssets) {

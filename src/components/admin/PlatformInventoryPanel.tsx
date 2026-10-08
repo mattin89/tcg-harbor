@@ -32,7 +32,7 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
   const [approvedIds, setApprovedIds] = useState<Set<string>>(() => getAdminApprovedAssetIds());
   const [activeTab, setActiveTab] = useState<TabMode>('all');
   const [issueFilter, setIssueFilter] = useState<'all' | CatalogItemIssue>('all');
-  const [languageFilter, setLanguageFilter] = useState<'all' | 'English' | 'Japanese' | 'French' | 'Chinese'>('all');
+  const [languageFilter, setLanguageFilter] = useState<'all' | 'English' | 'Japanese' | 'French' | 'Chinese' | 'Korean'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const pageSize = 30;
@@ -407,6 +407,7 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
             <option value="Japanese">Japanese</option>
             <option value="French">French</option>
             <option value="Chinese">Chinese</option>
+            <option value="Korean">Korean</option>
           </select>
         </div>
       </div>

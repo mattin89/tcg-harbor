@@ -349,7 +349,7 @@ describe('source-backed catalog snapshot', () => {
     expect(cards.filter((asset) => !asset.id.startsWith('card-tcgplayer-') && !asset.id.startsWith('card-multilingual-')).every(
       (asset) => asset.language === 'English',
     )).toBe(true);
-    expect(catalogAssets.every((asset) => ['English', 'French', 'Japanese', 'Chinese'].includes(asset.language))).toBe(true);
+    expect(catalogAssets.every((asset) => ['English', 'French', 'Japanese', 'Chinese', 'Korean'].includes(asset.language))).toBe(true);
     expect(catalogAssets.some((asset) => asset.language === 'German')).toBe(false);
   });
 

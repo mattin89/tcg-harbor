@@ -109,7 +109,7 @@ const TCGCSV_CATEGORY_ID = 68;
 const TCGCSV_GROUPS = `https://tcgcsv.com/tcgplayer/${TCGCSV_CATEGORY_ID}/groups`;
 // Match the whole source abbreviation. Event, anniversary, pre-release,
 // starter, promo, and Japanese groups therefore cannot enter by substring.
-const TCGCSV_MARKET_GROUP_ABBREVIATION = /^(?:OP\d{2}|EB-\d{2}(?:-\d{2})?|PRB-\d{2}|OP\d{2}-EB\d{2})$/;
+const TCGCSV_MARKET_GROUP_ABBREVIATION = /^(?:OP\d{2}|EB-?\d{2}(?:-\d{2})?|PRB-\d{2}|OP\d{2}-EB\d{2})$/;
 const MINIMUM_RELEASED_ENGLISH_MAIN_SET = 16;
 const BANDAI_ENGLISH_PRODUCTS = 'https://en.onepiece-cardgame.com/products/';
 const BANDAI_PRODUCTS_MAX_PAGES = 40;
@@ -129,14 +129,9 @@ const OFFICIAL_RELEASE_CONTINUITY = [{
   continuityEvidence: 'Official Bandai standalone product page',
 }];
 const REQUIRED_RELEASED_SPECIAL_GROUPS = ['EB-01', 'EB-02', 'EB-03', 'PRB-01', 'PRB-02'];
-// Bandai calls the January 2026 product OP14-EB04, while TCGCSV identifies the
-// exact English market group as OP14. Similarly, Bandai designates the Heroines
-// booster as EB-03, which TCGCSV titles/abbreviates as EB-03-04. Keep audited
-// aliases explicit; all other current/future codes are derived without manual lists.
-const OFFICIAL_TO_TCGCSV_GROUP_OVERRIDES = new Map([
-  ['OP14-EB04', 'OP14'],
-  ['EB-03', 'EB-03-04'],
-]);
+// Handled aliases between official Bandai product codes and TCGCSV market group abbreviations.
+// Note: OP14-EB04 matches TCGCSV group OP14-EB04 directly, and EB-03 matches EB03 via hyphen removal.
+const OFFICIAL_TO_TCGCSV_GROUP_OVERRIDES = new Map();
 const TCGCSV_PROMO_GROUP_ID = 17675;
 const TCGCSV_PROMO_PRODUCTS = `https://tcgcsv.com/tcgplayer/${TCGCSV_CATEGORY_ID}/${TCGCSV_PROMO_GROUP_ID}/products`;
 const TCGCSV_PROMO_PRICES = `https://tcgcsv.com/tcgplayer/${TCGCSV_CATEGORY_ID}/${TCGCSV_PROMO_GROUP_ID}/prices`;
@@ -289,6 +284,10 @@ const APPROVED_CATALOG_REMOVALS = new Map([
   ['card-optcg-3fc59250e4af08fa1339', { reason: 'OPTCG API renamed the EB-03 Nico Robin Gold DON!! image file; the stable ID derived from the new URL replaces this entry', permanent: true }],
   ['card-optcg-4b4eef3a50343bdf4edc', { reason: 'OPTCG API renamed the EB-03 Nico Robin DON!! image file; the stable ID derived from the new URL replaces this entry', permanent: true }],
   ['card-optcg-e113ac2e1544733badb7', { reason: 'OPTCG API renamed the EB-03 Uta DON!! image file; the stable ID derived from the new URL replaces this entry', permanent: true }],
+  ['card-optcg-60033f00fe859fa2d80a', { reason: 'OPTCG API populated set metadata for PRB-02 Rob Lucci Gold DON!! (don_169); replaced by card-optcg-f7fcebfde115b596c328', permanent: true }],
+  ['card-optcg-b39bed13a62d9975e1bb', { reason: 'OPTCG API populated set metadata for EB-03 Uta Gold DON!! (don_181); replaced by card-optcg-7fac9bb2fc7da860ad4c', permanent: true }],
+  ['card-optcg-cbfde6bb32412b031624', { reason: 'OPTCG API populated set metadata for EB-03 Boa Hancock Gold DON!! (don_132); replaced by card-optcg-22ba0d6794d24916fe6e', permanent: true }],
+  ['card-optcg-f2c200f207f2dec77f7f', { reason: 'OPTCG API populated set metadata for OP16 Alternate Art Gold DON!! (don_185); replaced by card-optcg-1f3b3734870a896f35e0', permanent: true }],
   ['card-optcg-147f49af129ece874702', { reason: 'ST30-017 TCGplayer-image-backed ID superseded by OPTCG-image-backed card-optcg-f6df1bf175052c9c0906 already in catalog', permanent: true }],
   ['sealed-cardmarket-761165', { reason: 'Cardmarket delisted product 761165 (BCG Fest 23-24 Premium Card Collection) from its public non-singles product feed', permanent: true }],
 ]);
@@ -968,18 +967,33 @@ async function fetchBandaiEnglishProducts(previousContinuity = []) {
     ));
   }
 
-  const archivedCodes = new Set(products
+  const seenProductKeys = new Set();
+  const dedupedProducts = [];
+  for (const product of products) {
+    const key = (product.category === 'boosters' || product.category === 'decks') && product.officialCode
+      ? `${product.category}:${product.officialCode}`
+      : product.productUrl
+        ? `${product.category}:${product.productUrl}`
+        : null;
+    if (key) {
+      if (seenProductKeys.has(key)) continue;
+      seenProductKeys.add(key);
+    }
+    dedupedProducts.push(product);
+  }
+
+  const archivedCodes = new Set(dedupedProducts
     .filter((product) => product.category === 'boosters' || product.category === 'decks')
     .map((product) => product.officialCode)
     .filter(Boolean));
   for (const continuityProduct of [...OFFICIAL_RELEASE_CONTINUITY, ...previousContinuity]) {
     if (!archivedCodes.has(continuityProduct.officialCode)) {
-      products.push(continuityProduct);
+      dedupedProducts.push(continuityProduct);
       archivedCodes.add(continuityProduct.officialCode);
     }
   }
 
-  const codedProducts = products.filter((product) =>
+  const codedProducts = dedupedProducts.filter((product) =>
     (product.category === 'boosters' || product.category === 'decks')
     && product.officialCode);
   if (codedProducts.length < 20) {
@@ -990,7 +1004,7 @@ async function fetchBandaiEnglishProducts(previousContinuity = []) {
     const duplicateCodes = [...new Set(codes.filter((code, index) => codes.indexOf(code) !== index))];
     throw new Error(`Bandai products archive returned duplicate coded products: ${duplicateCodes.join(', ')}.`);
   }
-  return { pageCount, fetchedAt: new Date().toISOString(), products };
+  return { pageCount, fetchedAt: new Date().toISOString(), products: dedupedProducts };
 }
 
 function parseEcbUsdPerEur(csvText) {
@@ -1093,7 +1107,7 @@ function tcgcsvGroupAbbreviation(group) {
 
 function primarySetCodeForGroup(group) {
   const abbreviation = tcgcsvGroupAbbreviation(group);
-  const match = abbreviation.match(/^(OP\d{2}|EB-\d{2}|PRB-\d{2})/);
+  const match = abbreviation.match(/^(OP\d{2}|EB-?\d{2}|PRB-\d{2})/);
   return match ? normalizeSetCode(match[1]) : null;
 }
 
@@ -1105,7 +1119,7 @@ function mainSetOrdinalForGroup(group) {
 function tcgcsvAbbreviationForOfficialCode(officialCode) {
   const override = OFFICIAL_TO_TCGCSV_GROUP_OVERRIDES.get(officialCode);
   if (override) return override;
-  return /^OP-\d{2}$/.test(officialCode) ? officialCode.replace('-', '') : officialCode;
+  return /^(?:OP|EB)-\d{2}$/.test(officialCode) ? officialCode.replace('-', '') : officialCode;
 }
 
 function officialMemberSetCodes(officialCode) {

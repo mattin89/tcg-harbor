@@ -224,6 +224,48 @@ export const donMappings: Record<string, DonCardmarketMapping> = {
       "cardmarket": 0.09
     }
   },
+  "card-optcg-1f3b3734870a896f35e0": {
+    "cardmarketProductId": 891009,
+    "cardmarketExpansionId": 6457,
+    "cardmarketPriceState": "available",
+    "cardmarketPriceReason": "An exact Cardmarket product is verified for this artwork and its daily trend is available.",
+    "cardmarketMappingEvidence": "OP16 The Time of Battle AA DON",
+    "cardmarketProductName": "Don!! (OP16)",
+    "pricing": {
+      "cardmarket": {
+        "trend": 2.54,
+        "low": 1.5,
+        "average": 4.44,
+        "average1Day": 2.51,
+        "average7Days": 2.61,
+        "average30Days": 4.59
+      }
+    },
+    "quote": {
+      "cardmarket": 2.54
+    }
+  },
+  "card-optcg-22ba0d6794d24916fe6e": {
+    "cardmarketProductId": 873739,
+    "cardmarketExpansionId": 6449,
+    "cardmarketPriceState": "available",
+    "cardmarketPriceReason": "An exact Cardmarket product is verified for this artwork and its daily trend is available.",
+    "cardmarketMappingEvidence": "EB-03 Gold DON (Boa Hancock)",
+    "cardmarketProductName": "Don!! (Boa EB03)",
+    "pricing": {
+      "cardmarket": {
+        "trend": 77.79,
+        "low": 70,
+        "average": 78.33,
+        "average1Day": 80,
+        "average7Days": 76.76,
+        "average30Days": 79.84
+      }
+    },
+    "quote": {
+      "cardmarket": 77.79
+    }
+  },
   "card-optcg-23c43716599ef56b6e17": {
     "cardmarketProductId": 845306,
     "cardmarketExpansionId": 5244,
@@ -1023,6 +1065,27 @@ export const donMappings: Record<string, DonCardmarketMapping> = {
     }
   },
   "card-optcg-60033f00fe859fa2d80a": {
+    "cardmarketProductId": 852259,
+    "cardmarketExpansionId": 6242,
+    "cardmarketPriceState": "available",
+    "cardmarketPriceReason": "An exact Cardmarket product is verified for this artwork and its daily trend is available.",
+    "cardmarketMappingEvidence": "PRB-02 Gold DON (Rob Lucci)",
+    "cardmarketProductName": "DON!! (PRB02 - Lucci)",
+    "pricing": {
+      "cardmarket": {
+        "trend": 38.3,
+        "low": 12,
+        "average": 26.98,
+        "average1Day": 25,
+        "average7Days": 27.91,
+        "average30Days": 29.56
+      }
+    },
+    "quote": {
+      "cardmarket": 38.3
+    }
+  },
+  "card-optcg-f7fcebfde115b596c328": {
     "cardmarketProductId": 852259,
     "cardmarketExpansionId": 6242,
     "cardmarketPriceState": "available",
@@ -2451,6 +2514,27 @@ export const donMappings: Record<string, DonCardmarketMapping> = {
     }
   },
   "card-optcg-b39bed13a62d9975e1bb": {
+    "cardmarketProductId": 873737,
+    "cardmarketExpansionId": 6449,
+    "cardmarketPriceState": "available",
+    "cardmarketPriceReason": "An exact Cardmarket product is verified for this artwork and its daily trend is available.",
+    "cardmarketMappingEvidence": "EB-03 Gold DON (Uta)",
+    "cardmarketProductName": "Don!! (Uta EB03)",
+    "pricing": {
+      "cardmarket": {
+        "trend": 25.69,
+        "low": 24,
+        "average": 27.27,
+        "average1Day": 20,
+        "average7Days": 25.98,
+        "average30Days": 27.4
+      }
+    },
+    "quote": {
+      "cardmarket": 25.69
+    }
+  },
+  "card-optcg-7fac9bb2fc7da860ad4c": {
     "cardmarketProductId": 873737,
     "cardmarketExpansionId": 6449,
     "cardmarketPriceState": "available",

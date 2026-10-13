@@ -115,4 +115,17 @@ describe('catalog card search v5', () => {
     expect(results.some((asset) => asset.name.includes('(Yamato)'))).toBe(true);
     expect(results.some((asset) => asset.name.includes('(Zoro)'))).toBe(true);
   });
+
+  it('matches compound searches combining character name and card set or number like Luffy OP11-040', () => {
+    const luffyCard = {
+      name: 'Monkey.D.Luffy',
+      number: 'OP11-040',
+      setCode: 'OP-11',
+      variant: 'Standard',
+    };
+
+    expect(selectCardGroupMatchV5([luffyCard], normalizeCatalogQueryV5('Luffy OP11-040'), 'all')).toBe(luffyCard);
+    expect(selectCardGroupMatchV5([luffyCard], normalizeCatalogQueryV5('Luffy OP11'), 'all')).toBe(luffyCard);
+    expect(selectCardGroupMatchV5([luffyCard], normalizeCatalogQueryV5('Monkey D Luffy'), 'all')).toBe(luffyCard);
+  });
 });

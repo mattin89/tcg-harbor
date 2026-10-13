@@ -390,7 +390,7 @@ create policy community_card_loans_select on public.community_card_loans
       select 1 from public.community_memberships mem
       where mem.community_id = community_id
         and mem.user_id = (select auth.uid())
-        and mem.role in ('moderator', 'administrator')
+        and mem.role = 'moderator'
         and mem.status = 'active'
     )
   );

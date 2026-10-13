@@ -7,7 +7,10 @@ import {
   type KeyboardEvent,
 } from 'react';
 import { formatMoney, type DemoAsset } from '../data/demo';
-import { searchCommunityCardsV9 } from '../domain/communityCardSearchV9';
+import {
+  communityCardPrintingKey,
+  searchCommunityCardsV9,
+} from '../domain/communityCardSearchV9';
 import { resolveCardmarketArtworkReferenceV10 } from '../domain/cardmarketSearchReferenceV10';
 import { Icon } from './Icon';
 import { CardArt, Chip } from './ui';
@@ -48,7 +51,25 @@ export function CommunityCardSearchPickerV9({
     asset.kind === 'card'
     && asset.id !== excludedAssetId
   )), [assets, excludedAssetId]);
+  const languageSiblingsMap = useMemo(() => {
+    const map = new Map<string, DemoAsset[]>();
+    for (const asset of eligibleAssets) {
+      const key = communityCardPrintingKey(asset);
+      const existing = map.get(key);
+      if (existing) {
+        existing.push(asset);
+      } else {
+        map.set(key, [asset]);
+      }
+    }
+    return map;
+  }, [eligibleAssets]);
   const selected = eligibleAssets.find((asset) => asset.id === value) ?? null;
+  const selectedSiblings = useMemo(() => {
+    if (!selected) return [];
+    const key = communityCardPrintingKey(selected);
+    return languageSiblingsMap.get(key) ?? [selected];
+  }, [selected, languageSiblingsMap]);
   const [query, setQuery] = useState(() => selected ? selectedInputLabelV9(selected) : '');
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -151,6 +172,8 @@ export function CommunityCardSearchPickerV9({
           {search.matches.map((asset, index) => {
             const cardmarket = resolveCardmarketArtworkReferenceV10(asset);
             const available = availableQuantity?.(asset);
+            const printingKey = communityCardPrintingKey(asset);
+            const siblings = languageSiblingsMap.get(printingKey) ?? [asset];
             return <button
               id={`${listboxId}-${index}`}
               type="button"
@@ -164,7 +187,10 @@ export function CommunityCardSearchPickerV9({
               <CardArt asset={asset} size="xs"/>
               <span>
                 <strong>{asset.name}</strong>
-                <small>{asset.number} · {asset.setCode} · {asset.variant} · {asset.language}</small>
+                <small>
+                  {asset.number} · {asset.setCode} · {asset.variant}
+                  {siblings.length > 1 ? ` · ${asset.language} (+${siblings.length - 1} languages)` : ` · ${asset.language}`}
+                </small>
                 {owned && <em>{available ?? asset.quantity} of {asset.quantity} available in your collection</em>}
               </span>
               <span className="community-card-search-result-price-v9">
@@ -182,6 +208,25 @@ export function CommunityCardSearchPickerV9({
         <span><Chip tone="neutral">{selected.setCode}</Chip>{owned && <Chip tone="positive">In your collection</Chip>}</span>
         <strong>{selected.name}</strong>
         <small>{selected.number} · {selected.variant} · {selected.language}</small>
+        {selectedSiblings.length > 1 && <div className="community-card-selected-language-picker-v9">
+          <label htmlFor={`${listboxId}-language-select`}>
+            <span>Change language:</span>
+          </label>
+          <select
+            id={`${listboxId}-language-select`}
+            value={selected.language}
+            onChange={(event) => {
+              const target = selectedSiblings.find((sibling) => sibling.language === event.target.value);
+              if (target) choose(target);
+            }}
+          >
+            {selectedSiblings.map((sibling) => (
+              <option key={sibling.id} value={sibling.language}>
+                {sibling.language}
+              </option>
+            ))}
+          </select>
+        </div>}
         {owned && <em>{selectedAvailable} of {selected.quantity} unreserved {selectedAvailable === 1 ? 'copy' : 'copies'}</em>}
       </div>
       <div className="community-card-selected-market-v9" aria-label="Current market references">

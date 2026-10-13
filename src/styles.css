@@ -14,8 +14,17 @@
   --muted: #63717e;
   --subtle: #8c969e;
   --paper: #fffdf9;
+  --surface: #ffffff;
+  --surface-raised: #f8f6f0;
   --canvas: #f4f2ed;
   --line: #deddd8;
+  --border: #deddd8;
+  --border-strong: #c9c5bc;
+  --text: #132130;
+  --text-strong: #06111d;
+  --text-muted: #63717e;
+  --text-subtle: #8c969e;
+  --azure: #2563eb;
   --line-dark: rgba(255,255,255,.1);
   --coral: #e98d61;
   --coral-soft: #fff0e7;
@@ -172,10 +181,10 @@ a { color: inherit; }
 .art-meta strong { max-width: 60%; font-size: 5px; text-align: right; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .art-xs .art-meta, .art-sm .art-meta { display: none; }
 
-.modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; background: rgba(5,15,24,.72); backdrop-filter: blur(8px); animation: fade-in .17s ease-out; }
-.modal { width: min(530px, 100%); max-height: calc(100vh - 48px); overflow: auto; background: var(--paper); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); border: 1px solid rgba(255,255,255,.4); animation: rise-in .2s ease-out; }
+.modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; background: rgba(5,15,24,.85); backdrop-filter: blur(8px); animation: fade-in .17s ease-out; }
+.modal { width: min(530px, 100%); max-height: calc(100vh - 48px); overflow: auto; background: #fffdf9; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); border: 1px solid rgba(255,255,255,.4); animation: rise-in .2s ease-out; }
 .modal-wide { width: min(950px, 100%); }
-.modal-header { position: sticky; top: 0; z-index: 2; padding: 20px 22px 16px; display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; background: rgba(255,253,249,.95); backdrop-filter: blur(15px); border-bottom: 1px solid var(--line); }
+.modal-header { position: sticky; top: 0; z-index: 2; padding: 20px 22px 16px; display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; background: #fffdf9; border-bottom: 1px solid var(--line); }
 .modal-header h2 { font-size: 19px; letter-spacing: -.035em; margin-top: 4px; }
 .modal-body { padding: 22px; }
 @keyframes fade-in { from { opacity: 0; } }

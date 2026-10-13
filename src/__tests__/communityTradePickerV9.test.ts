@@ -40,4 +40,10 @@ describe('community trade picker v9 integration boundary', () => {
     expect(repositorySource).toContain('requireAuthenticatedOwnerV3');
     expect(boardSource).toContain('<CommunityTradeCreateModalV9');
   });
+
+  it('provides the option to change the card language after selection', () => {
+    expect(pickerSource).toContain('community-card-selected-language-picker-v9');
+    expect(pickerSource).toContain('Change language:');
+    expect(modalSource).toContain('primarySiblings');
+  });
 });

@@ -29,13 +29,34 @@ export function cardMatchesCatalogQueryV5(
 ): boolean {
   if (!normalizedQuery) return true;
 
+  const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return true;
+
   // Set titles can contain a featured character (for example the Katakuri
   // starter deck) even when the individual card is a different character.
   // Search stable card fields here; the dedicated set filter handles titles.
-  return [card.name, card.productName ?? '', card.number ?? '', card.setCode, card.variant]
-    .join(' ')
-    .toLocaleLowerCase('en-US')
-    .includes(normalizedQuery);
+  const rawFields = [
+    card.name,
+    card.productName ?? '',
+    card.number ?? '',
+    card.setCode,
+    card.variant,
+    (card as { language?: string }).language ?? '',
+  ];
+
+  const lowerFields = rawFields.map((f) => f.toLocaleLowerCase('en-US'));
+  const haystack = lowerFields.join(' ');
+  const nameSpaced = card.name.toLocaleLowerCase('en-US').replace(/[.]/g, ' ');
+  const setCodeClean = card.setCode.toLocaleLowerCase('en-US').replace(/[-_]/g, '');
+  const numberClean = (card.number ?? '').toLocaleLowerCase('en-US').replace(/[-_]/g, '');
+  const fullHaystack = `${haystack} ${nameSpaced} ${setCodeClean}`;
+
+  return tokens.every((token) => {
+    if (fullHaystack.includes(token)) return true;
+    const cleanToken = token.replace(/[-_]/g, '');
+    if (cleanToken && numberClean && numberClean === cleanToken) return true;
+    return false;
+  });
 }
 
 export function selectCardGroupMatchV5<T extends CatalogSearchCardV5>(

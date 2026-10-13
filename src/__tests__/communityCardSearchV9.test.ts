@@ -108,4 +108,33 @@ describe('community card search v9', () => {
       ],
     )).toEqual([available]);
   });
+
+  it('collapses multiple languages of the same card printing into a single search listing', () => {
+    const english = card('luffy-en', {
+      name: 'Monkey.D.Luffy',
+      number: 'OP11-040',
+      setCode: 'OP-11',
+      variant: 'Standard',
+      language: 'English',
+    });
+    const french = card('luffy-fr', {
+      ...english,
+      id: 'luffy-fr',
+      language: 'French',
+    });
+    const japanese = card('luffy-jp', {
+      ...english,
+      id: 'luffy-jp',
+      language: 'Japanese',
+    });
+
+    const results = searchCommunityCardsV9([english, french, japanese], 'Luffy OP11-040');
+    expect(results.totalMatches).toBe(1);
+    expect(results.matches).toHaveLength(1);
+    expect(results.matches[0].language).toBe('English');
+
+    const frenchQuery = searchCommunityCardsV9([english, french, japanese], 'Luffy OP11-040 French');
+    expect(frenchQuery.totalMatches).toBe(1);
+    expect(frenchQuery.matches[0].language).toBe('French');
+  });
 });

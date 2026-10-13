@@ -7,6 +7,7 @@ import {
   type CommunityTradePostKindV6,
 } from '../domain/communityTradingV6';
 import {
+  communityCardPrintingKey,
   selectAvailableOwnedCommunityCardsV9,
   selectSupportedCommunityCardsV9,
 } from '../domain/communityCardSearchV9';
@@ -83,6 +84,11 @@ export function CommunityTradeCreateModalV9({
 
   const primarySource = postKind === 'offering_card' ? availableOwnedCards : allCards;
   const primary = primarySource.find((asset) => asset.id === primaryId) ?? null;
+  const primarySiblings = useMemo(() => {
+    if (!primary) return [];
+    const key = communityCardPrintingKey(primary);
+    return primarySource.filter((asset) => communityCardPrintingKey(asset) === key);
+  }, [primary, primarySource]);
   const primaryIdentity = catalogIdentityV9(primary);
   const rawSpecificSource = postKind === 'offering_card' ? allCards : availableOwnedCards;
   const specificSource = rawSpecificSource.filter((asset) => (
@@ -205,9 +211,25 @@ export function CommunityTradeCreateModalV9({
                   <option value="played">Played</option>
                 </select>
               </label>
-              <label className="read-only-field">
+              <label className={primarySiblings.length > 1 ? undefined : 'read-only-field'}>
                 Language
-                <output>{primary.language}</output>
+                {primarySiblings.length > 1 ? (
+                  <select
+                    value={primary.language}
+                    onChange={(event) => {
+                      const next = primarySiblings.find((asset) => asset.language === event.target.value);
+                      if (next) setPrimaryId(next.id);
+                    }}
+                  >
+                    {primarySiblings.map((asset) => (
+                      <option key={asset.id} value={asset.language}>
+                        {asset.language}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <output>{primary.language}</output>
+                )}
               </label>
             </div>}
           </>}

@@ -45,7 +45,7 @@ describe('cardmarketProductUrl generalized logic', () => {
     });
 
     const url = cardmarketProductUrl(asset);
-    expect(url).toMatch(/\/OnePiece\/Products\/Singles\/The-Time-of-Battle\/Monkey-D-Luffy-OP16-022-V2$/);
+    expect(url).toMatch(/\/OnePiece\/Products\/Singles\/OP16\/MonkeyDLuffy-OP16-022-V2$/);
   });
 
   it('generates the exact slug URL for OP16-022 Standard (without -V1)', () => {
@@ -57,7 +57,7 @@ describe('cardmarketProductUrl generalized logic', () => {
     });
 
     const url = cardmarketProductUrl(asset);
-    expect(url).toMatch(/\/OnePiece\/Products\/Singles\/The-Time-of-Battle\/Monkey-D-Luffy-OP16-022$/);
+    expect(url).toMatch(/\/OnePiece\/Products\/Singles\/OP16\/MonkeyDLuffy-OP16-022$/);
   });
 
   it('generates slug URL for OP01-001 Alternate Art P1', () => {
@@ -81,7 +81,7 @@ describe('cardmarketProductUrl generalized logic', () => {
     });
 
     const url = cardmarketProductUrl(asset);
-    expect(url).toMatch(/\/OnePiece\/Products\/Singles\/Paramount-War\/Portgas-D-Ace-OP02-013-V3$/);
+    expect(url).toMatch(/\/OnePiece\/Products\/Singles\/Paramount-War\/PortgasDAce-OP02-013-V3$/);
   });
 
   it('resolves canonical Cardmarket URL for inventory cards mapped in canonical dictionary', () => {
@@ -210,7 +210,7 @@ describe('cardmarketProductUrl generalized logic', () => {
       cardmarketProductId: undefined,
     });
     expect(cardmarketProductUrl(leader)).toBe(
-      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Starter-Deck-Straw-Hat-Crew/Monkey-D-Luffy-ST01-001'
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Starter-Deck-Straw-Hat-Crew/MonkeyDLuffy-ST01-001'
     );
 
     // Event (OP01)
@@ -343,6 +343,53 @@ describe('cardmarketProductUrl generalized logic', () => {
     });
     expect(cardmarketProductUrl(frenchUta)).toBe(
       'https://www.cardmarket.com/en/OnePiece/Products/Singles/Wings-of-the-Captain/Uta-OP06-001?language=2'
+    );
+
+    // 6. Chinese Robson (OP08-013) routes to Two-Legends-Non-English with ?language=6
+    const chineseRobson = createMockAsset({
+      name: 'Robson',
+      setCode: 'OP08-CN',
+      number: 'OP08-013',
+      variant: 'Standard',
+      language: 'Chinese',
+    });
+    expect(cardmarketProductUrl(chineseRobson)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Two-Legends-Non-English/Robson-OP08-013?language=6'
+    );
+
+    // 7. Starter Deck Edward.Newgate (ST15-001) in English and Japanese
+    const englishNewgate = createMockAsset({
+      name: 'Edward.Newgate',
+      setCode: 'ST15',
+      number: 'ST15-001',
+      variant: 'Standard',
+      language: 'English',
+    });
+    expect(cardmarketProductUrl(englishNewgate)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Starter-Deck-EdwardNewgate/EdwardNewgate-ST15-001'
+    );
+
+    const japaneseNewgate = createMockAsset({
+      name: 'Edward.Newgate',
+      setCode: 'ST15-JP',
+      number: 'ST15-001',
+      variant: 'Standard',
+      language: 'Japanese',
+    });
+    expect(cardmarketProductUrl(japaneseNewgate)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Starter-Deck-EdwardNewgate-Non-English/EdwardNewgate-ST15-001?language=7'
+    );
+
+    // 8. Unmapped expansion falls back cleanly to universal Cards endpoint
+    const unmappedExpansion = createMockAsset({
+      name: 'Custom Pirate',
+      setCode: 'UNKNOWN99',
+      number: 'UNK-001',
+      variant: 'Standard',
+      language: 'English',
+    });
+    expect(cardmarketProductUrl(unmappedExpansion)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Cards/Custom-Pirate-UNK-001'
     );
   });
 });

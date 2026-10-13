@@ -58,14 +58,17 @@ export const SPECIAL_EXPANSIONS: Record<string, string> = {
   'OP14-EB04': 'The-Azure-Seas-Seven',
   OP15: 'Adventure-on-Kamis-Island',
   'OP15-EB04': 'Adventure-on-Kamis-Island',
-  OP16: 'The-Time-of-Battle',
-  OP17: 'The-Worlds-Strongest-Warriors',
+  OP16: 'OP16',
+  OP17: 'OP17',
+  OP18: 'The-Dominance-of-God',
+  OP19: 'OP19',
 
   // Extra Boosters
   EB01: 'Memorial-Collection',
   EB02: 'Anime-25th-Collection',
   EB03: 'Heroines-Edition',
   EB04: 'The-Azure-Seas-Seven',
+  EB05: 'Heroines-Edition-Vol2',
 
   // Premium Boosters
   PRB01: 'The-Best',
@@ -74,25 +77,25 @@ export const SPECIAL_EXPANSIONS: Record<string, string> = {
   // Starter Decks
   ST01: 'Starter-Deck-Straw-Hat-Crew',
   ST02: 'Starter-Deck-Worst-Generation',
-  ST03: 'Starter-Deck-The-Seven-Warlords-of-The-Sea',
+  ST03: 'Starter-Deck-The-Seven-Warlords-of-the-Sea',
   ST04: 'Starter-Deck-Animal-Kingdom-Pirates',
-  ST05: 'Starter-Deck-Film-Edition',
+  ST05: 'Starter-Deck-ONE-PIECE-FILM-edition',
   ST06: 'Starter-Deck-Absolute-Justice',
   ST07: 'Starter-Deck-Big-Mom-Pirates',
   ST08: 'Starter-Deck-MonkeyDLuffy',
   ST09: 'Starter-Deck-Yamato',
   ST10: 'Ultra-Deck-The-Three-Captains',
   ST11: 'Starter-Deck-Uta',
-  ST12: 'Starter-Deck-Zoro-and-Sanji',
-  ST13: 'Ultra-Deck-The-Three-Brothers',
+  ST12: 'Starter-Deck-Zoro-Sanji',
+  ST13: 'Ultimate-Deck-The-Three-Brothers',
   ST14: 'Starter-Deck-3D2Y',
-  ST15: 'Starter-Deck-RED-Edward-Newgate',
-  ST16: 'Starter-Deck-GREEN-Uta',
-  ST17: 'Starter-Deck-BLUE-Donquixote-Doflamingo',
-  ST18: 'Starter-Deck-PURPLE-Monkey-D-Luffy',
-  ST19: 'Starter-Deck-BLACK-Smoker',
-  ST20: 'Starter-Deck-YELLOW-Charlotte-Katakuri',
-  ST21: 'Starter-Deck-Red-MonkeyDLuffy',
+  ST15: 'Starter-Deck-EdwardNewgate',
+  ST16: 'Starter-Deck-Green-Uta',
+  ST17: 'Starter-Deck-Donquixote-Doflamingo',
+  ST18: 'Starter-Deck-Purple-MonkeyDLuffy',
+  ST19: 'Starter-Deck-Smoker',
+  ST20: 'Starter-Deck-Charlotte-Katakuri',
+  ST21: 'Ultra-Deck-EX-Gear-5',
   ST22: 'Starter-Deck-EX-Ace-Newgate',
   ST23: 'Starter-Deck-Red-Shanks',
   ST24: 'Starter-Deck-Green-Jewlery-Bonney',
@@ -106,7 +109,7 @@ export const SPECIAL_EXPANSIONS: Record<string, string> = {
   ST32: 'Starter-Deck-Green-Roronoa-Zoro',
   ST33: 'Starter-Deck-Blue-Kuzan',
   ST34: 'Starter-Deck-Purple-Charlotte-Katakuri',
-  ST35: 'Starter-Deck-Red-Black-Sabo',
+  ST35: 'Starter-Deck-RedBlack-Sabo',
   ST36: 'Starter-Deck-Yellow-Eustass-Captain-Kid',
 
   // Promos
@@ -115,10 +118,90 @@ export const SPECIAL_EXPANSIONS: Record<string, string> = {
   'OP-PR': 'Promos',
 };
 
+export const ASIAN_EXPANSIONS: Record<string, string> = {
+  // Mainline Boosters (Asian / Non-English / Asia Region Legal)
+  OP01: 'Romance-Dawn-Japanese',
+  OP02: 'Paramount-War-Japanese',
+  OP03: 'Pillars-of-Strength-Japanese',
+  OP04: 'Kingdoms-of-Intrigue-Japanese',
+  OP05: 'Awakening-of-the-New-Era-Japanese',
+  OP06: 'Wings-of-the-Captain-Japanese',
+  OP07: '500-Years-into-the-Future-Japanese',
+  OP08: 'Two-Legends-Non-English',
+  OP09: 'Emperors-in-the-New-World-Non-English',
+  OP10: 'Royal-Blood-Non-English',
+  OP11: 'A-Fist-of-Divine-Speed-Non-English',
+  OP12: 'Bonds-of-Master-and-Disciple-Non-English',
+  OP13: 'Carrying-on-his-Will-Non-English',
+  OP14: 'Egghead-Crisis-Asia-Region-Legal',
+  'OP15-EB04': 'Adventure-on-Kamis-Island-Asia-Region-Legal',
+  OP15: 'Adventure-on-Kamis-Island-Asia-Region-Legal',
+  OP16: 'OP16',
+  OP17: 'OP17',
+  OP18: 'The-Dominance-of-God',
+  OP19: 'OP19',
+
+  // Extra Boosters
+  EB01: 'Memorial-Collection-Japanese',
+  EB02: 'Anime-25th-Collection-Japanese',
+  EB03: 'Heroines-Edition-Asia-Region-Legal',
+  EB04: 'The-Azure-Seas-Seven-Asia-Region-Legal',
+  EB05: 'Heroines-Edition-Vol2',
+
+  // Premium Boosters
+  PRB01: 'The-Best-Non-English',
+  PRB02: 'The-Best-Vol-2-Non-English',
+
+  // Starter Decks
+  ST01: 'Starter-Deck-Straw-Hat-Crew-Non-English',
+  ST02: 'Starter-Deck-Worst-Generation-Non-English',
+  ST03: 'Starter-Deck-The-Seven-Warlords-of-the-Sea-Non-English',
+  ST04: 'Starter-Deck-Animal-Kingdom-Pirates-Non-English',
+  ST05: 'Starter-Deck-ONE-PIECE-FILM-edition',
+  ST06: 'Starter-Deck-Absolute-Justice',
+  ST07: 'Starter-Deck-Big-Mom-Pirates',
+  ST08: 'Starter-Deck-MonkeyDLuffy',
+  ST09: 'Starter-Deck-Yamato-Non-English',
+  ST10: 'Ultimate-Deck-The-Three-Captains-Japanese',
+  ST11: 'Starter-Deck-Uta-Japanese',
+  ST12: 'Starter-Deck-Zoro-Sanji-Japanese',
+  ST13: 'Ultra-Deck-The-Three-Brothers-Japanese',
+  ST14: 'Starter-Deck-3D2Y-Japanese',
+  ST15: 'Starter-Deck-EdwardNewgate-Non-English',
+  ST16: 'Starter-Deck-Green-Uta-Non-English',
+  ST17: 'Starter-Deck-Donquixote-Doflamingo-Non-English',
+  ST18: 'Starter-Deck-Purple-MonkeyDLuffy-Non-English',
+  ST19: 'Starter-Deck-Smoker-Non-English',
+  ST20: 'Starter-Deck-Charlotte-Katakuri-Non-English',
+  ST21: 'Starter-Deck-EX-Gear-5-Non-English',
+  ST22: 'Starter-Deck-EX-Ace-Newgate-Non-English',
+  ST23: 'Starter-Deck-Red-Shanks-Non-English',
+  ST24: 'Starter-Deck-Green-Jewelry-Bonney-Non-English',
+  ST25: 'Starter-Deck-Blue-Buggy-Non-English',
+  ST26: 'Starter-Deck-Purple-Black-MonkeyDLuffy-Non-English',
+  ST27: 'Starter-Deck-Black-MarshallDTeach-Non-English',
+  ST28: 'Starter-Deck-Green-Yellow-Yamato-Non-English',
+  ST29: 'Starter-Deck-Egghead-Asia-Region-Legal',
+  ST30: 'Starter-Deck-EX-Luffy-Ace-Asia-Region-Legal',
+  ST31: 'Starter-Deck-Red-MonkeyDLuffy-Asia-Region-Legal',
+  ST32: 'Starter-Deck-Green-Roronoa-Zoro-Asia-Region-Legal',
+  ST33: 'Starter-Deck-Blue-Kuzan-Asia-Region-Legal',
+  ST34: 'Starter-Deck-Purple-Charlotte-Katakuri-Asia-Region-Legal',
+  ST35: 'Starter-Deck-RedBlack-Sabo-Asia-Region-Legal',
+  ST36: 'Starter-Deck-Yellow-Eustass-Captain-Kid-Asia-Region-Legal',
+
+  // Promos
+  P: 'Promos-Japanese',
+  PROMO: 'Promos-Japanese',
+  'OP-PR': 'Promos-Japanese',
+};
+
 export function cleanCardmarketCardName(name: string): string {
   let cleaned = name.replace(/\s*\([^)]*\)\s*$/, '').trim();
   cleaned = cleaned.replace(/^[\s.·!?'"-]+/, '');
-  cleaned = cleaned.replace(/\./g, '-');
+  // Periods in character names (e.g. Monkey.D.Luffy -> MonkeyDLuffy, Edward.Newgate -> EdwardNewgate)
+  // are stripped rather than turned into hyphens.
+  cleaned = cleaned.replace(/\./g, '');
   cleaned = cleaned.replace(/[\s_]+/g, '-');
   cleaned = cleaned.replace(/['"!?/:;,#&()]/g, '');
   cleaned = cleaned.replace(/-+/g, '-');
@@ -174,22 +257,29 @@ export function cardmarketProductUrl(asset: DemoAsset): string {
 
     let expansion = '';
     const cleanSetCode = (asset.setCode || '').replace(/-(?:JP|CN|KR|FR|EN)$/i, '').trim();
-    if (cleanSetCode) {
-      expansion = SPECIAL_EXPANSIONS[cleanSetCode] || '';
-    }
-    if (!expansion && asset.setCode) {
-      expansion = SPECIAL_EXPANSIONS[asset.setCode] || '';
-    }
-    if (!expansion) {
-      const prefixMatch = asset.number.match(/^([A-Za-z]+[-]?\d+)/);
-      if (prefixMatch) {
-        const prefix = prefixMatch[1].replace(/[^a-zA-Z0-9]/g, '');
-        expansion = SPECIAL_EXPANSIONS[prefix] || '';
+    if (isAsianLanguage) {
+      if (cleanSetCode) expansion = ASIAN_EXPANSIONS[cleanSetCode] || '';
+      if (!expansion && asset.setCode) expansion = ASIAN_EXPANSIONS[asset.setCode] || '';
+      if (!expansion) {
+        const prefixMatch = asset.number.match(/^([A-Za-z]+[-]?\d+)/);
+        if (prefixMatch) {
+          const prefix = prefixMatch[1].replace(/[^a-zA-Z0-9]/g, '');
+          expansion = ASIAN_EXPANSIONS[prefix] || '';
+        }
       }
-    }
-
-    if (expansion && isAsianLanguage && !expansion.endsWith('-Japanese')) {
-      expansion = `${expansion}-Japanese`;
+      if (!expansion && cleanSetCode) {
+        expansion = SPECIAL_EXPANSIONS[cleanSetCode] || '';
+      }
+    } else {
+      if (cleanSetCode) expansion = SPECIAL_EXPANSIONS[cleanSetCode] || '';
+      if (!expansion && asset.setCode) expansion = SPECIAL_EXPANSIONS[asset.setCode] || '';
+      if (!expansion) {
+        const prefixMatch = asset.number.match(/^([A-Za-z]+[-]?\d+)/);
+        if (prefixMatch) {
+          const prefix = prefixMatch[1].replace(/[^a-zA-Z0-9]/g, '');
+          expansion = SPECIAL_EXPANSIONS[prefix] || '';
+        }
+      }
     }
 
     const cleanName = cleanCardmarketCardName(asset.name);

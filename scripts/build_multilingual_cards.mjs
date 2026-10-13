@@ -30,9 +30,24 @@ function getColorFromSetOrCard(rec) {
   return 'coral';
 }
 
+const setNamesByCode = new Map();
+for (const r of allOptcgRecords) {
+  const code = (r.set_id || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  if (code && r.set_name && !setNamesByCode.has(code)) {
+    setNamesByCode.set(code, r.set_name);
+  }
+}
+
 function normalizeSetCode(rawSetId) {
   if (!rawSetId) return 'OP01';
   return rawSetId.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+}
+
+function getCardSetCode(num, rec) {
+  if (!num) return normalizeSetCode(rec?.set_id);
+  const match = num.match(/^([A-Z0-9]+)-/);
+  if (match) return match[1];
+  return normalizeSetCode(rec?.set_id);
 }
 
 const multilingualAssets = [];
@@ -43,19 +58,20 @@ function normalizeRulesCardId(rawNumber) {
 
 // 1. JAPANESE CARDS
 // Japanese releases mirror English releases across all mainline sets (OP01-OP10, EB01, PRB01),
-// starter decks (ST01-ST20), plus Japanese promotional exclusives.
+// starter decks (ST01-ST36), plus Japanese promotional exclusives.
 console.log('Generating Japanese mirrored & exclusive cards...');
 for (const [num, r] of cardsByNumber) {
-  const cleanCode = normalizeSetCode(r.set_id);
+  const cleanCode = getCardSetCode(num, r);
   const isPromo = cleanCode === 'P' || num.startsWith('P-');
   const jpSetCode = cleanCode.endsWith('-JP') ? cleanCode : `${cleanCode}-JP`;
+  const setName = setNamesByCode.get(cleanCode) || r.set_name || 'One Piece Card Game Japan';
 
   const asset = {
     id: `card-multilingual-jp-${num.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
     kind: 'card',
     name: r.card_name,
     productName: `${r.card_name} (${num}) [Japanese]`,
-    set: r.set_name || 'One Piece Card Game Japan',
+    set: setName,
     setCode: jpSetCode,
     number: num,
     rulesCardId: normalizeRulesCardId(num),
@@ -101,33 +117,39 @@ for (const [num, r] of cardsByNumber) {
 }
 
 // 2. FRENCH CARDS
-// French releases started recently with sets: OP06, OP07, OP08, OP09, EB01, ST10 through ST20,
-// and French Tournament / Winner Pack exclusives.
-console.log('Generating French cards (recent sets & tournament exclusives)...');
+// Official French releases launched in February 2025.
+// French sets encompass:
+// Boosters: OP09, OP10, OP11, OP12, OP13, OP14, OP15, OP16, OP17, OP18
+// Extra Boosters: EB02, EB03, EB05 (EB01 and EB04 were never released in French!)
+// Premium Boosters: PRB01, PRB02
+// Starter Decks: ST15 through ST36 (ST01 through ST14 were never released in French!)
+// Exclusives: French Tournament & Winner packs (P-FR)
+console.log('Generating French cards (OP09+, EB02/EB03/EB05, PRB01/PRB02, ST15-ST36, tournament exclusives)...');
 const frenchSetCodes = new Set([
-  'OP06', 'OP-06', 'OP07', 'OP-07', 'OP08', 'OP-08', 'OP09', 'OP-09',
-  'EB01', 'EB-01',
-  'ST10', 'ST-10', 'ST11', 'ST-11', 'ST12', 'ST-12', 'ST13', 'ST-13',
-  'ST14', 'ST-14', 'ST15', 'ST-15', 'ST16', 'ST-16', 'ST17', 'ST-17',
-  'ST18', 'ST-18', 'ST19', 'ST-19', 'ST20', 'ST-20'
+  'OP09', 'OP10', 'OP11', 'OP12', 'OP13', 'OP14', 'OP15', 'OP16', 'OP17', 'OP18',
+  'EB02', 'EB03', 'EB05',
+  'PRB01', 'PRB02',
+  'ST15', 'ST16', 'ST17', 'ST18', 'ST19', 'ST20', 'ST21', 'ST22', 'ST23', 'ST24',
+  'ST25', 'ST26', 'ST27', 'ST28', 'ST29', 'ST30', 'ST31', 'ST32', 'ST33', 'ST34',
+  'ST35', 'ST36'
 ]);
 
 for (const [num, r] of cardsByNumber) {
-  const rawSet = (r.set_id || '').toUpperCase();
-  const cleanCode = normalizeSetCode(rawSet);
+  const cleanCode = getCardSetCode(num, r);
 
-  if (!frenchSetCodes.has(rawSet) && !frenchSetCodes.has(cleanCode)) {
+  if (!frenchSetCodes.has(cleanCode)) {
     continue;
   }
 
   const frSetCode = cleanCode.endsWith('-FR') ? cleanCode : `${cleanCode}-FR`;
+  const setName = setNamesByCode.get(cleanCode) || r.set_name || 'One Piece Card Game France';
 
   const asset = {
     id: `card-multilingual-fr-${num.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
     kind: 'card',
     name: r.card_name,
     productName: `${r.card_name} (${num}) [French]`,
-    set: r.set_name || 'One Piece Card Game France',
+    set: setName,
     setCode: frSetCode,
     number: num,
     rulesCardId: normalizeRulesCardId(num),
@@ -138,7 +160,7 @@ for (const [num, r] of cardsByNumber) {
     languageEvidence: 'Bandai official French One Piece Card Game printing',
     condition: 'Near Mint',
     quantity: 1,
-    addedAt: '2024-05-15T12:00:00.000Z',
+    addedAt: '2025-02-07T12:00:00.000Z',
     color: getColorFromSetOrCard(r),
     imageUrl: r.card_image || `https://optcgapi.com/media/static/Card_Images/${num}.jpg`,
     imageState: 'available',
@@ -214,30 +236,35 @@ for (const ex of frenchTournamentExclusives) {
 }
 
 // 3. CHINESE CARDS
-// Chinese releases (Simplified Chinese) cover OP01 through OP05, Starter Decks ST01..ST04,
+// Simplified Chinese releases cover OP01 through OP17, Extra Boosters EB01 through EB03,
+// Premium Boosters PRB01, PRB02, Starter Decks ST01 through ST20,
 // and Chinese exclusive anniversary/tournament promos.
-console.log('Generating Chinese cards (OP01-OP05, ST01-ST04, Anniversary exclusives)...');
+console.log('Generating Simplified Chinese cards (OP01-OP17, EB01-EB03, PRB01-PRB02, ST01-ST20, Anniversary exclusives)...');
 const chineseSetCodes = new Set([
-  'OP01', 'OP-01', 'OP02', 'OP-02', 'OP03', 'OP-03', 'OP04', 'OP-04', 'OP05', 'OP-05',
-  'ST01', 'ST-01', 'ST02', 'ST-02', 'ST03', 'ST-03', 'ST04', 'ST-04'
+  'OP01', 'OP02', 'OP03', 'OP04', 'OP05', 'OP06', 'OP07', 'OP08', 'OP09', 'OP10',
+  'OP11', 'OP12', 'OP13', 'OP14', 'OP15', 'OP16', 'OP17',
+  'EB01', 'EB02', 'EB03',
+  'PRB01', 'PRB02',
+  'ST01', 'ST02', 'ST03', 'ST04', 'ST05', 'ST06', 'ST07', 'ST08', 'ST09', 'ST10',
+  'ST11', 'ST12', 'ST13', 'ST14', 'ST15', 'ST16', 'ST17', 'ST18', 'ST19', 'ST20'
 ]);
 
 for (const [num, r] of cardsByNumber) {
-  const rawSet = (r.set_id || '').toUpperCase();
-  const cleanCode = normalizeSetCode(rawSet);
+  const cleanCode = getCardSetCode(num, r);
 
-  if (!chineseSetCodes.has(rawSet) && !chineseSetCodes.has(cleanCode)) {
+  if (!chineseSetCodes.has(cleanCode)) {
     continue;
   }
 
   const cnSetCode = cleanCode.endsWith('-CN') ? cleanCode : `${cleanCode}-CN`;
+  const setName = setNamesByCode.get(cleanCode) || r.set_name || 'One Piece Card Game China';
 
   const asset = {
     id: `card-multilingual-cn-${num.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
     kind: 'card',
     name: r.card_name,
     productName: `${r.card_name} (${num}) [Simplified Chinese]`,
-    set: r.set_name || 'One Piece Card Game China',
+    set: setName,
     setCode: cnSetCode,
     number: num,
     rulesCardId: normalizeRulesCardId(num),
@@ -357,29 +384,34 @@ for (const ex of chineseExclusives) {
 }
 
 // 4. KOREAN CARDS
-// Korean releases cover mainline sets OP01 through OP06 and Starter Decks ST01 through ST06.
-console.log('Generating Korean cards (OP01-OP06, ST01-ST06)...');
+// Korean releases cover mainline sets OP01 through OP14, Extra Boosters EB01 through EB04,
+// and Starter Decks ST01 through ST14, and ST21 through ST29.
+console.log('Generating Korean cards (OP01-OP14, EB01-EB04, ST01-ST14, ST21-ST29)...');
 const koreanSetCodes = new Set([
-  'OP01', 'OP-01', 'OP02', 'OP-02', 'OP03', 'OP-03', 'OP04', 'OP-04', 'OP05', 'OP-05', 'OP06', 'OP-06',
-  'ST01', 'ST-01', 'ST02', 'ST-02', 'ST03', 'ST-03', 'ST04', 'ST-04', 'ST05', 'ST-05', 'ST06', 'ST-06'
+  'OP01', 'OP02', 'OP03', 'OP04', 'OP05', 'OP06', 'OP07', 'OP08', 'OP09', 'OP10',
+  'OP11', 'OP12', 'OP13', 'OP14',
+  'EB01', 'EB02', 'EB03', 'EB04',
+  'ST01', 'ST02', 'ST03', 'ST04', 'ST05', 'ST06', 'ST07', 'ST08', 'ST09', 'ST10',
+  'ST11', 'ST12', 'ST13', 'ST14',
+  'ST21', 'ST22', 'ST23', 'ST24', 'ST25', 'ST26', 'ST27', 'ST28', 'ST29'
 ]);
 
 for (const [num, r] of cardsByNumber) {
-  const rawSet = (r.set_id || '').toUpperCase();
-  const cleanCode = normalizeSetCode(rawSet);
+  const cleanCode = getCardSetCode(num, r);
 
-  if (!koreanSetCodes.has(rawSet) && !koreanSetCodes.has(cleanCode)) {
+  if (!koreanSetCodes.has(cleanCode)) {
     continue;
   }
 
   const krSetCode = cleanCode.endsWith('-KR') ? cleanCode : `${cleanCode}-KR`;
+  const setName = setNamesByCode.get(cleanCode) || r.set_name || 'One Piece Card Game Korea';
 
   const asset = {
     id: `card-multilingual-kr-${num.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
     kind: 'card',
     name: r.card_name,
     productName: `${r.card_name} (${num}) [Korean]`,
-    set: r.set_name || 'One Piece Card Game Korea',
+    set: setName,
     setCode: krSetCode,
     number: num,
     rulesCardId: normalizeRulesCardId(num),

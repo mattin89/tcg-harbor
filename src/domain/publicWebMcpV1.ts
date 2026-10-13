@@ -46,7 +46,7 @@ const MAX_QUERY_LENGTH_V1 = 120;
 const MAX_RESULT_LIMIT_V1 = 20;
 const CARD_TOOL_INPUT_KEYS_V1 = new Set(['query', 'setCode', 'language', 'limit', 'offset']);
 const STORE_TOOL_INPUT_KEYS_V1 = new Set(['query', 'limit', 'offset']);
-const CARD_LANGUAGES_V1 = new Set(['English', 'French', 'Japanese']);
+const CARD_LANGUAGES_V1 = new Set(['English', 'French', 'Japanese', 'Chinese', 'Korean']);
 
 function boundedStringV1(value: unknown, maximumLength = MAX_QUERY_LENGTH_V1): string {
   return typeof value === 'string' ? value.trim().slice(0, maximumLength) : '';
@@ -118,7 +118,7 @@ function validatedCardToolInputV1(input: unknown): PublicCardSearchInputV1 {
   assertOptionalStringV1(record, 'setCode', 24);
   assertOptionalStringV1(record, 'language', 24);
   if (record.language !== undefined && !CARD_LANGUAGES_V1.has(record.language as string)) {
-    throw new TypeError('language must be English, French, or Japanese.');
+    throw new TypeError('language must be English, French, Japanese, Chinese, or Korean.');
   }
   assertOptionalIntegerV1(record, 'limit', 1, MAX_RESULT_LIMIT_V1);
   assertOptionalIntegerV1(record, 'offset', 0);
@@ -305,7 +305,7 @@ export async function registerPublicWebMcpV1({
           },
           language: {
             type: 'string',
-            enum: ['English', 'French', 'Japanese'],
+            enum: ['English', 'French', 'Japanese', 'Chinese', 'Korean'],
             description: 'Optional exact printing language.',
           },
           limit: {

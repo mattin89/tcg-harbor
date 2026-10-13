@@ -388,7 +388,7 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
           <select
             className="production-inventory-lang-select"
             value={languageFilter}
-            onChange={(e) => setLanguageFilter(e.target.value as 'all' | 'English' | 'Japanese' | 'French' | 'Chinese')}
+            onChange={(e) => setLanguageFilter(e.target.value as 'all' | 'English' | 'Japanese' | 'French' | 'Chinese' | 'Korean')}
             aria-label="Filter catalog by language"
             style={{
               minWidth: '135px',

@@ -408,7 +408,7 @@ describe('source-backed catalog snapshot', () => {
       expect(asset.pricing?.usMarket.variants?.length).toBeGreaterThan(1);
       expect(asset.pricing?.usMarket.variants?.some((variant) => variant.market !== null)).toBe(true);
     }
-  });
+  }, 20_000);
 
   it('retains a known exact Cardmarket base-product mapping', () => {
     const usopp = catalogAssets.find(

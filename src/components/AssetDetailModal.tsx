@@ -3,6 +3,7 @@ import {
   type AcquisitionLot,
   type DemoAsset,
   type Market,
+  catalogAssets,
   currencyFor,
   formatMoney,
   marketDataMeta,
@@ -12,7 +13,11 @@ import {
   extractAssetPriceFromHistory,
   type UserCardPriceHistory,
 } from '../domain/cardPriceHistory';
-import { resolveCardmarketArtworkReferenceV10 } from '../domain/cardmarketSearchReferenceV10';
+import {
+  chooseOriginalRegularArt,
+  resolveCardmarketArtworkReferenceV10,
+} from '../domain/cardmarketSearchReferenceV10';
+import { catalogCardGroupIdV5 } from '../domain/catalogSearchV5';
 import cardmarketCanonicalUrls from '../data/generated/cardmarket-canonical-urls.json';
 import { Icon } from './Icon';
 import { Button, CardArt, Chip, Modal, PriceChart, Trend } from './ui';
@@ -354,6 +359,26 @@ export function tcgplayerProductUrl(asset: DemoAsset): string {
   return `https://www.tcgplayer.com/search/one-piece-card-game/product?q=${encodeURIComponent(query)}`;
 }
 
+let cachedCardGroupIndex: Map<string, DemoAsset[]> | null = null;
+export function getCardGroupArts(asset: DemoAsset): DemoAsset[] {
+  if (!cachedCardGroupIndex) {
+    const map = new Map<string, DemoAsset[]>();
+    for (const item of catalogAssets) {
+      if (item.kind !== 'card' || item.catalogAliasOf) continue;
+      const groupId = catalogCardGroupIdV5(item);
+      const existing = map.get(groupId);
+      if (existing) {
+        existing.push(item);
+      } else {
+        map.set(groupId, [item]);
+      }
+    }
+    cachedCardGroupIndex = map;
+  }
+  const groupId = catalogCardGroupIdV5(asset);
+  return cachedCardGroupIndex.get(groupId) ?? [asset];
+}
+
 export interface AssetDetailModalProps {
   readonly asset: DemoAsset | null;
   readonly onClose: () => void;
@@ -368,6 +393,7 @@ export interface AssetDetailModalProps {
   readonly onNavigateToCollection?: () => void;
   readonly onConfirmReturn?: (loanId: string) => Promise<void> | void;
   readonly currentUserId?: string;
+  readonly siblings?: readonly DemoAsset[];
 }
 
 export function AssetDetailModal({
@@ -384,13 +410,21 @@ export function AssetDetailModal({
   onNavigateToCollection,
   onConfirmReturn,
   currentUserId,
+  siblings,
 }: AssetDetailModalProps) {
   if (!asset) return null;
-  const cardmarketReference = resolveCardmarketArtworkReferenceV10(asset);
+  const effectiveSiblings = siblings ?? (asset.kind === 'card' ? getCardGroupArts(asset) : undefined);
+  const cardmarketReference = resolveCardmarketArtworkReferenceV10(asset, effectiveSiblings);
   const currentCardmarketPrice = extractAssetAveragePrice(asset, 'cardmarket', priceHistory);
   const currentTcgplayerPrice = extractAssetAveragePrice(asset, 'tcgplayer', priceHistory);
+  const isRegular = asset.kind === 'card' && /^(?:standard|base art)$/i.test(asset.variant.trim());
+  const regularSibling = (isRegular && effectiveSiblings)
+    ? chooseOriginalRegularArt(asset, effectiveSiblings)
+    : null;
   const displayCardmarketValue = currentCardmarketPrice > 0 ? formatMoney(currentCardmarketPrice, 'EUR') : cardmarketReference?.displayValue;
-  const displayTcgplayerValue = currentTcgplayerPrice > 0 ? formatMoney(currentTcgplayerPrice, 'USD') : formatMoney(asset.quote.tcgplayer, 'USD');
+  const displayTcgplayerValue = currentTcgplayerPrice > 0
+    ? formatMoney(currentTcgplayerPrice, 'USD')
+    : formatMoney(asset.quote.tcgplayer ?? regularSibling?.quote.tcgplayer ?? null, 'USD');
   const hasLivePrice = priceHistory ? extractAssetPriceFromHistory(asset, 'cardmarket', priceHistory) !== null : false;
   const cardmarketDateLabel = (hasLivePrice || asset.pricing?.cardmarket?.trend != null) ? 'Daily market trend' : `${cardmarketReference?.label} · ${marketSourceDate('cardmarket')}`;
   const tcgplayerDateLabel = currentTcgplayerPrice > 0 ? 'Daily market price' : `Daily source snapshot · ${assetUsSourceDate(asset)}`;

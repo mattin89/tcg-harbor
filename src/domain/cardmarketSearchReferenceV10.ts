@@ -24,6 +24,7 @@ interface CardmarketLowOfferInputV10 {
 
 export interface CatalogCardmarketAssetV10 extends CardmarketReferenceInputV8, CardmarketLowOfferInputV10 {
   readonly id: string;
+  readonly name?: string;
   readonly kind: 'card' | 'sealed';
   readonly variant: string;
   readonly language?: string;
@@ -107,9 +108,9 @@ function verifiedRegularIdentity(asset: CatalogCardmarketAssetV10): string | nul
   return null;
 }
 
-function chooseEquivalentRegular(
-  candidates: readonly CatalogCardmarketAssetV10[],
-): CatalogCardmarketAssetV10 | null {
+function chooseEquivalentRegular<T extends CatalogCardmarketAssetV10>(
+  candidates: readonly T[],
+): T | null {
   if (candidates.length === 0) return null;
   if (candidates.length === 1) return candidates[0];
   const identities = candidates.map(verifiedRegularIdentity);
@@ -123,10 +124,10 @@ function chooseEquivalentRegular(
   return null;
 }
 
-function chooseOriginalRegularArt(
+export function chooseOriginalRegularArt<T extends CatalogCardmarketAssetV10 = CatalogCardmarketAssetV10>(
   matched: CatalogCardmarketAssetV10,
-  siblings: readonly CatalogCardmarketAssetV10[],
-): CatalogCardmarketAssetV10 | null {
+  siblings: readonly T[],
+): T | null {
   const regular = siblings.filter((asset) => asset.kind === 'card' && isRegularArt(asset));
   if (regular.length === 0) return null;
 
@@ -259,14 +260,23 @@ export function resolveCatalogCardmarketReferenceV10(
   };
 }
 
+export type CardmarketArtworkInputV10 = CardmarketReferenceInputV8 & CardmarketLowOfferInputV10 & {
+  readonly id?: string;
+  readonly kind?: 'card' | 'sealed';
+  readonly variant?: string;
+  readonly language?: string;
+  readonly setCode?: string;
+  readonly number?: string;
+  readonly rulesCardId?: string;
+  readonly sourcePrintingId?: string;
+  readonly cardmarketArtworkReference?: ArtworkReferenceV10;
+  readonly cardmarketRegularArtReference?: ArtworkReferenceV10;
+};
+
 /** Suppresses ambiguous candidate ranges in exact-art details and pickers. */
 export function resolveCardmarketArtworkReferenceV10(
-  input: CardmarketReferenceInputV8 & CardmarketLowOfferInputV10 & {
-    readonly kind?: 'card' | 'sealed';
-    readonly variant?: string;
-    readonly cardmarketArtworkReference?: ArtworkReferenceV10;
-    readonly cardmarketRegularArtReference?: ArtworkReferenceV10;
-  },
+  input: CardmarketArtworkInputV10,
+  siblings?: readonly CatalogCardmarketAssetV10[],
 ): CardmarketArtworkReferenceViewV10 {
   const view = resolveCardmarketReferenceV8(input);
   const lowestOffer = exactLowestOffer(input);
@@ -313,6 +323,54 @@ export function resolveCardmarketArtworkReferenceV10(
       label: regular ? 'Regular art · image verified' : 'Exact art · image verified',
       detail: `The sourced ${regular ? 'regular artwork' : 'selected artwork'} independently matches this Cardmarket product image. Its current trend is stored with collection acquisitions and included in value-growth tracking.`,
     };
+  }
+  if (
+    (view.state === 'unmapped' || (view.state === 'exact-trend-unavailable' && input.cardmarketProductId == null && !reference))
+    && regular
+    && siblings
+    && siblings.length > 0
+  ) {
+    const regularSibling = chooseOriginalRegularArt(input as CatalogCardmarketAssetV10, siblings);
+    if (regularSibling && regularSibling.id !== input.id) {
+      const siblingRef = regularSibling.cardmarketArtworkReference ?? regularSibling.cardmarketRegularArtReference;
+      if (siblingRef && usablePrice(siblingRef.trend)) {
+        return {
+          state: 'regular-image-reference',
+          displayValue: formatEur(siblingRef.trend),
+          label: 'Regular art · image verified',
+          detail: 'The sourced regular artwork independently matches this Cardmarket product image. Sourced regional printings share the base release trend on Cardmarket.',
+        };
+      }
+      if (
+        regularSibling.cardmarketProductId != null
+        && usablePrice(regularSibling.quote.cardmarket)
+        && (regularSibling.cardmarketPriceState === 'available' || regularSibling.cardmarketPriceState == null)
+      ) {
+        return {
+          state: 'exact',
+          displayValue: formatEur(regularSibling.quote.cardmarket),
+          label: 'Regular art · exact trend',
+          detail: 'Verified Cardmarket trend for the original regular artwork. Sourced regional printings share the base release listing on Cardmarket.',
+        };
+      }
+      const regularLowest = exactLowestOffer(regularSibling);
+      if ((regularSibling.cardmarketProductId != null || siblingRef) && regularLowest !== null) {
+        return {
+          state: 'exact-low-offer',
+          displayValue: formatEur(regularLowest),
+          label: 'Regular art · lowest offer',
+          detail: 'The exact regular-art product is verified, but Cardmarket publishes no current trend. This is Cardmarket’s current lowest non-foil offer across conditions.',
+        };
+      }
+      if (regularSibling.cardmarketProductId != null || siblingRef) {
+        return {
+          state: 'exact-trend-unavailable',
+          displayValue: 'Trend unavailable',
+          label: 'Regular art · no current trend',
+          detail: 'The regular-art Cardmarket product is verified, but the current daily price guide has no trend value.',
+        };
+      }
+    }
   }
   if (view.state !== 'release-range') return view;
   if (reference && usablePrice(reference.trend)) {

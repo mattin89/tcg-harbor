@@ -185,4 +185,85 @@ describe('per-art Cardmarket references v10', () => {
       displayValue: 'Trend unavailable',
     });
   });
+
+  it('resolves regular art trend for standard regional printings like French OP16-077 when siblings are provided', () => {
+    const englishCanonical = artwork({
+      id: 'card-optcg-2986bfd8f107757577dc',
+      name: '"Buddha" Sengoku',
+      setCode: 'OP16',
+      number: 'OP16-077',
+      rulesCardId: 'OP16-077',
+      sourcePrintingId: 'OP16-077',
+      variant: 'Standard',
+      language: 'English',
+      cardmarketProductId: 890771,
+      cardmarketPriceState: 'available',
+      quote: { cardmarket: 0.14 },
+    });
+
+    const frenchPrinting = artwork({
+      id: 'card-multilingual-fr-op16-077',
+      name: '"Buddha" Sengoku',
+      setCode: 'OP16-FR',
+      number: 'OP16-077',
+      rulesCardId: 'OP16-077',
+      variant: 'Standard',
+      language: 'French',
+      cardmarketProductId: null,
+      cardmarketPriceState: 'unmapped',
+      quote: { cardmarket: null },
+    });
+
+    const siblings = [frenchPrinting, englishCanonical];
+
+    // Preview in catalog search
+    const searchView = resolveCatalogCardmarketReferenceV10(frenchPrinting, siblings);
+    expect(searchView).toMatchObject({
+      state: 'regular-exact',
+      displayValue: '0,14 €',
+      label: 'Regular art · exact trend',
+    });
+
+    // Detail panel / art picker view with siblings
+    const detailView = resolveCardmarketArtworkReferenceV10(frenchPrinting, siblings);
+    expect(detailView).toMatchObject({
+      state: 'exact',
+      displayValue: '0,14 €',
+      label: 'Regular art · exact trend',
+    });
+  });
+
+  it('never falls back to regular art trend for unmapped alternate arts even with siblings', () => {
+    const englishCanonical = artwork({
+      id: 'card-optcg-2986bfd8f107757577dc',
+      name: '"Buddha" Sengoku',
+      setCode: 'OP16',
+      number: 'OP16-077',
+      rulesCardId: 'OP16-077',
+      sourcePrintingId: 'OP16-077',
+      variant: 'Standard',
+      language: 'English',
+      cardmarketProductId: 890771,
+      cardmarketPriceState: 'available',
+      quote: { cardmarket: 0.14 },
+    });
+
+    const alternateArt = artwork({
+      id: 'alternate-unmapped',
+      name: '"Buddha" Sengoku',
+      setCode: 'OP16',
+      number: 'OP16-077',
+      rulesCardId: 'OP16-077',
+      variant: 'Alternate art · Parallel',
+      cardmarketProductId: null,
+      cardmarketPriceState: 'unmapped',
+      quote: { cardmarket: null },
+    });
+
+    const view = resolveCardmarketArtworkReferenceV10(alternateArt, [alternateArt, englishCanonical]);
+    expect(view).toMatchObject({
+      state: 'unmapped',
+      displayValue: 'Exact price unavailable',
+    });
+  });
 });

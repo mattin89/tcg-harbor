@@ -14,6 +14,7 @@ import {
 import {
   AssetDetailModal,
   cardmarketProductUrl,
+  getCardGroupArts,
   tcgplayerProductUrl,
 } from './components/AssetDetailModal';
 export { cardmarketProductUrl, tcgplayerProductUrl };
@@ -44,6 +45,7 @@ import {
 } from './domain/catalogSearchV5';
 import { registerPublicWebMcpV1 } from './domain/publicWebMcpV1';
 import {
+  chooseOriginalRegularArt,
   resolveCardmarketArtworkReferenceV10,
   resolveCatalogCardmarketReferenceV10,
 } from './domain/cardmarketSearchReferenceV10';
@@ -710,6 +712,7 @@ function DashboardPage({ assets, dailySnapshots, activity: _activity, activityLo
       onClose={() => setSelected(null)}
       market={market}
       priceHistory={priceHistory}
+      siblings={selected?.kind === 'card' ? getCardGroupArts(selected) : undefined}
       onNavigateToCollection={() => {
         setSelected(null);
         navigate('/collection');
@@ -852,7 +855,18 @@ function CollectionPage({
   };
   const assetUnitPrice = (asset: DemoAsset) => {
     const p = extractAssetAveragePrice(asset, market, priceHistory);
-    return p > 0 ? p : asset.quote[market];
+    if (p > 0) return p;
+    if (asset.quote[market] !== null && Number.isFinite(asset.quote[market])) {
+      return asset.quote[market];
+    }
+    if (asset.kind === 'card' && /^(?:standard|base art)$/i.test(asset.variant.trim())) {
+      const siblings = getCardGroupArts(asset);
+      const regular = chooseOriginalRegularArt(asset, siblings);
+      if (regular && regular.quote[market] !== null && Number.isFinite(regular.quote[market])) {
+        return regular.quote[market];
+      }
+    }
+    return null;
   };
 
   const tabAssets = filterAssetsByTab(effectiveAssets, tab);
@@ -1039,6 +1053,7 @@ function CollectionPage({
       onClose={() => setSelected(null)}
       market={market}
       priceHistory={priceHistory}
+      siblings={selected?.kind === 'card' ? getCardGroupArts(selected) : undefined}
       noteDraft={noteDraft}
       onNoteDraftChange={setNoteDraft}
       onUpdateQty={updateQty}
@@ -1127,7 +1142,7 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
       ? allGroupArts.filter((art) => art.language === catalogLanguage)
       : allGroupArts);
   const selectedCardmarketReference = selected
-    ? resolveCardmarketArtworkReferenceV10(selected)
+    ? resolveCardmarketArtworkReferenceV10(selected, allGroupArts)
     : null;
 
   useEffect(() => { setResultLimit(40); }, [catalogSet, catalogLanguage, query, tab]);
@@ -1169,13 +1184,22 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
       }
       return;
     }
+    const isRegular = selected.kind === 'card' && /^(?:standard|base art)$/i.test(selected.variant.trim());
+    const groupRegular = (selected.kind === 'card' && allGroupArts.length > 0)
+      ? chooseOriginalRegularArt(selected, allGroupArts)
+      : null;
+    const resolvedQuote = {
+      cardmarket: selected.quote.cardmarket ?? (isRegular ? groupRegular?.quote.cardmarket ?? null : null),
+      tcgplayer: selected.quote.tcgplayer ?? (isRegular ? groupRegular?.quote.tcgplayer ?? null : null),
+    };
+    const resolvedPricing = selected.pricing ?? (isRegular && groupRegular?.pricing ? { ...groupRegular.pricing } : undefined);
     const capturedAt = new Date().toISOString();
     const acquisition: AcquisitionLot = {
       id: typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? `lot-${crypto.randomUUID()}` : `lot-${capturedAt}-${assets.length}`,
       addedAt: capturedAt,
       quantity,
-      quoteAtAdd: { ...selected.quote },
-      sourceUpdatedAt: selected.sourceUpdatedAt,
+      quoteAtAdd: resolvedQuote,
+      sourceUpdatedAt: selected.sourceUpdatedAt ?? (isRegular ? groupRegular?.sourceUpdatedAt : undefined),
     };
     if (existing) {
       const previousLots: AcquisitionLot[] = existing.acquisitionLots?.length ? existing.acquisitionLots : [{
@@ -1191,9 +1215,9 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
         quantity: asset.quantity + quantity,
         purchasePrice: purchase ? Number(purchase) : asset.purchasePrice,
         note: privateNoteForSave,
-        quote: selected.quote,
-        pricing: selected.pricing,
-        sourceUpdatedAt: selected.sourceUpdatedAt,
+        quote: resolvedQuote,
+        pricing: resolvedPricing,
+        sourceUpdatedAt: selected.sourceUpdatedAt ?? (isRegular ? groupRegular?.sourceUpdatedAt : undefined),
         acquisitionLots: [...previousLots, acquisition],
       } : asset));
       notify(`${existing.name} quantity increased by ${quantity}`);
@@ -1212,6 +1236,9 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
         purchasePrice: purchase ? Number(purchase) : undefined,
         note: privateNoteForSave,
         addedAt: capturedAt,
+        quote: resolvedQuote,
+        pricing: resolvedPricing,
+        sourceUpdatedAt: selected.sourceUpdatedAt ?? (isRegular ? groupRegular?.sourceUpdatedAt : undefined),
         acquisitionLots: [acquisition],
       }]);
       notify(`${selected.name} added to your collection`);
@@ -1226,7 +1253,7 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
       <div>{availableArts.map((art) => {
         const artCmPrice = extractAssetAveragePrice(art, 'cardmarket', priceHistory);
         const artTcpPrice = extractAssetAveragePrice(art, 'tcgplayer', priceHistory);
-        const cardmarketReference = resolveCardmarketArtworkReferenceV10(art);
+        const cardmarketReference = resolveCardmarketArtworkReferenceV10(art, allGroupArts);
         const displayedReference = market === 'cardmarket'
           ? (artCmPrice > 0 ? formatMoney(artCmPrice, 'EUR') : cardmarketReference.displayValue)
           : (artTcpPrice > 0 ? formatMoney(artTcpPrice, 'USD') : formatMoney(art.quote.tcgplayer, 'USD'));
@@ -1239,8 +1266,14 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
     {(() => {
       const selectedCmPrice = selected ? extractAssetAveragePrice(selected, 'cardmarket', priceHistory) : 0;
       const selectedTcpPrice = selected ? extractAssetAveragePrice(selected, 'tcgplayer', priceHistory) : 0;
+      const isRegular = selected ? selected.kind === 'card' && /^(?:standard|base art)$/i.test(selected.variant.trim()) : false;
+      const groupRegular = (selected?.kind === 'card' && allGroupArts.length > 0)
+        ? chooseOriginalRegularArt(selected, allGroupArts)
+        : null;
       const displaySelectedCm = selectedCmPrice > 0 ? formatMoney(selectedCmPrice, 'EUR') : selectedCardmarketReference?.displayValue;
-      const displaySelectedTcp = selectedTcpPrice > 0 ? formatMoney(selectedTcpPrice, 'USD') : formatMoney(selected.quote.tcgplayer, 'USD');
+      const displaySelectedTcp = selectedTcpPrice > 0
+        ? formatMoney(selectedTcpPrice, 'USD')
+        : formatMoney(selected.quote.tcgplayer ?? (isRegular ? groupRegular?.quote.tcgplayer ?? null : null), 'USD');
       const cmDateLabel = selectedCmPrice > 0 ? 'Daily market trend' : `${selectedCardmarketReference?.label} · ${marketSourceDate('cardmarket')}`;
       const tcpDateLabel = selectedTcpPrice > 0 ? 'Daily market price' : `Daily source snapshot · ${assetUsSourceDate(selected)}`;
       const isCm = market === 'cardmarket';

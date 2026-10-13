@@ -197,11 +197,19 @@ export const ASIAN_EXPANSIONS: Record<string, string> = {
 };
 
 export function cleanCardmarketCardName(name: string): string {
-  let cleaned = name.replace(/\s*\([^)]*\)\s*$/, '').trim();
+  // Strip trailing numeric or set-code suffixes like (056), (022), (OP16-056),
+  // while preserving character aliases and epithets like (Galdino), (Bentham), (Daz.Bonez).
+  let cleaned = name.replace(/\s*\(\d{1,4}\)\s*$/, '').trim();
+  cleaned = cleaned.replace(/\s*\([A-Za-z]{1,4}\d{0,2}-\d{2,4}\)\s*$/, '').trim();
   cleaned = cleaned.replace(/^[\s.·!?'"-]+/, '');
+  // Normalize "Mr. 3" or "Mr.3" or "Mr 3" to "Mr3", and "Miss." to "Miss"
+  cleaned = cleaned.replace(/\bMr[.]?\s*(\d)/gi, 'Mr$1');
+  cleaned = cleaned.replace(/\bMiss[.]?\s*/gi, 'Miss');
   // Periods in character names (e.g. Monkey.D.Luffy -> MonkeyDLuffy, Edward.Newgate -> EdwardNewgate)
   // are stripped rather than turned into hyphens.
   cleaned = cleaned.replace(/\./g, '');
+  // Eliminate space around parentheses so aliases like "Mr 3 (Galdino)" or "Chadros (Brownbeard)" join cleanly
+  cleaned = cleaned.replace(/\s*\(\s*/g, '(').replace(/\s*\)/g, ')');
   cleaned = cleaned.replace(/[\s_]+/g, '-');
   cleaned = cleaned.replace(/['"!?/:;,#&()]/g, '');
   cleaned = cleaned.replace(/-+/g, '-');
@@ -289,12 +297,20 @@ export function cardmarketProductUrl(asset: DemoAsset): string {
     const variant = asset.variant || '';
     const pMatch = variant.match(/P(\d+)/i);
     const vMatch = variant.match(/V[.]?(\d+)/i);
+    const isExplicitV1 = /(?:version\s*1\b|\bv1\b|\(v\.?1\))/i.test(variant);
+    const hasMultipleCardmarketVersions = Boolean(
+      (asset.cardmarketArtworkReference?.candidateCount && asset.cardmarketArtworkReference.candidateCount > 1) ||
+      (asset.cardmarketCandidates && asset.cardmarketCandidates.length > 1)
+    );
+
     if (pMatch) {
       versionSuffix = `-V${parseInt(pMatch[1], 10) + 1}`;
-    } else if (vMatch && vMatch[1] !== '1') {
+    } else if (vMatch) {
       versionSuffix = `-V${vMatch[1]}`;
     } else if (/alternate art/i.test(variant)) {
       versionSuffix = '-V2';
+    } else if (isExplicitV1 || hasMultipleCardmarketVersions) {
+      versionSuffix = '-V1';
     }
 
     if (cleanName && cleanNumber) {

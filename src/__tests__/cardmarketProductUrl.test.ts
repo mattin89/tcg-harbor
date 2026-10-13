@@ -392,6 +392,98 @@ describe('cardmarketProductUrl generalized logic', () => {
       'https://www.cardmarket.com/en/OnePiece/Cards/Custom-Pirate-UNK-001'
     );
   });
+
+  it('correctly formats character aliases and Version 1 suffixes (e.g. OP16-056 Mr.3 Galdino V1)', () => {
+    // 1. Mr.3(Galdino) OP16-056 Version 1
+    const mr3V1 = createMockAsset({
+      name: 'Mr.3(Galdino) (056)',
+      setCode: 'OP16',
+      number: 'OP16-056',
+      variant: 'Version 1',
+    });
+    expect(cardmarketProductUrl(mr3V1)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/OP16/Mr3Galdino-OP16-056-V1'
+    );
+
+    // 2. Mr.3(Galdino) OP16-056 Standard with candidateCount > 1
+    const mr3StandardMulti = createMockAsset({
+      name: 'Mr.3(Galdino)',
+      setCode: 'OP16',
+      number: 'OP16-056',
+      variant: 'Standard',
+      cardmarketArtworkReference: { candidateCount: 2 } as any,
+    });
+    expect(cardmarketProductUrl(mr3StandardMulti)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/OP16/Mr3Galdino-OP16-056-V1'
+    );
+
+    // 3. Mr.3(Galdino) OP16-056 Canonical lookup for 890742
+    const mr3Canon = createMockAsset({
+      name: 'Mr.3(Galdino) (056)',
+      setCode: 'OP16',
+      number: 'OP16-056',
+      variant: 'Standard',
+      cardmarketProductId: 890742,
+    });
+    expect(cardmarketProductUrl(mr3Canon)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/OP16/Mr3Galdino-OP16-056-V1'
+    );
+
+    // 4. Mr.3(Galdino) Alternate Art P1 -> V2
+    const mr3V2 = createMockAsset({
+      name: 'Mr.3(Galdino) (056)',
+      setCode: 'OP16',
+      number: 'OP16-056',
+      variant: 'Alternate art · P1',
+    });
+    expect(cardmarketProductUrl(mr3V2)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/OP16/Mr3Galdino-OP16-056-V2'
+    );
+
+    // 5. Mr.2.Bon.Kurei(Bentham) OP16-055 Version 1
+    const mr2V1 = createMockAsset({
+      name: 'Mr.2.Bon.Kurei(Bentham) (055)',
+      setCode: 'OP16',
+      number: 'OP16-055',
+      variant: 'V1',
+    });
+    expect(cardmarketProductUrl(mr2V1)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/OP16/Mr2BonKureiBentham-OP16-055-V1'
+    );
+
+    // 6. Mr.1(Daz.Bonez) OP04-068
+    const mr1 = createMockAsset({
+      name: 'Mr.1(Daz.Bonez) (068)',
+      setCode: 'OP04',
+      number: 'OP04-068',
+      variant: 'Standard',
+    });
+    expect(cardmarketProductUrl(mr1)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Kingdoms-of-Intrigue/Mr1DazBonez-OP04-068'
+    );
+
+    // 7. Miss.Valentine(Mikita) OP04-067
+    const missValentine = createMockAsset({
+      name: 'Miss.Valentine(Mikita) (067)',
+      setCode: 'OP04',
+      number: 'OP04-067',
+      variant: 'Standard',
+    });
+    expect(cardmarketProductUrl(missValentine)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Kingdoms-of-Intrigue/MissValentineMikita-OP04-067'
+    );
+
+    // 8. Miss Doublefinger(Zala) OP04-065
+    const missDoublefinger = createMockAsset({
+      name: 'Miss Doublefinger(Zala) (065)',
+      setCode: 'OP04',
+      number: 'OP04-065',
+      variant: 'Standard',
+    });
+    expect(cardmarketProductUrl(missDoublefinger)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Kingdoms-of-Intrigue/MissDoublefingerZala-OP04-065'
+    );
+  });
 });
 
 

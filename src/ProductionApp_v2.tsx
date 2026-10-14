@@ -6,9 +6,10 @@ import {
   StoreWorkspacePanel,
   useProductionAccessContext,
   useProductionIdentity,
+  type RegisteredStore,
 } from './production';
-import type { RegisteredStore } from './production';
 import type { Store } from './data/demo';
+import { formatStoreOpeningHoursSummary } from './domain/storeOpeningHours';
 import { useProductionNotificationsV5 } from './services/supabase/useProductionNotificationsV5';
 import { usePublicStoreDirectoryV4 } from './services/supabase/usePublicStoreDirectoryV4';
 
@@ -39,7 +40,8 @@ function toMapStore(store: RegisteredStore, index: number): Store {
     y: 50,
     latitude: store.latitude,
     longitude: store.longitude,
-    hours: Object.keys(store.openingHours).length ? 'Opening hours available' : 'Hours not provided',
+    hours: formatStoreOpeningHoursSummary(store.openingHours),
+    openingHours: store.openingHours,
     phone: store.phone ?? '',
     email: store.contactEmail ?? '',
     accent: storeAccents[index % storeAccents.length],

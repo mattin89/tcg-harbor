@@ -409,6 +409,7 @@ export interface Store {
   latitude: number;
   longitude: number;
   hours: string;
+  openingHours?: Record<string, unknown>;
   phone: string;
   email: string;
   accent: string;

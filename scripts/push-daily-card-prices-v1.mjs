@@ -47,16 +47,16 @@ export async function pushDailyCardPrices(options = {}) {
       890623: 0.16,
     };
 
-    if (asset.cardmarketProductId != null && LIVE_OVERRIDES[asset.cardmarketProductId] != null) {
-      cmPrice = LIVE_OVERRIDES[asset.cardmarketProductId];
-      cmMatchCount += 1;
-    } else if (asset.cardmarketProductId != null && cardmarketPrices.has(asset.cardmarketProductId)) {
+    if (asset.cardmarketProductId != null && cardmarketPrices.has(asset.cardmarketProductId)) {
       const p = cardmarketPrices.get(asset.cardmarketProductId);
       const trend = p.trend ?? p.avg ?? p.low;
       if (typeof trend === 'number' && Number.isFinite(trend) && trend > 0) {
         cmPrice = Math.round(trend * 100) / 100;
         cmMatchCount += 1;
       }
+    } else if (asset.cardmarketProductId != null && LIVE_OVERRIDES[asset.cardmarketProductId] != null) {
+      cmPrice = LIVE_OVERRIDES[asset.cardmarketProductId];
+      cmMatchCount += 1;
     }
 
     let tcgPrice = (typeof asset.quote?.tcgplayer === 'number' && asset.quote.tcgplayer > 0)

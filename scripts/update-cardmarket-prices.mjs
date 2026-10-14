@@ -32,7 +32,7 @@ function percentAgainst(current, comparison) {
   return Number((((current - comparison) / comparison) * 100).toFixed(2));
 }
 
-async function run() {
+export async function updateCardmarketPrices() {
   const priceGuideData = await fetchPriceGuide();
   const prices = priceGuideData.priceGuides || [];
   const createdAt = priceGuideData.createdAt || new Date().toISOString();
@@ -73,10 +73,9 @@ async function run() {
   };
 
   for (const asset of catalog.assets) {
-    if (!asset.cardmarketProductId) continue;
-
+    const livePrice = priceMap.get(asset.cardmarketProductId);
     const liveOverride = LIVE_VERIFIED_OVERRIDES[asset.cardmarketProductId];
-    const entry = liveOverride || priceMap.get(asset.cardmarketProductId);
+    const entry = livePrice || liveOverride;
     if (!entry) continue;
 
     const newTrend = round(entry.trend);
@@ -85,7 +84,7 @@ async function run() {
     const newAvg1 = round(entry.avg1);
     const newAvg7 = round(entry.avg7);
     const newAvg30 = round(entry.avg30);
-    const assetObservedAt = liveOverride?.observedAt || createdAt;
+    const assetObservedAt = livePrice ? createdAt : (liveOverride?.observedAt || createdAt);
 
     const oldTrend = asset.pricing?.cardmarket?.trend;
     if (oldTrend !== newTrend) {
@@ -126,8 +125,7 @@ async function run() {
 
     if (Array.isArray(asset.cardmarketCandidates)) {
       for (const cand of asset.cardmarketCandidates) {
-        const candOverride = LIVE_VERIFIED_OVERRIDES[cand.productId];
-        const candEntry = candOverride || priceMap.get(cand.productId);
+        const candEntry = priceMap.get(cand.productId) || LIVE_VERIFIED_OVERRIDES[cand.productId];
         if (candEntry) {
           cand.trend = round(candEntry.trend);
         }
@@ -141,6 +139,28 @@ async function run() {
     catalog.provenance.cardmarket.createdAt = createdAt;
   }
 
+  if (catalog.provenance?.catalogCounts) {
+    const cardAssets = catalog.assets.filter((a) => a.kind === 'card');
+    const sealedAssets = catalog.assets.filter((a) => a.kind === 'sealed');
+    const exactCrossMarketAssets = cardAssets.filter(
+      (asset) =>
+        asset.cardmarketProductId != null
+        && asset.tcgplayerProductId != null
+        && asset.usPriceSource === 'TCGplayer via TCGCSV'
+        && asset.quote?.cardmarket != null
+        && asset.quote?.tcgplayer != null,
+    );
+    catalog.provenance.catalogCounts.exactCrossMarketCardmarketTwentyEuroOrMore = exactCrossMarketAssets.filter(
+      (asset) => (asset.quote.cardmarket ?? 0) >= 20,
+    ).length;
+    catalog.provenance.catalogCounts.releasedSealedProductsWithTrend = sealedAssets.filter(
+      (asset) => asset.quote?.cardmarket != null,
+    ).length;
+    catalog.provenance.catalogCounts.releasedSealedProductsWithoutTrend = sealedAssets.filter(
+      (asset) => asset.quote?.cardmarket == null,
+    ).length;
+  }
+
   fs.writeFileSync(catalogPath, JSON.stringify(catalog, null, 2), 'utf8');
   console.log(`\nUpdated ${updatedCount} assets with fresh Cardmarket prices (${priceChangedCount} prices changed).`);
 
@@ -152,4 +172,11 @@ async function run() {
   console.log(' - Source updated at:', luffy?.sourceUpdatedAt?.cardmarket);
 }
 
-run().catch(console.error);
+import { fileURLToPath } from 'node:url';
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  updateCardmarketPrices().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

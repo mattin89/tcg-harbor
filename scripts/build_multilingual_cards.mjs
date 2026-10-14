@@ -79,8 +79,10 @@ const setPrefixToExps = {
   ST23: [6229], ST24: [6228], ST25: [6227], ST26: [6226], ST27: [6225],
   ST28: [6224, 6215], ST29: [6445], ST30: [6560], ST31: [6713], ST32: [6712],
   ST33: [6711], ST34: [6710], ST35: [6709], ST36: [6708],
-  P: [5262, 5510, 5244]
 };
+
+const v10Catalog = JSON.parse(fs.readFileSync('src/data/generated/onepiece-market-v10.json', 'utf8')).assets;
+const v10ProductIds = new Set(v10Catalog.filter((a) => a.cardmarketProductId != null).map((a) => a.cardmarketProductId));
 
 const cmProductsByExpansionAndNum = new Map();
 for (const p of cmProducts) {
@@ -111,14 +113,15 @@ for (const [num, r] of cardsByNumber) {
   for (const expId of allowedExpIds) {
     const list = cmProductsByExpansionAndNum.get(`${expId}:${num}`);
     if (list && list.length > 0) {
-      candidate = [...list].sort((a, b) => a.idProduct - b.idProduct)[0];
-      break;
+      const sorted = [...list].sort((a, b) => a.idProduct - b.idProduct);
+      candidate = sorted.find((cand) => !v10ProductIds.has(cand.idProduct)) ?? null;
+      if (candidate) break;
     }
   }
 
   const pg = candidate ? cmPriceMap.get(candidate.idProduct) : null;
-  const trend = pg?.trend ?? pg?.avg ?? (pg?.low != null ? pg.low : null);
-  const hasPrice = typeof trend === 'number' && Number.isFinite(trend) && trend > 0;
+  const trend = pg?.trend != null && Number.isFinite(pg.trend) && pg.trend > 0 ? Number(pg.trend.toFixed(2)) : null;
+  const hasPrice = trend !== null;
 
   const asset = {
     id: `card-multilingual-jp-${num.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,

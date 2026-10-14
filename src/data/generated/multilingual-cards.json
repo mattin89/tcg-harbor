@@ -87469,19 +87469,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/P-029_p3.jpg",
     "imageState": "available",
-    "cardmarketProductId": 752018,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #752018",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 41.36,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 3.66,
-        "1W": 11.48,
-        "1M": 127
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -87491,12 +87491,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 41.36,
-        "low": 30,
-        "average": 39.9,
-        "average1Day": 39.9,
-        "average7Days": 37.1,
-        "average30Days": 18.22
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -88569,12 +88569,12 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/P-088_p3.jpg",
     "imageState": "available",
-    "cardmarketProductId": 904376,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #904376",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 700,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -88592,7 +88592,7 @@
     "pricing": {
       "cardmarket": {
         "trend": null,
-        "low": 700,
+        "low": null,
         "average": null,
         "average1Day": null,
         "average7Days": null,
@@ -88624,19 +88624,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/P-069_p3.jpg",
     "imageState": "available",
-    "cardmarketProductId": 864298,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #864298",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 300,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 0,
-        "1W": 13.21,
-        "1M": 13.21
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -88646,12 +88646,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 300,
-        "low": 380,
-        "average": 300,
-        "average1Day": 300,
-        "average7Days": 265,
-        "average30Days": 265
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -88734,19 +88734,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/P-085_p3.jpg",
     "imageState": "available",
-    "cardmarketProductId": 840667,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #840667",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 180.68,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 0.38,
-        "1W": 22.82,
-        "1M": 133.59
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -88756,12 +88756,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 180.68,
-        "low": 140,
-        "average": 179.99,
-        "average1Day": 179.99,
-        "average7Days": 147.11,
-        "average30Days": 77.35
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -88844,19 +88844,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/P-078_p6.jpg",
     "imageState": "available",
-    "cardmarketProductId": 821353,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #821353",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 33.5,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": -14.1,
-        "1W": -1.99,
-        "1M": 71.01
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -88866,12 +88866,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 33.5,
-        "low": 40,
-        "average": 39,
-        "average1Day": 39,
-        "average7Days": 34.18,
-        "average30Days": 19.59
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -89064,19 +89064,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/P-079_p3.jpg",
     "imageState": "available",
-    "cardmarketProductId": 842347,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #842347",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 15.41,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 28.52,
-        "1W": 13.14,
-        "1M": 10.86
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -89086,12 +89086,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 15.41,
-        "low": 12,
-        "average": 13.85,
-        "average1Day": 11.99,
-        "average7Days": 13.62,
-        "average30Days": 13.9
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -89394,19 +89394,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/P-063_p1_rWUDzZS.jpg",
     "imageState": "available",
-    "cardmarketProductId": 787454,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #787454",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 6.84,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": -23.92,
-        "1W": -13.64,
-        "1M": -27.31
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -89416,12 +89416,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 6.84,
-        "low": 8,
-        "average": 7.92,
-        "average1Day": 8.99,
-        "average7Days": 7.92,
-        "average30Days": 9.41
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -90054,19 +90054,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/P-082_p2.jpg",
     "imageState": "available",
-    "cardmarketProductId": 828305,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #828305",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 59.18,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 51.74,
-        "1W": 25.86,
-        "1M": 27.05
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -90076,12 +90076,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 59.18,
-        "low": 37.5,
-        "average": 43.74,
-        "average1Day": 39,
-        "average7Days": 47.02,
-        "average30Days": 46.58
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -90164,19 +90164,19 @@
     "color": "azure",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/P-081_p2.jpg",
     "imageState": "available",
-    "cardmarketProductId": 828307,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #828307",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 35.39,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 50.6,
-        "1W": 15.35,
-        "1M": 24.26
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -90186,12 +90186,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 35.39,
-        "low": 21,
-        "average": 28.82,
-        "average1Day": 23.5,
-        "average7Days": 30.68,
-        "average30Days": 28.48
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -90274,19 +90274,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/P-044.jpg",
     "imageState": "available",
-    "cardmarketProductId": 787452,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #787452",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 11.96,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": -20.27,
-        "1W": -7.93,
-        "1M": -21.68
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -90296,12 +90296,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 11.96,
-        "low": 10,
-        "average": 12.82,
-        "average1Day": 15,
-        "average7Days": 12.99,
-        "average30Days": 15.27
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -116674,19 +116674,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/P-105_p1.jpg",
     "imageState": "available",
-    "cardmarketProductId": 904396,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #904396",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 80,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 0,
-        "1W": -33.15,
-        "1M": -33.15
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -116696,12 +116696,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 80,
-        "low": 80,
-        "average": 119.66,
-        "average1Day": 80,
-        "average7Days": 119.67,
-        "average30Days": 119.67
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -130151,10 +130151,10 @@
     "imageState": "available",
     "cardmarketProductId": 910925,
     "cardmarketExpansionId": 6712,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910925",
     "quote": {
-      "cardmarket": 6.25,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -130204,19 +130204,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/P-084_p1.jpg",
     "imageState": "available",
-    "cardmarketProductId": 817503,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #817503",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 37.12,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": -9.44,
-        "1W": -13.39,
-        "1M": -30.62
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -130226,12 +130226,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 37.12,
-        "low": 20,
-        "average": 44.78,
-        "average1Day": 40.99,
-        "average7Days": 42.86,
-        "average30Days": 53.5
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -130261,10 +130261,10 @@
     "imageState": "available",
     "cardmarketProductId": 910913,
     "cardmarketExpansionId": 6713,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910913",
     "quote": {
-      "cardmarket": 7.5,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -147476,10 +147476,10 @@
     "imageState": "available",
     "cardmarketProductId": 910910,
     "cardmarketExpansionId": 6713,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910910",
     "quote": {
-      "cardmarket": 6.25,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -147531,10 +147531,10 @@
     "imageState": "available",
     "cardmarketProductId": 910914,
     "cardmarketExpansionId": 6713,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910914",
     "quote": {
-      "cardmarket": 5.55,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -147586,10 +147586,10 @@
     "imageState": "available",
     "cardmarketProductId": 910911,
     "cardmarketExpansionId": 6713,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910911",
     "quote": {
-      "cardmarket": 2.25,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -147641,10 +147641,10 @@
     "imageState": "available",
     "cardmarketProductId": 910912,
     "cardmarketExpansionId": 6713,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910912",
     "quote": {
-      "cardmarket": 2.5,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -147696,10 +147696,10 @@
     "imageState": "available",
     "cardmarketProductId": 910926,
     "cardmarketExpansionId": 6712,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910926",
     "quote": {
-      "cardmarket": 5,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -147751,10 +147751,10 @@
     "imageState": "available",
     "cardmarketProductId": 910924,
     "cardmarketExpansionId": 6712,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910924",
     "quote": {
-      "cardmarket": 2,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -147806,10 +147806,10 @@
     "imageState": "available",
     "cardmarketProductId": 910928,
     "cardmarketExpansionId": 6712,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910928",
     "quote": {
-      "cardmarket": 4,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -147861,10 +147861,10 @@
     "imageState": "available",
     "cardmarketProductId": 910927,
     "cardmarketExpansionId": 6712,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910927",
     "quote": {
-      "cardmarket": 3.25,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -147916,10 +147916,10 @@
     "imageState": "available",
     "cardmarketProductId": 910942,
     "cardmarketExpansionId": 6711,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910942",
     "quote": {
-      "cardmarket": 4.5,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -147971,10 +147971,10 @@
     "imageState": "available",
     "cardmarketProductId": 910941,
     "cardmarketExpansionId": 6711,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910941",
     "quote": {
-      "cardmarket": 3,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -148026,10 +148026,10 @@
     "imageState": "available",
     "cardmarketProductId": 910943,
     "cardmarketExpansionId": 6711,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910943",
     "quote": {
-      "cardmarket": 7,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -148081,10 +148081,10 @@
     "imageState": "available",
     "cardmarketProductId": 910939,
     "cardmarketExpansionId": 6711,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910939",
     "quote": {
-      "cardmarket": 2,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -148136,10 +148136,10 @@
     "imageState": "available",
     "cardmarketProductId": 910940,
     "cardmarketExpansionId": 6711,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910940",
     "quote": {
-      "cardmarket": 2,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -148191,10 +148191,10 @@
     "imageState": "available",
     "cardmarketProductId": 910956,
     "cardmarketExpansionId": 6710,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910956",
     "quote": {
-      "cardmarket": 6,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -148246,10 +148246,10 @@
     "imageState": "available",
     "cardmarketProductId": 910953,
     "cardmarketExpansionId": 6710,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910953",
     "quote": {
-      "cardmarket": 9,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -148301,10 +148301,10 @@
     "imageState": "available",
     "cardmarketProductId": 910955,
     "cardmarketExpansionId": 6710,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910955",
     "quote": {
-      "cardmarket": 2,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -148356,10 +148356,10 @@
     "imageState": "available",
     "cardmarketProductId": 910954,
     "cardmarketExpansionId": 6710,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910954",
     "quote": {
-      "cardmarket": 2.25,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -148411,10 +148411,10 @@
     "imageState": "available",
     "cardmarketProductId": 910957,
     "cardmarketExpansionId": 6710,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910957",
     "quote": {
-      "cardmarket": 2.5,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -148464,12 +148464,12 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/P-090_r1.jpg",
     "imageState": "available",
-    "cardmarketProductId": 904378,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #904378",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 500,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -148487,7 +148487,7 @@
     "pricing": {
       "cardmarket": {
         "trend": null,
-        "low": 500,
+        "low": null,
         "average": null,
         "average1Day": null,
         "average7Days": null,
@@ -148521,10 +148521,10 @@
     "imageState": "available",
     "cardmarketProductId": 910971,
     "cardmarketExpansionId": 6709,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910971",
     "quote": {
-      "cardmarket": 10,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -148576,10 +148576,10 @@
     "imageState": "available",
     "cardmarketProductId": 910970,
     "cardmarketExpansionId": 6709,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910970",
     "quote": {
-      "cardmarket": 8,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -148631,10 +148631,10 @@
     "imageState": "available",
     "cardmarketProductId": 910968,
     "cardmarketExpansionId": 6709,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910968",
     "quote": {
-      "cardmarket": 3,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -148686,10 +148686,10 @@
     "imageState": "available",
     "cardmarketProductId": 910969,
     "cardmarketExpansionId": 6709,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910969",
     "quote": {
-      "cardmarket": 3.5,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -148741,10 +148741,10 @@
     "imageState": "available",
     "cardmarketProductId": 910967,
     "cardmarketExpansionId": 6709,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910967",
     "quote": {
-      "cardmarket": 1.95,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -148796,10 +148796,10 @@
     "imageState": "available",
     "cardmarketProductId": 910984,
     "cardmarketExpansionId": 6708,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910984",
     "quote": {
-      "cardmarket": 7.5,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -148851,10 +148851,10 @@
     "imageState": "available",
     "cardmarketProductId": 910981,
     "cardmarketExpansionId": 6708,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910981",
     "quote": {
-      "cardmarket": 5,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -148906,10 +148906,10 @@
     "imageState": "available",
     "cardmarketProductId": 910982,
     "cardmarketExpansionId": 6708,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910982",
     "quote": {
-      "cardmarket": 3.5,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -148961,10 +148961,10 @@
     "imageState": "available",
     "cardmarketProductId": 910983,
     "cardmarketExpansionId": 6708,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910983",
     "quote": {
-      "cardmarket": 3.75,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -149016,10 +149016,10 @@
     "imageState": "available",
     "cardmarketProductId": 910980,
     "cardmarketExpansionId": 6708,
-    "cardmarketPriceState": "available",
+    "cardmarketPriceState": "trend-unavailable",
     "cardmarketPriceReason": "Verified Cardmarket Non-English product #910980",
     "quote": {
-      "cardmarket": 2.5,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -149069,19 +149069,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/P-101_r1.jpg",
     "imageState": "available",
-    "cardmarketProductId": 904392,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #904392",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 490,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 0,
-        "1W": 0,
-        "1M": 0
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -149091,12 +149091,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 490,
-        "low": 399,
-        "average": 490,
-        "average1Day": 490,
-        "average7Days": 490,
-        "average30Days": 490
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -149894,19 +149894,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/P-038.jpg",
     "imageState": "available",
-    "cardmarketProductId": 787443,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #787443",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 16.56,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": -8,
-        "1W": -6.65,
-        "1M": -22.11
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -149916,12 +149916,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 16.56,
-        "low": 15,
-        "average": 18.18,
-        "average1Day": 18,
-        "average7Days": 17.74,
-        "average30Days": 21.26
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -150059,19 +150059,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Sengoku_Event_Pack_Vol._1_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 752023,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #752023",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 37.39,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": -5.1,
-        "1W": 0.92,
-        "1M": 21.32
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -150081,12 +150081,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 37.39,
-        "low": 32,
-        "average": 36.33,
-        "average1Day": 39.4,
-        "average7Days": 37.05,
-        "average30Days": 30.82
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -150169,12 +150169,12 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/P-092.jpg",
     "imageState": "available",
-    "cardmarketProductId": 904382,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #904382",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 1200,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -150192,7 +150192,7 @@
     "pricing": {
       "cardmarket": {
         "trend": null,
-        "low": 1200,
+        "low": null,
         "average": null,
         "average1Day": null,
         "average7Days": null,
@@ -150224,19 +150224,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Monkey.D.Luffy_Alternate_Art_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 717506,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #717506",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 1857.78,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 11.47,
-        "1W": 13.68,
-        "1M": 90.21
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -150246,12 +150246,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 1857.78,
-        "low": 2500,
-        "average": 1666.67,
-        "average1Day": 1666.67,
-        "average7Days": 1634.22,
-        "average30Days": 976.7
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -150334,19 +150334,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Trafalgar_Law_Winner_Pack_Vol._7_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 787485,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #787485",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 53.29,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 33.29,
-        "1W": 24.68,
-        "1M": 80.16
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -150356,12 +150356,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 53.29,
-        "low": 38.99,
-        "average": 40.74,
-        "average1Day": 39.98,
-        "average7Days": 42.74,
-        "average30Days": 29.58
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -150444,19 +150444,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Monkey.D.Luffy_-_P-006_Tournament_Pack_Vol._1_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 752047,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #752047",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 270.06,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 237.57,
-        "1W": 23.56,
-        "1M": 173.09
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -150466,12 +150466,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 270.06,
-        "low": 140,
-        "average": 80,
-        "average1Day": 80,
-        "average7Days": 218.57,
-        "average30Days": 98.89
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -150499,19 +150499,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Portgas.D.Ace_Gift_Collection_2023_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 752016,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #752016",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 222.81,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": -12.62,
-        "1W": 24.09,
-        "1M": 90.84
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -150521,12 +150521,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 222.81,
-        "low": 120,
-        "average": 189,
-        "average1Day": 255,
-        "average7Days": 179.55,
-        "average30Days": 116.75
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -150554,19 +150554,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Bepo_Tournament_Pack_Vol._7_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 787487,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #787487",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 30.31,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 29.92,
-        "1W": 29.2,
-        "1M": 55.36
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -150576,12 +150576,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 30.31,
-        "low": 21.99,
-        "average": 24.67,
-        "average1Day": 23.33,
-        "average7Days": 23.46,
-        "average30Days": 19.51
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -150609,19 +150609,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Monkey.D.Luffy_-_P-007_Tournament_Pack_Vol._1_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 752048,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #752048",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 275.1,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 83.4,
-        "1W": 26.83,
-        "1M": 62.82
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -150631,12 +150631,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 275.1,
-        "low": 170,
-        "average": 223.16,
-        "average1Day": 150,
-        "average7Days": 216.9,
-        "average30Days": 168.96
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -150994,19 +150994,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/P-027.jpg",
     "imageState": "available",
-    "cardmarketProductId": 752015,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #752015",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 54.77,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": -77.64,
-        "1W": -3.81,
-        "1M": 53.03
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -151016,12 +151016,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 54.77,
-        "low": 55,
+        "trend": null,
+        "low": null,
         "average": null,
-        "average1Day": 245,
-        "average7Days": 56.94,
-        "average30Days": 35.79
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -151159,19 +151159,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Boa_Hancock_Sealed_Battle_2024_Vol._2_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 866411,
-    "cardmarketExpansionId": 5510,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #866411",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 702.95,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 75.74,
-        "1W": -5.06,
-        "1M": 43.49
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -151181,12 +151181,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 702.95,
-        "low": 350,
-        "average": 754.5,
-        "average1Day": 400,
-        "average7Days": 740.38,
-        "average30Days": 489.9
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -151214,19 +151214,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Trafalgar_Law_Tournament_Pack_Vol._1_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 752056,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #752056",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 57.31,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 63.74,
-        "1W": 12.37,
-        "1M": 98.17
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -151236,12 +151236,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 57.31,
-        "low": 39.5,
-        "average": 38.33,
-        "average1Day": 35,
-        "average7Days": 51,
-        "average30Days": 28.92
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -151269,19 +151269,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Jinbe_CS_2023_Event_Pack_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 752020,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #752020",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 59.03,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 7.35,
-        "1W": -3.51,
-        "1M": 113.8
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -151291,12 +151291,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 59.03,
-        "low": 49.99,
-        "average": 54.99,
-        "average1Day": 54.99,
-        "average7Days": 61.18,
-        "average30Days": 27.61
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -151379,19 +151379,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/P-033.jpg",
     "imageState": "available",
-    "cardmarketProductId": 743251,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #743251",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 2119.76,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": -29.34,
-        "1W": 12.23,
-        "1M": 106.08
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -151401,12 +151401,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 2119.76,
-        "low": 2199,
-        "average": 3000,
-        "average1Day": 3000,
-        "average7Days": 1888.75,
-        "average30Days": 1028.61
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -151929,19 +151929,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Monkey.D.Luffy_Starter_Deck_11_Uta_Deck_Battle_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 754832,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #754832",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 291.91,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 53.72,
-        "1W": 21.28,
-        "1M": 165.76
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -151951,12 +151951,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 291.91,
-        "low": 150,
-        "average": 189.9,
-        "average1Day": 189.9,
-        "average7Days": 240.7,
-        "average30Days": 109.84
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -152039,12 +152039,12 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Shirahoshi_Event_Pack_Vol._7_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 904380,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #904380",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 1000,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -152062,7 +152062,7 @@
     "pricing": {
       "cardmarket": {
         "trend": null,
-        "low": 1000,
+        "low": null,
         "average": null,
         "average1Day": null,
         "average7Days": null,
@@ -152094,19 +152094,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Monkey.D.Luffy_037_1st_Anniversary_Tournament_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 748121,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #748121",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 37.44,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 2.13,
-        "1W": 7.22,
-        "1M": -13.53
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -152116,12 +152116,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 37.44,
-        "low": 20,
-        "average": 39.08,
-        "average1Day": 36.66,
-        "average7Days": 34.92,
-        "average30Days": 43.3
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -152149,19 +152149,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Yamato_Tournament_Pack_Vol._1_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 752054,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #752054",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 116.4,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 29.35,
-        "1W": 18.33,
-        "1M": 102.26
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -152171,12 +152171,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 116.4,
-        "low": 65,
-        "average": 90,
-        "average1Day": 89.99,
-        "average7Days": 98.37,
-        "average30Days": 57.55
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -152259,19 +152259,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/EustassCaptainKid_Store_Championship_Vol._2_Winner_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 729808,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #729808",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 85.71,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 64.86,
-        "1W": 20.87,
-        "1M": 39.48
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -152281,12 +152281,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 85.71,
-        "low": 50,
-        "average": 74.44,
-        "average1Day": 51.99,
-        "average7Days": 70.91,
-        "average30Days": 61.45
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -152314,19 +152314,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Monkey.D.Luffy_041_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 748120,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #748120",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 1505.66,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 7.62,
-        "1W": -7.8,
-        "1M": 83.9
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -152336,12 +152336,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 1505.66,
-        "low": 840,
-        "average": 1399,
-        "average1Day": 1399,
-        "average7Days": 1633,
-        "average30Days": 818.73
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -152424,19 +152424,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/P-046.jpg",
     "imageState": "available",
-    "cardmarketProductId": 787453,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #787453",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 56.62,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 13.24,
-        "1W": -7.51,
-        "1M": -27.19
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -152446,12 +152446,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 56.62,
-        "low": 50,
-        "average": 66.36,
-        "average1Day": 50,
-        "average7Days": 61.22,
-        "average30Days": 77.76
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -152479,19 +152479,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Kaido_-_P-010_Winner_Pack_Vol._1_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 752057,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #752057",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 52.95,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 26.07,
-        "1W": 18.06,
-        "1M": 62.08
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -152501,12 +152501,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 52.95,
-        "low": 42,
-        "average": 40.66,
-        "average1Day": 42,
-        "average7Days": 44.85,
-        "average30Days": 32.67
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -152534,19 +152534,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Uta_CS_2023_Event_Pack_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 752021,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #752021",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 72.99,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": -14.13,
-        "1W": -5.05,
-        "1M": 39.4
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -152556,12 +152556,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 72.99,
-        "low": 89,
-        "average": 90,
-        "average1Day": 85,
-        "average7Days": 76.87,
-        "average30Days": 52.36
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -152589,19 +152589,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Roronoa_Zoro_ST15_-_ST20_Release_Event_Pack_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 754941,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #754941",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 257.38,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 0.94,
-        "1W": 4.81,
-        "1M": -0.54
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -152611,12 +152611,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 257.38,
-        "low": 140,
-        "average": 246,
-        "average1Day": 254.99,
-        "average7Days": 245.57,
-        "average30Days": 258.78
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -152699,19 +152699,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Kouzuki_Momonosuke_CS_2024_Event_Pack_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 787456,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #787456",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 9.9,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 0.51,
-        "1W": -7.91,
-        "1M": -19.45
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -152721,12 +152721,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 9.9,
-        "low": 6,
-        "average": 11.1,
-        "average1Day": 9.85,
-        "average7Days": 10.75,
-        "average30Days": 12.29
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -152754,19 +152754,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Roronoa_Zoro_Event_Pack_Vol._3_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 787446,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #787446",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 105.55,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": -8.22,
-        "1W": 0.7,
-        "1M": -18.83
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -152776,12 +152776,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 105.55,
-        "low": 74.99,
-        "average": 117.92,
-        "average1Day": 115,
-        "average7Days": 104.82,
-        "average30Days": 130.04
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -152809,19 +152809,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Sanji_Event_Pack_Vol._2_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 752024,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #752024",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 106.38,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": -7.5,
-        "1W": 3.15,
-        "1M": 49.92
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -152831,12 +152831,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 106.38,
-        "low": 110,
-        "average": 111.33,
-        "average1Day": 115,
-        "average7Days": 103.13,
-        "average30Days": 70.96
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -152974,19 +152974,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Tony_Tony.Chopper_Online_Regional_Finalist_Card_Set_2025_Vol.2_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 840672,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #840672",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 141.21,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": -21.55,
-        "1W": 16,
-        "1M": 71.87
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -152996,12 +152996,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 141.21,
-        "low": 148,
-        "average": 180,
-        "average1Day": 180,
-        "average7Days": 121.73,
-        "average30Days": 82.16
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -153084,19 +153084,19 @@
     "color": "amber",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Boa_Hancock_OP15_Release_Event_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 880065,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #880065",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 84.19,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 16.93,
-        "1W": -7.9,
-        "1M": -18.32
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -153106,12 +153106,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 84.19,
-        "low": 55,
-        "average": 95.96,
-        "average1Day": 72,
-        "average7Days": 91.41,
-        "average30Days": 103.07
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -153194,19 +153194,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Monkey.D.Luffy_Store_Tournament_2025_Vol._4_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 904397,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #904397",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 500,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 0,
-        "1W": 0,
-        "1M": 0
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -153216,12 +153216,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 500,
-        "low": 749.99,
-        "average": 500,
-        "average1Day": 500,
-        "average7Days": 500,
-        "average30Days": 500
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -153249,19 +153249,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Nami_Store_Tournament_2025_Vol._4_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 904393,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #904393",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 265,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 0,
-        "1W": -2.75,
-        "1M": -2.75
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -153271,12 +153271,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 265,
-        "low": 249.99,
-        "average": 280,
-        "average1Day": 265,
-        "average7Days": 272.5,
-        "average30Days": 272.5
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -153304,12 +153304,12 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Monkey.D.Luffy_Event_Pack_Vol._8_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 904388,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #904388",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 39000,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -153327,7 +153327,7 @@
     "pricing": {
       "cardmarket": {
         "trend": null,
-        "low": 39000,
+        "low": null,
         "average": null,
         "average1Day": null,
         "average7Days": null,
@@ -153359,19 +153359,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Marshall.D.Teach_Event_Pack_Vol._8_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 904390,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #904390",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 100,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 0,
-        "1W": 0,
-        "1M": 0
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -153381,12 +153381,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 100,
-        "low": 2500,
-        "average": 100,
-        "average1Day": 100,
-        "average7Days": 100,
-        "average30Days": 100
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -153469,12 +153469,12 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Shanks_Event_Pack_Vol._8_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 904384,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #904384",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 3000,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -153492,7 +153492,7 @@
     "pricing": {
       "cardmarket": {
         "trend": null,
-        "low": 3000,
+        "low": null,
         "average": null,
         "average1Day": null,
         "average7Days": null,
@@ -153524,19 +153524,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Portgas.D.Ace_Store_Tournament_2025_Vol._4_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 904394,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #904394",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 86.08,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 1.27,
-        "1W": -10.57,
-        "1M": -10.57
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -153546,12 +153546,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 86.08,
-        "low": 120,
-        "average": 85,
-        "average1Day": 85,
-        "average7Days": 96.25,
-        "average30Days": 96.25
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,
@@ -153579,12 +153579,12 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/Buggy_Event_Pack_Vol._8_img.jpg",
     "imageState": "available",
-    "cardmarketProductId": 904386,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #904386",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 2000,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
@@ -153602,7 +153602,7 @@
     "pricing": {
       "cardmarket": {
         "trend": null,
-        "low": 2000,
+        "low": null,
         "average": null,
         "average1Day": null,
         "average7Days": null,
@@ -153689,19 +153689,19 @@
     "color": "coral",
     "imageUrl": "https://optcgapi.com/media/static/Card_Images/P-104.jpg",
     "imageState": "available",
-    "cardmarketProductId": 904395,
-    "cardmarketExpansionId": 5262,
-    "cardmarketPriceState": "available",
-    "cardmarketPriceReason": "Verified Cardmarket Non-English product #904395",
+    "cardmarketProductId": null,
+    "cardmarketExpansionId": null,
+    "cardmarketPriceState": "unmapped",
+    "cardmarketPriceReason": "Japanese printing; individual regional listing trends are tracked in native markets.",
     "quote": {
-      "cardmarket": 143,
+      "cardmarket": null,
       "tcgplayer": null
     },
     "change": {
       "cardmarket": {
-        "1D": 0,
-        "1W": 0,
-        "1M": 0
+        "1D": null,
+        "1W": null,
+        "1M": null
       },
       "tcgplayer": {
         "1D": null,
@@ -153711,12 +153711,12 @@
     },
     "pricing": {
       "cardmarket": {
-        "trend": 143,
-        "low": 180,
-        "average": 143,
-        "average1Day": 143,
-        "average7Days": 143,
-        "average30Days": 143
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
       },
       "usMarket": {
         "market": null,

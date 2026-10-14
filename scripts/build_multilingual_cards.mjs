@@ -59,12 +59,66 @@ function normalizeRulesCardId(rawNumber) {
 // 1. JAPANESE CARDS
 // Japanese releases mirror English releases across all mainline sets (OP01-OP10, EB01, PRB01),
 // starter decks (ST01-ST36), plus Japanese promotional exclusives.
-console.log('Generating Japanese mirrored & exclusive cards...');
+// Authentic Cardmarket products and prices from Non-English expansions are mapped directly.
+console.log('Generating Japanese mirrored & exclusive cards with native Cardmarket pricing...');
+
+const cardmarketSingles = JSON.parse(fs.readFileSync('scripts/data/cache/cardmarket_singles.json', 'utf8'));
+const cmProducts = Array.isArray(cardmarketSingles) ? cardmarketSingles : cardmarketSingles.products || [];
+const priceGuideData = JSON.parse(fs.readFileSync('scripts/data/cache/cardmarket_price_guide.json', 'utf8'));
+const cmPriceMap = new Map((priceGuideData.priceGuides || []).map((g) => [g.idProduct, g]));
+
+const setPrefixToExps = {
+  OP01: [5484], OP02: [5483], OP03: [5482], OP04: [5485], OP05: [5481],
+  OP06: [5551], OP07: [5587], OP08: [5744], OP09: [5887], OP10: [5975],
+  OP11: [6034], OP12: [6157], OP13: [6277], OP14: [6478], OP15: [6504],
+  OP16: [6606], OP17: [6723], EB01: [5580], EB02: [6018], EB03: [6379],
+  EB04: [6411], PRB01: [5804], PRB02: [6233], ST01: [6029], ST02: [6030],
+  ST03: [6031], ST04: [6032], ST10: [5558], ST11: [5591], ST12: [5592],
+  ST13: [5594], ST14: [5850], ST15: [5968], ST16: [5969], ST17: [5970],
+  ST18: [5971], ST19: [5972], ST20: [5973], ST21: [5999], ST22: [6138],
+  ST23: [6229], ST24: [6228], ST25: [6227], ST26: [6226], ST27: [6225],
+  ST28: [6224, 6215], ST29: [6445], ST30: [6560], ST31: [6713], ST32: [6712],
+  ST33: [6711], ST34: [6710], ST35: [6709], ST36: [6708],
+  P: [5262, 5510, 5244]
+};
+
+const cmProductsByExpansionAndNum = new Map();
+for (const p of cmProducts) {
+  const match = p.name.match(/\(([A-Z0-9]+-[A-Z0-9]+)\)/i);
+  if (match) {
+    const cardNum = match[1].toUpperCase();
+    const key = `${p.idExpansion}:${cardNum}`;
+    if (!cmProductsByExpansionAndNum.has(key)) cmProductsByExpansionAndNum.set(key, []);
+    cmProductsByExpansionAndNum.get(key).push(p);
+  }
+}
+
+function percentAgainst(current, comparison) {
+  if (current == null || comparison == null || comparison === 0) return null;
+  return Number((((current - comparison) / comparison) * 100).toFixed(2));
+}
+
 for (const [num, r] of cardsByNumber) {
   const cleanCode = getCardSetCode(num, r);
   const isPromo = cleanCode === 'P' || num.startsWith('P-');
   const jpSetCode = cleanCode.endsWith('-JP') ? cleanCode : `${cleanCode}-JP`;
   const setName = setNamesByCode.get(cleanCode) || r.set_name || 'One Piece Card Game Japan';
+
+  const prefixMatch = num.match(/^([A-Z0-9]+)-/);
+  const prefix = prefixMatch ? prefixMatch[1] : '';
+  const allowedExpIds = setPrefixToExps[prefix] || [];
+  let candidate = null;
+  for (const expId of allowedExpIds) {
+    const list = cmProductsByExpansionAndNum.get(`${expId}:${num}`);
+    if (list && list.length > 0) {
+      candidate = [...list].sort((a, b) => a.idProduct - b.idProduct)[0];
+      break;
+    }
+  }
+
+  const pg = candidate ? cmPriceMap.get(candidate.idProduct) : null;
+  const trend = pg?.trend ?? pg?.avg ?? (pg?.low != null ? pg.low : null);
+  const hasPrice = typeof trend === 'number' && Number.isFinite(trend) && trend > 0;
 
   const asset = {
     id: `card-multilingual-jp-${num.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
@@ -86,29 +140,35 @@ for (const [num, r] of cardsByNumber) {
     color: getColorFromSetOrCard(r),
     imageUrl: r.card_image || `https://optcgapi.com/media/static/Card_Images/${num}.jpg`,
     imageState: 'available',
-    cardmarketProductId: null,
-    cardmarketExpansionId: null,
-    cardmarketPriceState: 'unmapped',
-    cardmarketPriceReason: 'Japanese printing mirroring primary release; individual regional listing trends are tracked in native markets.',
+    cardmarketProductId: candidate ? candidate.idProduct : null,
+    cardmarketExpansionId: candidate ? candidate.idExpansion : null,
+    cardmarketPriceState: candidate ? (hasPrice ? 'available' : (pg?.low != null ? 'trend-unavailable' : 'unmapped')) : 'unmapped',
+    cardmarketPriceReason: candidate
+      ? `Verified Cardmarket Non-English product #${candidate.idProduct}`
+      : 'Japanese printing; individual regional listing trends are tracked in native markets.',
     quote: {
-      cardmarket: null,
-      tcgplayer: r.market_price ? Number(r.market_price) : null
+      cardmarket: hasPrice ? Number(trend.toFixed(2)) : null,
+      tcgplayer: null
     },
     change: {
-      cardmarket: { '1D': null, '1W': null, '1M': null },
+      cardmarket: {
+        '1D': percentAgainst(pg?.trend, pg?.avg1),
+        '1W': percentAgainst(pg?.trend, pg?.avg7),
+        '1M': percentAgainst(pg?.trend, pg?.avg30)
+      },
       tcgplayer: { '1D': null, '1W': null, '1M': null }
     },
     pricing: {
       cardmarket: {
-        trend: null,
-        low: null,
-        average: null,
-        average1Day: null,
-        average7Days: null,
-        average30Days: null
+        trend: pg?.trend != null ? Number(pg.trend.toFixed(2)) : null,
+        low: pg?.low != null ? Number(pg.low.toFixed(2)) : null,
+        average: pg?.avg != null ? Number(pg.avg.toFixed(2)) : null,
+        average1Day: pg?.avg1 != null ? Number(pg.avg1.toFixed(2)) : null,
+        average7Days: pg?.avg7 != null ? Number(pg.avg7.toFixed(2)) : null,
+        average30Days: pg?.avg30 != null ? Number(pg.avg30.toFixed(2)) : null
       },
       usMarket: {
-        market: r.market_price ? Number(r.market_price) : null,
+        market: null,
         inventory: null
       }
     }

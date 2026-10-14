@@ -176,6 +176,19 @@ describe('cardmarketProductUrl generalized logic', () => {
     expect(url).toBe('https://www.cardmarket.com/en/OnePiece/Products/Singles/Memorial-Collection/I-Want-to-Live-EB01-050');
   });
 
+  it('resolves verified canonical URL for Japanese EB01-050 (...I Want to Live!!)', () => {
+    const asset = createMockAsset({
+      name: '...I Want to Live!!',
+      setCode: 'EB01-JP',
+      number: 'EB01-050',
+      language: 'Japanese',
+      cardmarketProductId: 754216,
+      variant: 'Standard',
+    });
+    const url = cardmarketProductUrl(asset);
+    expect(url).toBe('https://www.cardmarket.com/en/OnePiece/Products/Singles/Memorial-Collection-Japanese/I-Want-to-Live-EB01-050?language=7');
+  });
+
   it('resolves verified canonical URL for OP06-096 (...Nothing...at All!!!)', () => {
     const asset = createMockAsset({
       name: '...Nothing...at All!!!',

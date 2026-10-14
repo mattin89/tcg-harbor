@@ -421,10 +421,12 @@ export function AssetDetailModal({
   const regularSibling = (isRegular && effectiveSiblings)
     ? chooseOriginalRegularArt(asset, effectiveSiblings)
     : null;
+  const isSameLangRegular = Boolean(regularSibling && (regularSibling.language || 'English').toLowerCase() === (asset.language || 'English').toLowerCase());
   const displayCardmarketValue = currentCardmarketPrice > 0 ? formatMoney(currentCardmarketPrice, 'EUR') : cardmarketReference?.displayValue;
+  const fallbackTcp = isSameLangRegular ? regularSibling?.quote.tcgplayer ?? null : null;
   const displayTcgplayerValue = currentTcgplayerPrice > 0
     ? formatMoney(currentTcgplayerPrice, 'USD')
-    : formatMoney(asset.quote.tcgplayer ?? regularSibling?.quote.tcgplayer ?? null, 'USD');
+    : formatMoney(asset.quote.tcgplayer ?? fallbackTcp, 'USD');
   const hasLivePrice = priceHistory ? extractAssetPriceFromHistory(asset, 'cardmarket', priceHistory) !== null : false;
   const cardmarketDateLabel = (hasLivePrice || asset.pricing?.cardmarket?.trend != null) ? 'Daily market trend' : `${cardmarketReference?.label} · ${marketSourceDate('cardmarket')}`;
   const tcgplayerDateLabel = currentTcgplayerPrice > 0 ? 'Daily market price' : `Daily source snapshot · ${assetUsSourceDate(asset)}`;

@@ -186,7 +186,7 @@ describe('per-art Cardmarket references v10', () => {
     });
   });
 
-  it('resolves regular art trend for standard regional printings like French OP16-077 when siblings are provided', () => {
+  it('does not mirror English regular art trend for standard regional printings; each language keeps its own original price', () => {
     const englishCanonical = artwork({
       id: 'card-optcg-2986bfd8f107757577dc',
       name: '"Buddha" Sengoku',
@@ -216,20 +216,62 @@ describe('per-art Cardmarket references v10', () => {
 
     const siblings = [frenchPrinting, englishCanonical];
 
-    // Preview in catalog search
+    // Regional card keeps its unmapped state and does not falsely borrow English trend
     const searchView = resolveCatalogCardmarketReferenceV10(frenchPrinting, siblings);
     expect(searchView).toMatchObject({
-      state: 'regular-exact',
-      displayValue: '0,14 €',
-      label: 'Regular art · exact trend',
+      state: 'regular-unavailable',
+      displayValue: 'Price unavailable',
     });
 
-    // Detail panel / art picker view with siblings
+    // Detail view stays unmapped
     const detailView = resolveCardmarketArtworkReferenceV10(frenchPrinting, siblings);
     expect(detailView).toMatchObject({
+      state: 'unmapped',
+      displayValue: 'Exact price unavailable',
+    });
+  });
+
+  it('reports native Cardmarket price for Japanese printings such as EB01-050 (0.02 €)', () => {
+    const englishCanonical = artwork({
+      id: 'card-optcg-433974100459a2a2d300',
+      name: '...I Want to Live!!',
+      setCode: 'EB01',
+      number: 'EB01-050',
+      rulesCardId: 'EB01-050',
+      sourcePrintingId: 'EB01-050',
+      variant: 'Standard',
+      language: 'English',
+      cardmarketProductId: 768017,
+      cardmarketPriceState: 'available',
+      quote: { cardmarket: 0.13 },
+    });
+
+    const japanesePrinting = artwork({
+      id: 'card-multilingual-jp-eb01-050',
+      name: '...I Want to Live!!',
+      setCode: 'EB01-JP',
+      number: 'EB01-050',
+      rulesCardId: 'EB01-050',
+      variant: 'Standard',
+      language: 'Japanese',
+      cardmarketProductId: 754216,
+      cardmarketPriceState: 'available',
+      quote: { cardmarket: 0.02 },
+    });
+
+    const siblings = [japanesePrinting, englishCanonical];
+
+    const searchView = resolveCatalogCardmarketReferenceV10(japanesePrinting, siblings);
+    expect(searchView).toMatchObject({
+      state: 'regular-exact',
+      displayValue: '0,02 €',
+      sourceAssetId: 'card-multilingual-jp-eb01-050',
+    });
+
+    const detailView = resolveCardmarketArtworkReferenceV10(japanesePrinting, siblings);
+    expect(detailView).toMatchObject({
       state: 'exact',
-      displayValue: '0,14 €',
-      label: 'Regular art · exact trend',
+      displayValue: '0,02 €',
     });
   });
 

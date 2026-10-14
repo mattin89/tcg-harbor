@@ -89,8 +89,17 @@ function originSetCode(asset: CatalogCardmarketAssetV10): string | null {
     .match(/^((?:OP|EB|PRB|ST)\d{2})-/)?.[1] ?? null;
 }
 
-function isRegularArt(asset: CatalogCardmarketAssetV10): boolean {
-  return /^(?:standard|base art)$/i.test(asset.variant.trim()) && (!asset.language || asset.language === 'English');
+function isSameLanguage(a: string | undefined, b: string | undefined): boolean {
+  const normalize = (l: string | undefined) => {
+    const val = (l || 'English').toLowerCase().trim();
+    if (val.includes('chinese')) return 'chinese';
+    return val;
+  };
+  return normalize(a) === normalize(b);
+}
+
+function isRegularArt(asset: CatalogCardmarketAssetV10, targetLanguage?: string): boolean {
+  return /^(?:standard|base art)$/i.test(asset.variant.trim()) && isSameLanguage(asset.language, targetLanguage);
 }
 
 function verifiedRegularIdentity(asset: CatalogCardmarketAssetV10): string | null {
@@ -128,7 +137,7 @@ export function chooseOriginalRegularArt<T extends CatalogCardmarketAssetV10 = C
   matched: CatalogCardmarketAssetV10,
   siblings: readonly T[],
 ): T | null {
-  const regular = siblings.filter((asset) => asset.kind === 'card' && isRegularArt(asset));
+  const regular = siblings.filter((asset) => asset.kind === 'card' && isRegularArt(asset, matched.language));
   if (regular.length === 0) return null;
 
   const rulesId = matched.rulesCardId ?? matched.number ?? null;
@@ -338,7 +347,7 @@ export function resolveCardmarketArtworkReferenceV10(
           state: 'regular-image-reference',
           displayValue: formatEur(siblingRef.trend),
           label: 'Regular art · image verified',
-          detail: 'The sourced regular artwork independently matches this Cardmarket product image. Sourced regional printings share the base release trend on Cardmarket.',
+          detail: 'The sourced regular artwork independently matches this Cardmarket product image. Sourced standard printings share the verified regular artwork trend on Cardmarket.',
         };
       }
       if (
@@ -350,7 +359,7 @@ export function resolveCardmarketArtworkReferenceV10(
           state: 'exact',
           displayValue: formatEur(regularSibling.quote.cardmarket),
           label: 'Regular art · exact trend',
-          detail: 'Verified Cardmarket trend for the original regular artwork. Sourced regional printings share the base release listing on Cardmarket.',
+          detail: 'Verified Cardmarket trend for the regular artwork.',
         };
       }
       const regularLowest = exactLowestOffer(regularSibling);

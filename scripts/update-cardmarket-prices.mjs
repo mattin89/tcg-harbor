@@ -164,6 +164,41 @@ export async function updateCardmarketPrices() {
   fs.writeFileSync(catalogPath, JSON.stringify(catalog, null, 2), 'utf8');
   console.log(`\nUpdated ${updatedCount} assets with fresh Cardmarket prices (${priceChangedCount} prices changed).`);
 
+  const multiPath = 'src/data/generated/multilingual-cards.json';
+  if (fs.existsSync(multiPath)) {
+    const multi = JSON.parse(fs.readFileSync(multiPath, 'utf8'));
+    let multiUpdated = 0;
+    for (const asset of multi) {
+      if (asset.cardmarketProductId != null && priceMap.has(asset.cardmarketProductId)) {
+        const p = priceMap.get(asset.cardmarketProductId);
+        const trend = round(p.trend ?? p.avg ?? (p.low != null ? p.low : null));
+        if (trend !== null && trend > 0) {
+          asset.quote = asset.quote || {};
+          asset.quote.cardmarket = trend;
+          asset.cardmarketPriceState = 'available';
+          asset.pricing = asset.pricing || {};
+          asset.pricing.cardmarket = {
+            trend: round(p.trend),
+            low: round(p.low),
+            average: round(p.avg),
+            average1Day: round(p.avg1),
+            average7Days: round(p.avg7),
+            average30Days: round(p.avg30),
+          };
+          asset.change = asset.change || {};
+          asset.change.cardmarket = {
+            '1D': percentAgainst(p.trend, p.avg1),
+            '1W': percentAgainst(p.trend, p.avg7),
+            '1M': percentAgainst(p.trend, p.avg30),
+          };
+          multiUpdated++;
+        }
+      }
+    }
+    fs.writeFileSync(multiPath, JSON.stringify(multi, null, 2), 'utf8');
+    console.log(`Updated ${multiUpdated} multilingual assets with fresh Cardmarket prices.`);
+  }
+
   const luffy = catalog.assets.find(a => a.cardmarketProductId === 890624);
   console.log('\nVerification for Monkey.D.Luffy OP16-022 (890624):');
   console.log(' - Cardmarket quote:', luffy?.quote?.cardmarket);

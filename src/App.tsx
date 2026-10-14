@@ -863,8 +863,10 @@ function CollectionPage({
     if (asset.kind === 'card' && /^(?:standard|base art)$/i.test(asset.variant.trim())) {
       const siblings = getCardGroupArts(asset);
       const regular = chooseOriginalRegularArt(asset, siblings);
-      if (regular && regular.quote[market] !== null && Number.isFinite(regular.quote[market])) {
-        return regular.quote[market];
+      if (regular && (regular.language || 'English').toLowerCase() === (asset.language || 'English').toLowerCase()) {
+        if (regular.quote[market] !== null && Number.isFinite(regular.quote[market])) {
+          return regular.quote[market];
+        }
       }
     }
     return null;
@@ -1189,11 +1191,12 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
     const groupRegular = (selected.kind === 'card' && allGroupArts.length > 0)
       ? chooseOriginalRegularArt(selected, allGroupArts)
       : null;
+    const isSameLangGroupRegular = Boolean(groupRegular && (groupRegular.language || 'English').toLowerCase() === (selected.language || 'English').toLowerCase());
     const resolvedQuote = {
-      cardmarket: selected.quote.cardmarket ?? (isRegular ? groupRegular?.quote.cardmarket ?? null : null),
-      tcgplayer: selected.quote.tcgplayer ?? (isRegular ? groupRegular?.quote.tcgplayer ?? null : null),
+      cardmarket: selected.quote.cardmarket ?? (isRegular && isSameLangGroupRegular ? groupRegular?.quote.cardmarket ?? null : null),
+      tcgplayer: selected.quote.tcgplayer ?? (isRegular && isSameLangGroupRegular ? groupRegular?.quote.tcgplayer ?? null : null),
     };
-    const resolvedPricing = selected.pricing ?? (isRegular && groupRegular?.pricing ? { ...groupRegular.pricing } : undefined);
+    const resolvedPricing = selected.pricing ?? (isRegular && isSameLangGroupRegular && groupRegular?.pricing ? { ...groupRegular.pricing } : undefined);
     const capturedAt = new Date().toISOString();
     const acquisition: AcquisitionLot = {
       id: typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? `lot-${crypto.randomUUID()}` : `lot-${capturedAt}-${assets.length}`,
@@ -1271,10 +1274,11 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
       const groupRegular = (selected?.kind === 'card' && allGroupArts.length > 0)
         ? chooseOriginalRegularArt(selected, allGroupArts)
         : null;
+      const isSameLangGroupRegular = Boolean(groupRegular && selected && (groupRegular.language || 'English').toLowerCase() === (selected.language || 'English').toLowerCase());
       const displaySelectedCm = selectedCmPrice > 0 ? formatMoney(selectedCmPrice, 'EUR') : selectedCardmarketReference?.displayValue;
       const displaySelectedTcp = selectedTcpPrice > 0
         ? formatMoney(selectedTcpPrice, 'USD')
-        : formatMoney(selected.quote.tcgplayer ?? (isRegular ? groupRegular?.quote.tcgplayer ?? null : null), 'USD');
+        : formatMoney(selected.quote.tcgplayer ?? (isRegular && isSameLangGroupRegular ? groupRegular?.quote.tcgplayer ?? null : null), 'USD');
       const cmDateLabel = selectedCmPrice > 0 ? 'Daily market trend' : `${selectedCardmarketReference?.label} · ${marketSourceDate('cardmarket')}`;
       const tcpDateLabel = selectedTcpPrice > 0 ? 'Daily market price' : `Daily source snapshot · ${assetUsSourceDate(selected)}`;
       const isCm = market === 'cardmarket';

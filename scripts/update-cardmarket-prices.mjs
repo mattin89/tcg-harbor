@@ -32,6 +32,38 @@ function percentAgainst(current, comparison) {
   return Number((((current - comparison) / comparison) * 100).toFixed(2));
 }
 
+async function fetchLatestEcbRate() {
+  try {
+    const url = 'https://data-api.ecb.europa.eu/service/data/EXR/D.USD.EUR.SP00.A?lastNObservations=1&format=csvdata&detail=dataonly';
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const text = await res.text();
+    const [headerLine, ...dataLines] = text.trim().split(/\r?\n/);
+    const headers = headerLine.replace(/^\uFEFF/, '').split(',');
+    const values = dataLines.filter(Boolean).at(-1)?.split(',') ?? [];
+    const row = Object.fromEntries(headers.map((h, i) => [h, values[i]]));
+    const usdPerEur = Number(row.OBS_VALUE);
+    if (row.KEY === 'EXR.D.USD.EUR.SP00.A' && /^\d{4}-\d{2}-\d{2}$/.test(row.TIME_PERIOD ?? '') && Number.isFinite(usdPerEur) && usdPerEur > 0) {
+      return {
+        usdPerEur,
+        observationDate: row.TIME_PERIOD,
+        fetchedAt: new Date().toISOString(),
+        seriesKey: 'EXR.D.USD.EUR.SP00.A',
+        source: url,
+        retrievalMode: 'live',
+        fallbackUsedAt: null,
+        liveFetchError: null,
+        direction: 'USD per EUR',
+        role: 'Currency normalization for derived TCGplayer USD / Cardmarket EUR ratios',
+      };
+    }
+    return null;
+  } catch (err) {
+    console.warn('Failed to fetch latest ECB exchange rate:', err?.message || err);
+    return null;
+  }
+}
+
 export async function updateCardmarketPrices() {
   const priceGuideData = await fetchPriceGuide();
   const prices = priceGuideData.priceGuides || [];
@@ -137,6 +169,12 @@ export async function updateCardmarketPrices() {
 
   if (catalog.provenance?.cardmarket) {
     catalog.provenance.cardmarket.createdAt = createdAt;
+  }
+
+  const liveEcb = await fetchLatestEcbRate();
+  if (liveEcb && catalog.provenance) {
+    catalog.provenance.exchangeRate = liveEcb;
+    console.log(`Updated ECB exchange rate: ${liveEcb.usdPerEur} USD/EUR observed on ${liveEcb.observationDate}.`);
   }
 
   if (catalog.provenance?.catalogCounts) {

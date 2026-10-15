@@ -353,5 +353,6 @@ describe('compareCardMarkets', () => {
     expect(pageSource).not.toContain('comparison-method');
     expect(pageSource).not.toContain('comparison-results-footer');
     expect(pageSource).not.toContain('comparison-sources');
+    expect(pageSource).toContain('hideTrendComparison');
   });
 });

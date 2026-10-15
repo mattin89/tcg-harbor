@@ -396,6 +396,7 @@ export interface AssetDetailModalProps {
   readonly onConfirmReturn?: (loanId: string) => Promise<void> | void;
   readonly currentUserId?: string;
   readonly siblings?: readonly DemoAsset[];
+  readonly hideTrendComparison?: boolean;
 }
 
 export function AssetDetailModal({
@@ -413,6 +414,7 @@ export function AssetDetailModal({
   onConfirmReturn,
   currentUserId,
   siblings,
+  hideTrendComparison = false,
 }: AssetDetailModalProps) {
   if (!asset) return null;
   const effectiveSiblings = siblings ?? (asset.kind === 'card' ? getCardGroupArts(asset) : undefined);
@@ -595,16 +597,18 @@ export function AssetDetailModal({
               <Icon name="external-link" size={12} />
             </a>
           </div>
-          <div className="detail-chart">
-            <header>
-              <div>
-                <strong>Trend comparison</strong>
-                <small>Current trend vs 30-day rolling average</small>
-              </div>
-              <Trend value={asset.change[market]['1M']} />
-            </header>
-            <PriceChart assets={[asset]} market={market} period="1M" priceHistory={priceHistory} />
-          </div>
+          {!hideTrendComparison && (
+            <div className="detail-chart">
+              <header>
+                <div>
+                  <strong>Trend comparison</strong>
+                  <small>Current trend vs 30-day rolling average</small>
+                </div>
+                <Trend value={asset.change[market]['1M']} />
+              </header>
+              <PriceChart assets={[asset]} market={market} period="1M" priceHistory={priceHistory} />
+            </div>
+          )}
           <dl className="detail-facts">
             <div>
               <dt>Condition</dt>

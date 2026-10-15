@@ -262,6 +262,7 @@ export function MarketComparisonPage({
       market={market}
       priceHistory={priceHistory}
       siblings={selectedAsset?.kind === 'card' ? getCardGroupArts(selectedAsset) : undefined}
+      hideTrendComparison
     />
   </div>;
 }

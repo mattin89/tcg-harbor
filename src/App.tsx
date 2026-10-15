@@ -46,6 +46,8 @@ import {
 import { registerPublicWebMcpV1 } from './domain/publicWebMcpV1';
 import {
   chooseOriginalRegularArt,
+  isExclusiveCard,
+  isSameMarketVersion,
   resolveCardmarketArtworkReferenceV10,
   resolveCatalogCardmarketReferenceV10,
 } from './domain/cardmarketSearchReferenceV10';
@@ -860,10 +862,13 @@ function CollectionPage({
     if (asset.quote[market] !== null && Number.isFinite(asset.quote[market])) {
       return asset.quote[market];
     }
-    if (asset.kind === 'card' && /^(?:standard|base art)$/i.test(asset.variant.trim())) {
+    if (asset.kind === 'card' && /^(?:standard|base art)$/i.test(asset.variant.trim()) && !isExclusiveCard(asset)) {
       const siblings = getCardGroupArts(asset);
       const regular = chooseOriginalRegularArt(asset, siblings);
-      if (regular && (regular.language || 'English').toLowerCase() === (asset.language || 'English').toLowerCase()) {
+      if (regular && isSameMarketVersion(regular.language, asset.language)) {
+        if (market === 'tcgplayer' && (asset.language || 'English').toLowerCase() !== 'english') {
+          return null;
+        }
         if (regular.quote[market] !== null && Number.isFinite(regular.quote[market])) {
           return regular.quote[market];
         }
@@ -1187,16 +1192,17 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
       }
       return;
     }
-    const isRegular = selected.kind === 'card' && /^(?:standard|base art)$/i.test(selected.variant.trim());
+    const isRegular = selected.kind === 'card' && /^(?:standard|base art)$/i.test(selected.variant.trim()) && !isExclusiveCard(selected);
     const groupRegular = (selected.kind === 'card' && allGroupArts.length > 0)
       ? chooseOriginalRegularArt(selected, allGroupArts)
       : null;
-    const isSameLangGroupRegular = Boolean(groupRegular && (groupRegular.language || 'English').toLowerCase() === (selected.language || 'English').toLowerCase());
+    const isSameVersionGroupRegular = Boolean(groupRegular && isSameMarketVersion(groupRegular.language, selected.language));
+    const isEnglish = (selected.language || 'English').toLowerCase() === 'english';
     const resolvedQuote = {
-      cardmarket: selected.quote.cardmarket ?? (isRegular && isSameLangGroupRegular ? groupRegular?.quote.cardmarket ?? null : null),
-      tcgplayer: selected.quote.tcgplayer ?? (isRegular && isSameLangGroupRegular ? groupRegular?.quote.tcgplayer ?? null : null),
+      cardmarket: selected.quote.cardmarket ?? (isRegular && isSameVersionGroupRegular ? groupRegular?.quote.cardmarket ?? null : null),
+      tcgplayer: selected.quote.tcgplayer ?? (isRegular && isSameVersionGroupRegular && isEnglish ? groupRegular?.quote.tcgplayer ?? null : null),
     };
-    const resolvedPricing = selected.pricing ?? (isRegular && isSameLangGroupRegular && groupRegular?.pricing ? { ...groupRegular.pricing } : undefined);
+    const resolvedPricing = selected.pricing ?? (isRegular && isSameVersionGroupRegular && groupRegular?.pricing ? { ...groupRegular.pricing } : undefined);
     const capturedAt = new Date().toISOString();
     const acquisition: AcquisitionLot = {
       id: typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? `lot-${crypto.randomUUID()}` : `lot-${capturedAt}-${assets.length}`,
@@ -1270,15 +1276,16 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
     {(() => {
       const selectedCmPrice = selected ? extractAssetAveragePrice(selected, 'cardmarket', priceHistory) : 0;
       const selectedTcpPrice = selected ? extractAssetAveragePrice(selected, 'tcgplayer', priceHistory) : 0;
-      const isRegular = selected ? selected.kind === 'card' && /^(?:standard|base art)$/i.test(selected.variant.trim()) : false;
+      const isRegular = selected ? selected.kind === 'card' && /^(?:standard|base art)$/i.test(selected.variant.trim()) && !isExclusiveCard(selected) : false;
       const groupRegular = (selected?.kind === 'card' && allGroupArts.length > 0)
         ? chooseOriginalRegularArt(selected, allGroupArts)
         : null;
-      const isSameLangGroupRegular = Boolean(groupRegular && selected && (groupRegular.language || 'English').toLowerCase() === (selected.language || 'English').toLowerCase());
+      const isSameVersionGroupRegular = Boolean(groupRegular && selected && isSameMarketVersion(groupRegular.language, selected.language));
+      const isEnglish = selected ? (selected.language || 'English').toLowerCase() === 'english' : false;
       const displaySelectedCm = selectedCmPrice > 0 ? formatMoney(selectedCmPrice, 'EUR') : selectedCardmarketReference?.displayValue;
       const displaySelectedTcp = selectedTcpPrice > 0
         ? formatMoney(selectedTcpPrice, 'USD')
-        : formatMoney(selected.quote.tcgplayer ?? (isRegular && isSameLangGroupRegular ? groupRegular?.quote.tcgplayer ?? null : null), 'USD');
+        : formatMoney(selected.quote.tcgplayer ?? (isRegular && isSameVersionGroupRegular && isEnglish ? groupRegular?.quote.tcgplayer ?? null : null), 'USD');
       const cmDateLabel = selectedCmPrice > 0 ? 'Daily market trend' : `${selectedCardmarketReference?.label} · ${marketSourceDate('cardmarket')}`;
       const tcpDateLabel = selectedTcpPrice > 0 ? 'Daily market price' : `Daily source snapshot · ${assetUsSourceDate(selected)}`;
       const isCm = market === 'cardmarket';

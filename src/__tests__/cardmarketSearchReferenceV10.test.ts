@@ -186,7 +186,7 @@ describe('per-art Cardmarket references v10', () => {
     });
   });
 
-  it('does not mirror English regular art trend for standard regional printings; each language keeps its own original price', () => {
+  it('shares Western release price trend between English and French standard printings', () => {
     const englishCanonical = artwork({
       id: 'card-optcg-2986bfd8f107757577dc',
       name: '"Buddha" Sengoku',
@@ -209,29 +209,29 @@ describe('per-art Cardmarket references v10', () => {
       rulesCardId: 'OP16-077',
       variant: 'Standard',
       language: 'French',
-      cardmarketProductId: null,
-      cardmarketPriceState: 'unmapped',
-      quote: { cardmarket: null },
+      cardmarketProductId: 890771,
+      cardmarketPriceState: 'available',
+      quote: { cardmarket: 0.14 },
     });
 
     const siblings = [frenchPrinting, englishCanonical];
 
-    // Regional card keeps its unmapped state and does not falsely borrow English trend
+    // Standard cards in the same Western version share the verified regular art trend
     const searchView = resolveCatalogCardmarketReferenceV10(frenchPrinting, siblings);
     expect(searchView).toMatchObject({
-      state: 'regular-unavailable',
-      displayValue: 'Price unavailable',
+      state: 'regular-exact',
+      displayValue: '0,14 €',
     });
 
-    // Detail view stays unmapped
+    // Detail view reports exact trend
     const detailView = resolveCardmarketArtworkReferenceV10(frenchPrinting, siblings);
     expect(detailView).toMatchObject({
-      state: 'unmapped',
-      displayValue: 'Exact price unavailable',
+      state: 'exact',
+      displayValue: '0,14 €',
     });
   });
 
-  it('reports native Cardmarket price for Japanese printings such as EB01-050 (0.02 €)', () => {
+  it('reports native Cardmarket price for Asian printings (Japanese, Korean, Chinese EB01-050 at 0.02 €) without mirroring English (0.13 €)', () => {
     const englishCanonical = artwork({
       id: 'card-optcg-433974100459a2a2d300',
       name: '...I Want to Live!!',
@@ -259,19 +259,101 @@ describe('per-art Cardmarket references v10', () => {
       quote: { cardmarket: 0.02 },
     });
 
-    const siblings = [japanesePrinting, englishCanonical];
+    const koreanPrinting = artwork({
+      id: 'card-multilingual-kr-eb01-050',
+      name: '...I Want to Live!!',
+      setCode: 'EB01-KR',
+      number: 'EB01-050',
+      rulesCardId: 'EB01-050',
+      variant: 'Standard',
+      language: 'Korean',
+      cardmarketProductId: 754216,
+      cardmarketPriceState: 'available',
+      quote: { cardmarket: 0.02 },
+    });
 
-    const searchView = resolveCatalogCardmarketReferenceV10(japanesePrinting, siblings);
-    expect(searchView).toMatchObject({
+    const chinesePrinting = artwork({
+      id: 'card-multilingual-cn-eb01-050',
+      name: '...I Want to Live!!',
+      setCode: 'EB01-CN',
+      number: 'EB01-050',
+      rulesCardId: 'EB01-050',
+      variant: 'Standard',
+      language: 'Chinese',
+      cardmarketProductId: 754216,
+      cardmarketPriceState: 'available',
+      quote: { cardmarket: 0.02 },
+    });
+
+    const siblings = [japanesePrinting, koreanPrinting, chinesePrinting, englishCanonical];
+
+    // Japanese Asian version search and detail resolve to 0.02 €
+    expect(resolveCatalogCardmarketReferenceV10(japanesePrinting, siblings)).toMatchObject({
       state: 'regular-exact',
       displayValue: '0,02 €',
       sourceAssetId: 'card-multilingual-jp-eb01-050',
     });
-
-    const detailView = resolveCardmarketArtworkReferenceV10(japanesePrinting, siblings);
-    expect(detailView).toMatchObject({
+    expect(resolveCardmarketArtworkReferenceV10(japanesePrinting, siblings)).toMatchObject({
       state: 'exact',
       displayValue: '0,02 €',
+    });
+
+    // Korean Asian version search and detail resolve to 0.02 €
+    expect(resolveCatalogCardmarketReferenceV10(koreanPrinting, siblings)).toMatchObject({
+      state: 'regular-exact',
+      displayValue: '0,02 €',
+    });
+    expect(resolveCardmarketArtworkReferenceV10(koreanPrinting, siblings)).toMatchObject({
+      state: 'exact',
+      displayValue: '0,02 €',
+    });
+
+    // Chinese Asian version search and detail resolve to 0.02 €
+    expect(resolveCatalogCardmarketReferenceV10(chinesePrinting, siblings)).toMatchObject({
+      state: 'regular-exact',
+      displayValue: '0,02 €',
+    });
+    expect(resolveCardmarketArtworkReferenceV10(chinesePrinting, siblings)).toMatchObject({
+      state: 'exact',
+      displayValue: '0,02 €',
+    });
+  });
+
+  it('keeps language-exclusive cards (such as Treasure Cup cards) isolated without borrowing regular art trends', () => {
+    const regularEnglish = artwork({
+      id: 'card-optcg-zoro-standard',
+      name: 'Roronoa Zoro',
+      setCode: 'OP01',
+      number: 'OP01-025',
+      rulesCardId: 'OP01-025',
+      sourcePrintingId: 'OP01-025',
+      variant: 'Standard',
+      language: 'English',
+      cardmarketProductId: 690835,
+      cardmarketPriceState: 'available',
+      quote: { cardmarket: 0.15 },
+    });
+
+    const treasureCupZoro = artwork({
+      id: 'card-tcgplayer-515356',
+      name: 'Roronoa Zoro (025)',
+      setCode: 'OP01',
+      number: 'OP01-025',
+      rulesCardId: 'OP01-025',
+      variant: 'Promotional art · Treasure Cup · TCGplayer #515356',
+      language: 'English',
+      cardmarketProductId: null,
+      cardmarketPriceState: 'unmapped',
+      quote: { cardmarket: null },
+    });
+
+    const siblings = [regularEnglish, treasureCupZoro];
+
+    // Detail view for the exclusive card stays unmapped and does not borrow 0.15 €
+    const detailView = resolveCardmarketArtworkReferenceV10(treasureCupZoro, siblings);
+    expect(detailView).toMatchObject({
+      state: 'unmapped',
+      displayValue: 'Exact price unavailable',
     });
   });
 

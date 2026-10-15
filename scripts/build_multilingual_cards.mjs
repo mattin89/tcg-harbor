@@ -179,6 +179,23 @@ for (const [num, r] of cardsByNumber) {
   multilingualAssets.push(asset);
 }
 
+// Index English and Japanese standard cards by card number for version sharing
+const englishStandardByNumber = new Map();
+for (const a of v10Catalog) {
+  if (a.kind === 'card' && /^(?:standard|base art)$/i.test(a.variant || '') && a.number) {
+    if (!englishStandardByNumber.has(a.number)) {
+      englishStandardByNumber.set(a.number, a);
+    }
+  }
+}
+
+const japaneseStandardByNumber = new Map();
+for (const a of multilingualAssets) {
+  if (a.language === 'Japanese' && /^(?:standard|base art)$/i.test(a.variant || '') && a.number) {
+    japaneseStandardByNumber.set(a.number, a);
+  }
+}
+
 // 2. FRENCH CARDS
 // Official French releases launched in February 2025.
 // French sets encompass:
@@ -187,6 +204,7 @@ for (const [num, r] of cardsByNumber) {
 // Premium Boosters: PRB01, PRB02
 // Starter Decks: ST15 through ST36 (ST01 through ST14 were never released in French!)
 // Exclusives: French Tournament & Winner packs (P-FR)
+// On Cardmarket, French cards share the Western release product page and price trend with English cards.
 console.log('Generating French cards (OP09+, EB02/EB03/EB05, PRB01/PRB02, ST15-ST36, tournament exclusives)...');
 const frenchSetCodes = new Set([
   'OP09', 'OP10', 'OP11', 'OP12', 'OP13', 'OP14', 'OP15', 'OP16', 'OP17', 'OP18',
@@ -207,9 +225,16 @@ for (const [num, r] of cardsByNumber) {
   const frSetCode = cleanCode.endsWith('-FR') ? cleanCode : `${cleanCode}-FR`;
   const setName = setNamesByCode.get(cleanCode) || r.set_name || 'One Piece Card Game France';
 
+  const eng = englishStandardByNumber.get(num);
+  const cmId = eng?.cardmarketProductId ?? null;
+  const hasEngPrice = eng?.quote?.cardmarket != null;
+  const frTrend = hasEngPrice ? eng.quote.cardmarket : null;
+  const cmState = cmId != null ? (frTrend !== null ? 'available' : 'trend-unavailable') : 'unmapped';
+
   const asset = {
     id: `card-multilingual-fr-${num.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
     kind: 'card',
+    ...(cmId ? { catalogAliasOf: eng.catalogAliasOf || eng.id } : {}),
     name: r.card_name,
     productName: `${r.card_name} (${num}) [French]`,
     set: setName,
@@ -227,20 +252,22 @@ for (const [num, r] of cardsByNumber) {
     color: getColorFromSetOrCard(r),
     imageUrl: r.card_image || `https://optcgapi.com/media/static/Card_Images/${num}.jpg`,
     imageState: 'available',
-    cardmarketProductId: null,
-    cardmarketExpansionId: null,
-    cardmarketPriceState: 'unmapped',
-    cardmarketPriceReason: 'French printing mirroring primary release; individual regional listing trends are tracked in native markets.',
+    cardmarketProductId: cmId,
+    cardmarketExpansionId: eng?.cardmarketExpansionId ?? null,
+    cardmarketPriceState: cmState,
+    cardmarketPriceReason: cmId != null
+      ? `Western release; French cards share Cardmarket product #${cmId} price trend.`
+      : 'French printing mirroring primary release; individual regional listing trends are tracked in native markets.',
     quote: {
-      cardmarket: null,
+      cardmarket: frTrend,
       tcgplayer: null
     },
     change: {
-      cardmarket: { '1D': null, '1W': null, '1M': null },
+      cardmarket: eng?.change?.cardmarket ? { ...eng.change.cardmarket } : { '1D': null, '1W': null, '1M': null },
       tcgplayer: { '1D': null, '1W': null, '1M': null }
     },
     pricing: {
-      cardmarket: {
+      cardmarket: eng?.pricing?.cardmarket ? { ...eng.pricing.cardmarket } : {
         trend: null,
         low: null,
         average: null,
@@ -322,9 +349,16 @@ for (const [num, r] of cardsByNumber) {
   const cnSetCode = cleanCode.endsWith('-CN') ? cleanCode : `${cleanCode}-CN`;
   const setName = setNamesByCode.get(cleanCode) || r.set_name || 'One Piece Card Game China';
 
+  const jp = japaneseStandardByNumber.get(num);
+  const cmId = jp?.cardmarketProductId ?? null;
+  const hasJpPrice = jp?.quote?.cardmarket != null;
+  const cnTrend = hasJpPrice ? jp.quote.cardmarket : null;
+  const cmState = cmId != null ? (cnTrend !== null ? 'available' : 'trend-unavailable') : 'unmapped';
+
   const asset = {
     id: `card-multilingual-cn-${num.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
     kind: 'card',
+    ...(cmId ? { catalogAliasOf: jp.catalogAliasOf || jp.id } : {}),
     name: r.card_name,
     productName: `${r.card_name} (${num}) [Simplified Chinese]`,
     set: setName,
@@ -342,20 +376,22 @@ for (const [num, r] of cardsByNumber) {
     color: getColorFromSetOrCard(r),
     imageUrl: r.card_image || `https://optcgapi.com/media/static/Card_Images/${num}.jpg`,
     imageState: 'available',
-    cardmarketProductId: null,
-    cardmarketExpansionId: null,
-    cardmarketPriceState: 'unmapped',
-    cardmarketPriceReason: 'Simplified Chinese printing mirroring primary release; individual regional listing trends are tracked in native markets.',
+    cardmarketProductId: cmId,
+    cardmarketExpansionId: jp?.cardmarketExpansionId ?? null,
+    cardmarketPriceState: cmState,
+    cardmarketPriceReason: cmId != null
+      ? `Asian release; Simplified Chinese cards share Cardmarket Non-English product #${cmId} price trend.`
+      : 'Simplified Chinese printing mirroring primary release; individual regional listing trends are tracked in native markets.',
     quote: {
-      cardmarket: null,
+      cardmarket: cnTrend,
       tcgplayer: null
     },
     change: {
-      cardmarket: { '1D': null, '1W': null, '1M': null },
+      cardmarket: jp?.change?.cardmarket ? { ...jp.change.cardmarket } : { '1D': null, '1W': null, '1M': null },
       tcgplayer: { '1D': null, '1W': null, '1M': null }
     },
     pricing: {
-      cardmarket: {
+      cardmarket: jp?.pricing?.cardmarket ? { ...jp.pricing.cardmarket } : {
         trend: null,
         low: null,
         average: null,
@@ -469,9 +505,16 @@ for (const [num, r] of cardsByNumber) {
   const krSetCode = cleanCode.endsWith('-KR') ? cleanCode : `${cleanCode}-KR`;
   const setName = setNamesByCode.get(cleanCode) || r.set_name || 'One Piece Card Game Korea';
 
+  const jp = japaneseStandardByNumber.get(num);
+  const cmId = jp?.cardmarketProductId ?? null;
+  const hasJpPrice = jp?.quote?.cardmarket != null;
+  const krTrend = hasJpPrice ? jp.quote.cardmarket : null;
+  const cmState = cmId != null ? (krTrend !== null ? 'available' : 'trend-unavailable') : 'unmapped';
+
   const asset = {
     id: `card-multilingual-kr-${num.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
     kind: 'card',
+    ...(cmId ? { catalogAliasOf: jp.catalogAliasOf || jp.id } : {}),
     name: r.card_name,
     productName: `${r.card_name} (${num}) [Korean]`,
     set: setName,
@@ -489,20 +532,22 @@ for (const [num, r] of cardsByNumber) {
     color: getColorFromSetOrCard(r),
     imageUrl: r.card_image || `https://optcgapi.com/media/static/Card_Images/${num}.jpg`,
     imageState: 'available',
-    cardmarketProductId: null,
-    cardmarketExpansionId: null,
-    cardmarketPriceState: 'unmapped',
-    cardmarketPriceReason: 'Korean printing mirroring primary release; individual regional listing trends are tracked in native markets.',
+    cardmarketProductId: cmId,
+    cardmarketExpansionId: jp?.cardmarketExpansionId ?? null,
+    cardmarketPriceState: cmState,
+    cardmarketPriceReason: cmId != null
+      ? `Asian release; Korean cards share Cardmarket Non-English product #${cmId} price trend.`
+      : 'Korean printing mirroring primary release; individual regional listing trends are tracked in native markets.',
     quote: {
-      cardmarket: null,
+      cardmarket: krTrend,
       tcgplayer: null
     },
     change: {
-      cardmarket: { '1D': null, '1W': null, '1M': null },
+      cardmarket: jp?.change?.cardmarket ? { ...jp.change.cardmarket } : { '1D': null, '1W': null, '1M': null },
       tcgplayer: { '1D': null, '1W': null, '1M': null }
     },
     pricing: {
-      cardmarket: {
+      cardmarket: jp?.pricing?.cardmarket ? { ...jp.pricing.cardmarket } : {
         trend: null,
         low: null,
         average: null,

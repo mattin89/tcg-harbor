@@ -89,17 +89,63 @@ function originSetCode(asset: CatalogCardmarketAssetV10): string | null {
     .match(/^((?:OP|EB|PRB|ST)\d{2})-/)?.[1] ?? null;
 }
 
-function isSameLanguage(a: string | undefined, b: string | undefined): boolean {
-  const normalize = (l: string | undefined) => {
-    const val = (l || 'English').toLowerCase().trim();
-    if (val.includes('chinese')) return 'chinese';
-    return val;
-  };
-  return normalize(a) === normalize(b);
+export type MarketVersion = 'western' | 'asian' | 'exclusive';
+
+export function getLanguageMarketVersion(language?: string): MarketVersion {
+  const norm = (language || 'English').toLowerCase().trim();
+  if (
+    norm.includes('english')
+    || norm.includes('french')
+    || norm.includes('german')
+    || norm.includes('italian')
+    || norm.includes('spanish')
+  ) {
+    return 'western';
+  }
+  if (norm.includes('japan') || norm.includes('korean') || norm.includes('chinese')) {
+    return 'asian';
+  }
+  return 'exclusive';
+}
+
+export function isSameMarketVersion(a?: string, b?: string): boolean {
+  const va = getLanguageMarketVersion(a);
+  const vb = getLanguageMarketVersion(b);
+  return va === vb && va !== 'exclusive';
+}
+
+export function isExclusiveCard(asset: {
+  variant?: string;
+  name?: string;
+  set?: string;
+  rulesCardId?: string;
+  number?: string;
+}): boolean {
+  const variant = (asset.variant || '').toLowerCase();
+  const name = (asset.name || '').toLowerCase();
+  const set = (asset.set || '').toLowerCase();
+  const num = (asset.number || asset.rulesCardId || '').toUpperCase();
+
+  // Treasure cards (Treasure Cup, Store Treasure Cup, Treasure Campaign Pack, etc.)
+  if (
+    variant.includes('treasure')
+    || set.includes('treasure')
+    || (name.includes('treasure') && !name.includes('mad treasure'))
+  ) {
+    return true;
+  }
+
+  // Regional exclusive tournament / championship / anniversary codes
+  if (/^P-(?:FR|CN|KR|JP)/i.test(num) || /^CS-(?:FR|CN|KR|JP)/i.test(num)) {
+    return true;
+  }
+
+  return false;
 }
 
 function isRegularArt(asset: CatalogCardmarketAssetV10, targetLanguage?: string): boolean {
-  return /^(?:standard|base art)$/i.test(asset.variant.trim()) && isSameLanguage(asset.language, targetLanguage);
+  if (isExclusiveCard(asset)) return false;
+  return /^(?:standard|base art)$/i.test(asset.variant.trim()) && isSameMarketVersion(asset.language, targetLanguage);
 }
 
 function verifiedRegularIdentity(asset: CatalogCardmarketAssetV10): string | null {
@@ -137,6 +183,8 @@ export function chooseOriginalRegularArt<T extends CatalogCardmarketAssetV10 = C
   matched: CatalogCardmarketAssetV10,
   siblings: readonly T[],
 ): T | null {
+  if (isExclusiveCard(matched)) return null;
+
   const regular = siblings.filter((asset) => asset.kind === 'card' && isRegularArt(asset, matched.language));
   if (regular.length === 0) return null;
 
@@ -151,8 +199,23 @@ export function chooseOriginalRegularArt<T extends CatalogCardmarketAssetV10 = C
   const identityMatches = rulesId
     ? originPool.filter((asset) => asset.sourcePrintingId === rulesId)
     : [];
-  if (identityMatches.length > 0) return chooseEquivalentRegular(identityMatches);
-  return origin ? chooseEquivalentRegular(originPool) : null;
+  const candidatePool = identityMatches.length > 0 ? identityMatches : (origin ? originPool : null);
+  if (!candidatePool || candidatePool.length === 0) return null;
+
+  // Prefer exact same language with verified price if available
+  const sameLangPriced = candidatePool.find(
+    (c) => (c.language || 'English').toLowerCase() === (matched.language || 'English').toLowerCase()
+      && (c.quote.cardmarket != null || c.cardmarketProductId != null),
+  );
+  if (sameLangPriced) return sameLangPriced;
+
+  // Prefer any candidate in candidatePool with a verified Cardmarket price
+  const anyPriced = candidatePool.find(
+    (c) => c.quote.cardmarket != null || c.cardmarketProductId != null,
+  );
+  if (anyPriced) return anyPriced;
+
+  return chooseEquivalentRegular(candidatePool);
 }
 
 /**

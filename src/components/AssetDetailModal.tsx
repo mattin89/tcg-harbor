@@ -15,6 +15,8 @@ import {
 } from '../domain/cardPriceHistory';
 import {
   chooseOriginalRegularArt,
+  isExclusiveCard,
+  isSameMarketVersion,
   resolveCardmarketArtworkReferenceV10,
 } from '../domain/cardmarketSearchReferenceV10';
 import { catalogCardGroupIdV5 } from '../domain/catalogSearchV5';
@@ -417,13 +419,14 @@ export function AssetDetailModal({
   const cardmarketReference = resolveCardmarketArtworkReferenceV10(asset, effectiveSiblings);
   const currentCardmarketPrice = extractAssetAveragePrice(asset, 'cardmarket', priceHistory);
   const currentTcgplayerPrice = extractAssetAveragePrice(asset, 'tcgplayer', priceHistory);
-  const isRegular = asset.kind === 'card' && /^(?:standard|base art)$/i.test(asset.variant.trim());
+  const isRegular = asset.kind === 'card' && /^(?:standard|base art)$/i.test(asset.variant.trim()) && !isExclusiveCard(asset);
   const regularSibling = (isRegular && effectiveSiblings)
     ? chooseOriginalRegularArt(asset, effectiveSiblings)
     : null;
-  const isSameLangRegular = Boolean(regularSibling && (regularSibling.language || 'English').toLowerCase() === (asset.language || 'English').toLowerCase());
+  const isSameVersionRegular = Boolean(regularSibling && isSameMarketVersion(regularSibling.language, asset.language));
+  const isEnglish = (asset.language || 'English').toLowerCase() === 'english';
   const displayCardmarketValue = currentCardmarketPrice > 0 ? formatMoney(currentCardmarketPrice, 'EUR') : cardmarketReference?.displayValue;
-  const fallbackTcp = isSameLangRegular ? regularSibling?.quote.tcgplayer ?? null : null;
+  const fallbackTcp = (isSameVersionRegular && isEnglish) ? regularSibling?.quote.tcgplayer ?? null : null;
   const displayTcgplayerValue = currentTcgplayerPrice > 0
     ? formatMoney(currentTcgplayerPrice, 'USD')
     : formatMoney(asset.quote.tcgplayer ?? fallbackTcp, 'USD');

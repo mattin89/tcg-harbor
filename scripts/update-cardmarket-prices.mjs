@@ -171,8 +171,8 @@ export async function updateCardmarketPrices() {
     for (const asset of multi) {
       if (asset.cardmarketProductId != null && priceMap.has(asset.cardmarketProductId)) {
         const p = priceMap.get(asset.cardmarketProductId);
-        const trend = round(p.trend ?? p.avg ?? (p.low != null ? p.low : null));
-        if (trend !== null && trend > 0) {
+        const trend = p.trend != null && Number.isFinite(p.trend) && p.trend > 0 ? round(p.trend) : null;
+        if (trend !== null) {
           asset.quote = asset.quote || {};
           asset.quote.cardmarket = trend;
           asset.cardmarketPriceState = 'available';

@@ -489,7 +489,7 @@ export default function App({ identity, guest }: AppProps = {}) {
     : path === '/collection'
       ? <CollectionPage key={`collection:${identity?.userId ?? 'demo'}`} assets={assets} setAssets={setDemoAssets} productionCollection={identity ? productionCollection : undefined} onCollectionMutationCommitted={identity ? productionActivity.refresh : undefined} market={market} navigate={navigate} notify={notify} priceHistory={cardPriceHistory} productionTrading={productionCommunityTrading} currentUserId={identity?.userId} />
       : path === '/market-comparison'
-        ? <MarketComparisonPage />
+        ? <MarketComparisonPage market={market} priceHistory={cardPriceHistory} />
       : path === '/stores'
         ? <StoresPage stores={storeDirectory} joinedIds={effectiveJoinedIds} navigate={navigate} browseOnly={isGuest} onRequestAuthentication={guest?.onRequestAuthentication} />
         : path.startsWith('/stores/')

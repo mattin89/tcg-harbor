@@ -1,11 +1,24 @@
 import { useMemo, useState } from 'react';
-import { catalogAssets, formatMoney, marketDataMeta } from '../data/demo';
+import {
+  type DemoAsset,
+  type Market,
+  catalogAssets,
+  formatMoney,
+  marketDataMeta,
+} from '../data/demo';
+import type { UserCardPriceHistory } from '../domain/cardPriceHistory';
 import {
   compareCardMarkets,
   type MarketComparisonPriceFilterError,
 } from '../domain/marketComparison';
+import { AssetDetailModal, getCardGroupArts } from './AssetDetailModal';
 import { Icon } from './Icon';
 import { Button, CardArt, Chip, EmptyState, MarketDataBadge, Segmented } from './ui';
+
+export interface MarketComparisonPageProps {
+  readonly market?: Market;
+  readonly priceHistory?: UserCardPriceHistory;
+}
 
 type RankingMode = 'highest' | 'lowest';
 
@@ -39,8 +52,12 @@ function priceFilterErrorMessage(error: MarketComparisonPriceFilterError | null)
   }
 }
 
-export function MarketComparisonPage() {
+export function MarketComparisonPage({
+  market = 'cardmarket',
+  priceHistory,
+}: MarketComparisonPageProps = {}) {
   const [mode, setMode] = useState<RankingMode>('highest');
+  const [selectedAsset, setSelectedAsset] = useState<DemoAsset | null>(null);
   const [minimumCardmarketPrice, setMinimumCardmarketPrice] = useState('');
   const [maximumCardmarketPrice, setMaximumCardmarketPrice] = useState('');
   const exchangeRate = marketDataMeta.exchangeRate;
@@ -223,7 +240,20 @@ export function MarketComparisonPage() {
               const usdGap = row.tcgplayerUsd - row.cardmarketUsd;
               const relativeDifference = (row.ratio - 1) * 100;
               const tcgplayerHigher = row.ratio >= 1;
-              return <tr key={`${row.cardmarketProductId}:${row.tcgplayerProductId}`}>
+              return <tr
+                key={`${row.cardmarketProductId}:${row.tcgplayerProductId}`}
+                className="comparison-card-row"
+                tabIndex={0}
+                role="button"
+                aria-label={`View card profile for ${row.name} (${row.number} ${row.variant})`}
+                onClick={() => setSelectedAsset(asset)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setSelectedAsset(asset);
+                  }
+                }}
+              >
                 <td><span className="comparison-rank">{String(index + 1).padStart(2, '0')}</span></td>
                 <td><span className="comparison-card"><CardArt asset={asset} size="xs"/><span><strong>{row.name}</strong><small>{row.number} · {row.variant}</small><em>{row.language} · {row.rarity}</em></span></span></td>
                 <td><strong>{row.setCode}</strong><small>{row.set}</small></td>
@@ -250,5 +280,13 @@ export function MarketComparisonPage() {
       </div>
       <small>Source: ECB statistics; ratios calculated by TCG Harbor. Reference data is informational and may not reflect executable transaction prices.</small>
     </section>
+
+    <AssetDetailModal
+      asset={selectedAsset}
+      onClose={() => setSelectedAsset(null)}
+      market={market}
+      priceHistory={priceHistory}
+      siblings={selectedAsset?.kind === 'card' ? getCardGroupArts(selectedAsset) : undefined}
+    />
   </div>;
 }

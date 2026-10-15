@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { DemoAsset } from '../data/demo';
 import {
@@ -330,5 +331,22 @@ describe('compareCardMarkets', () => {
     expect(result.summary.filteredEligiblePrintingCount).toBe(0);
     expect(result.highest).toEqual([]);
     expect(result.lowest).toEqual([]);
+  });
+
+  it('wires row click handlers and AssetDetailModal in MarketComparisonPage', () => {
+    const pageSource = readFileSync(new URL('../components/MarketComparisonPage.tsx', import.meta.url), 'utf8');
+    const appSource = readFileSync(new URL('../App.tsx', import.meta.url), 'utf8');
+    const cssSource = readFileSync(new URL('../styles-market-comparison.css', import.meta.url), 'utf8');
+
+    expect(pageSource).toContain('import { AssetDetailModal, getCardGroupArts } from \'./AssetDetailModal\';');
+    expect(pageSource).toContain('const [selectedAsset, setSelectedAsset] = useState<DemoAsset | null>(null);');
+    expect(pageSource).toContain('onClick={() => setSelectedAsset(asset)}');
+    expect(pageSource).toContain('<AssetDetailModal');
+    expect(pageSource).toContain('asset={selectedAsset}');
+    expect(pageSource).toContain('onClose={() => setSelectedAsset(null)}');
+
+    expect(appSource).toContain("<MarketComparisonPage market={market} priceHistory={cardPriceHistory} />");
+
+    expect(cssSource).toContain('.comparison-table tbody tr { cursor: pointer;');
   });
 });

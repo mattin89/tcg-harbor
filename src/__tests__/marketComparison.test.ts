@@ -348,5 +348,10 @@ describe('compareCardMarkets', () => {
     expect(appSource).toContain("<MarketComparisonPage market={market} priceHistory={cardPriceHistory} />");
 
     expect(cssSource).toContain('.comparison-table tbody tr { cursor: pointer;');
+
+    expect(pageSource).not.toContain('Sources and calculation lineage');
+    expect(pageSource).not.toContain('comparison-method');
+    expect(pageSource).not.toContain('comparison-results-footer');
+    expect(pageSource).not.toContain('comparison-sources');
   });
 });

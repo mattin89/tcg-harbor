@@ -94,11 +94,6 @@ export function MarketComparisonPage({
     ?? releasedMarketGroupCodes.filter((code) => /^OP\d{2}(?:-EB\d{2})?$/.test(code)).length;
   const releasedSpecialGroupCount = marketDataMeta.catalogCounts.releasedEnglishSpecialGroups
     ?? releasedGroupCount - releasedMainGroupCount;
-  const latestReleasedMainSet = releasedMarketGroupCodes
-    .map((code) => code.match(/^OP(\d{2})/)?.[1] ?? null)
-    .filter((value): value is string => value !== null)
-    .sort((left, right) => Number(right) - Number(left))[0];
-  const latestReleasedMainSetCode = latestReleasedMainSet ? `OP${latestReleasedMainSet}` : 'the current set';
   const appliedPriceRange = priceFilterError
     ? 'Range not applied'
     : `${comparison.priceFilter.minCardmarketEur === null
@@ -143,12 +138,6 @@ export function MarketComparisonPage({
         <div><dt>Released set groups scanned</dt><dd>{releasedGroupCount}</dd><small>{releasedMainGroupCount} main · {releasedSpecialGroupCount} EB / PRB · promo source checked</small></div>
         <div><dt>ECB rate</dt><dd>{exchangeRate.usdPerEur.toFixed(4)}</dd><small>USD per EUR · {formatDate(exchangeRate.observationDate)}</small></div>
       </dl>
-    </section>
-
-    <section className="comparison-method panel" aria-label="Market comparison method">
-      <div><span><Icon name="shield"/></span><div><strong>Exact-match policy</strong><small>Cardmarket product ID + TCGplayer product ID + one unambiguous English art printing.</small></div></div>
-      <div><span><Icon name="refresh"/></span><div><strong>Current English release window</strong><small>OP01–{latestReleasedMainSetCode} plus EB / PRB; alternate, manga, SP, and promo arts enter only with exact pairs.</small></div></div>
-      <div><span><Icon name="info"/></span><div><strong>Relative signal, not profit</strong><small>Fees, tax, shipping, liquidity, and card condition are not included.</small></div></div>
     </section>
 
     <section className="comparison-results panel">
@@ -265,20 +254,6 @@ export function MarketComparisonPage({
             })}</tbody>
           </table>
         </div>}
-      <footer className="comparison-results-footer">
-        <p><Icon name="info"/>Raw ratio ranking can magnify differences on low-value cards. Use the USD gap column to judge magnitude.</p>
-        <span>Ratio = TCGplayer USD ÷ (Cardmarket EUR × {exchangeRate.usdPerEur.toFixed(4)})</span>
-      </footer>
-    </section>
-
-    <section className="comparison-sources">
-      <p>Sources and calculation lineage</p>
-      <div>
-        <a href={marketDataMeta.cardmarket.source} target="_blank" rel="noreferrer"><Icon name="collection"/><span><strong>Cardmarket</strong><small>Daily trend price · EUR</small></span><Icon name="chevron" size={15}/></a>
-        <a href={marketDataMeta.tcgcsv.source} target="_blank" rel="noreferrer"><Icon name="cards"/><span><strong>TCGplayer via TCGCSV</strong><small>Daily product market price · USD</small></span><Icon name="chevron" size={15}/></a>
-        <a href={exchangeRate.source} target="_blank" rel="noreferrer"><Icon name="refresh"/><span><strong>European Central Bank</strong><small>{exchangeRate.seriesKey} · {formatDate(exchangeRate.observationDate)}</small></span><Icon name="chevron" size={15}/></a>
-      </div>
-      <small>Source: ECB statistics; ratios calculated by TCG Harbor. Reference data is informational and may not reflect executable transaction prices.</small>
     </section>
 
     <AssetDetailModal

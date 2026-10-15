@@ -123,6 +123,13 @@ export const SPECIAL_EXPANSIONS: Record<string, string> = {
   P: 'Promos',
   PROMO: 'Promos',
   'OP-PR': 'Promos',
+  STP: 'Special-Tournaments-Promos',
+};
+
+export const CARDMARKET_EXPANSION_SLUGS: Record<number, string> = {
+  5262: 'Special-Tournaments-Promos',
+  5267: 'Unnumbered-Promos',
+  5230: 'Promos',
 };
 
 export const ASIAN_EXPANSIONS: Record<string, string> = {
@@ -271,28 +278,37 @@ export function cardmarketProductUrl(asset: DemoAsset): string {
     const isAsianLanguage = asset.language === 'Japanese' || asset.language === 'Chinese' || asset.language === 'Simplified Chinese' || asset.language === 'Korean';
 
     let expansion = '';
-    const cleanSetCode = (asset.setCode || '').replace(/-(?:JP|CN|KR|FR|EN)$/i, '').trim();
-    if (isAsianLanguage) {
-      if (cleanSetCode) expansion = ASIAN_EXPANSIONS[cleanSetCode] || '';
-      if (!expansion && asset.setCode) expansion = ASIAN_EXPANSIONS[asset.setCode] || '';
-      if (!expansion) {
-        const prefixMatch = asset.number.match(/^([A-Za-z]+[-]?\d+)/);
-        if (prefixMatch) {
-          const prefix = prefixMatch[1].replace(/[^a-zA-Z0-9]/g, '');
-          expansion = ASIAN_EXPANSIONS[prefix] || '';
+    const expansionId = asset.cardmarketExpansionId ?? asset.cardmarketArtworkReference?.expansionId;
+    if (expansionId && CARDMARKET_EXPANSION_SLUGS[expansionId]) {
+      expansion = CARDMARKET_EXPANSION_SLUGS[expansionId];
+    } else if (asset.set === 'Special Tournaments Promos' || asset.setCode === 'STP') {
+      expansion = 'Special-Tournaments-Promos';
+    }
+
+    if (!expansion) {
+      const cleanSetCode = (asset.setCode || '').replace(/-(?:JP|CN|KR|FR|EN)$/i, '').trim();
+      if (isAsianLanguage) {
+        if (cleanSetCode) expansion = ASIAN_EXPANSIONS[cleanSetCode] || '';
+        if (!expansion && asset.setCode) expansion = ASIAN_EXPANSIONS[asset.setCode] || '';
+        if (!expansion) {
+          const prefixMatch = asset.number.match(/^([A-Za-z]+[-]?\d+)/);
+          if (prefixMatch) {
+            const prefix = prefixMatch[1].replace(/[^a-zA-Z0-9]/g, '');
+            expansion = ASIAN_EXPANSIONS[prefix] || '';
+          }
         }
-      }
-      if (!expansion && cleanSetCode) {
-        expansion = SPECIAL_EXPANSIONS[cleanSetCode] || '';
-      }
-    } else {
-      if (cleanSetCode) expansion = SPECIAL_EXPANSIONS[cleanSetCode] || '';
-      if (!expansion && asset.setCode) expansion = SPECIAL_EXPANSIONS[asset.setCode] || '';
-      if (!expansion) {
-        const prefixMatch = asset.number.match(/^([A-Za-z]+[-]?\d+)/);
-        if (prefixMatch) {
-          const prefix = prefixMatch[1].replace(/[^a-zA-Z0-9]/g, '');
-          expansion = SPECIAL_EXPANSIONS[prefix] || '';
+        if (!expansion && cleanSetCode) {
+          expansion = SPECIAL_EXPANSIONS[cleanSetCode] || '';
+        }
+      } else {
+        if (cleanSetCode) expansion = SPECIAL_EXPANSIONS[cleanSetCode] || '';
+        if (!expansion && asset.setCode) expansion = SPECIAL_EXPANSIONS[asset.setCode] || '';
+        if (!expansion) {
+          const prefixMatch = asset.number.match(/^([A-Za-z]+[-]?\d+)/);
+          if (prefixMatch) {
+            const prefix = prefixMatch[1].replace(/[^a-zA-Z0-9]/g, '');
+            expansion = SPECIAL_EXPANSIONS[prefix] || '';
+          }
         }
       }
     }

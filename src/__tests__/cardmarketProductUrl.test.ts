@@ -497,6 +497,63 @@ describe('cardmarketProductUrl generalized logic', () => {
       'https://www.cardmarket.com/en/OnePiece/Products/Singles/Kingdoms-of-Intrigue/MissDoublefingerZala-OP04-065'
     );
   });
+
+  it('routes Queen (ST04-005) Treasure Cup and other tournament promos to Special-Tournaments-Promos', () => {
+    // Queen (ST04-005) Treasure Cup promo #719319
+    const queenPromo = createMockAsset({
+      name: 'Queen',
+      set: 'One Piece Promotion Cards',
+      setCode: 'ST04',
+      number: 'ST04-005',
+      variant: 'Promotional art · Treasure Cup · TCGplayer #515354',
+      cardmarketProductId: 719319,
+      cardmarketExpansionId: 5262,
+    });
+    expect(cardmarketProductUrl(queenPromo)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Special-Tournaments-Promos/Queen-ST04-005'
+    );
+
+    // Laboon (EB01-048) Treasure Cup 2025 #821355
+    const laboonPromo = createMockAsset({
+      name: 'Laboon (048)',
+      set: 'One Piece Promotion Cards',
+      setCode: 'EB01',
+      number: 'EB01-048',
+      variant: 'Promotional art · Treasure Cup 2025 · TCGplayer #629758',
+      cardmarketProductId: 821355,
+      cardmarketExpansionId: 5262,
+    });
+    expect(cardmarketProductUrl(laboonPromo)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Special-Tournaments-Promos/Laboon-EB01-048-V1'
+    );
+
+    // Gecko Moria (ST03-004) Champion promo via cardmarketExpansionId 5262 fallback
+    const moriaPromo = createMockAsset({
+      name: 'Gecko Moria',
+      set: 'One Piece Promotion Cards',
+      setCode: 'ST03',
+      number: 'ST03-004',
+      variant: 'Champion promo · TCGplayer #503022',
+      cardmarketExpansionId: 5262,
+    });
+    expect(cardmarketProductUrl(moriaPromo)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Special-Tournaments-Promos/Gecko-Moria-ST03-004'
+    );
+
+    // Franky (OP01-021) CS 2023 Celebration Pack via cardmarketExpansionId 5262 fallback
+    const frankyPromo = createMockAsset({
+      name: 'Franky',
+      set: 'One Piece Promotion Cards',
+      setCode: 'OP01',
+      number: 'OP01-021',
+      variant: 'Promotional art · CS 2023 Celebration Pack · TCGplayer #525306',
+      cardmarketExpansionId: 5262,
+    });
+    expect(cardmarketProductUrl(frankyPromo)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Special-Tournaments-Promos/Franky-OP01-021'
+    );
+  });
 });
+
 
 

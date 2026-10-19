@@ -342,7 +342,7 @@ export interface DemoAsset {
   imageState?: 'available' | 'unavailable';
   imageUnavailableReason?: string;
   imageSourceProductId?: number;
-  imageSourceRelationship?: 'exact-product' | 'contained-unit';
+  imageSourceRelationship?: 'exact-product' | 'contained-unit' | 'english-edition';
   imageSourceUrl?: string;
   imageEvidenceUrl?: string;
   imageSourceName?: string;

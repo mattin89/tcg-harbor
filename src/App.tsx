@@ -1406,6 +1406,7 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
     </div>
     <p className="reference-note"><Icon name="info"/>{selectedCardmarketReference?.detail} {selected?.kind === 'sealed' ? 'Cardmarket sealed trends are product-level and can combine listing languages.' : 'Source values are not adjusted by condition.'}</p>
     {selected?.kind === 'sealed' && selected.imageSourceRelationship === 'contained-unit' && <p className="reference-note"><Icon name="box"/>No verified photo exists for this exact outer case, so the catalog clearly shows the real corresponding contained product instead.</p>}
+    {selected?.kind === 'sealed' && selected.imageSourceRelationship === 'english-edition' && <p className="reference-note"><Icon name="box"/>Showing corresponding English edition packaging artwork.</p>}
   </> : null;
   return <div className="page add-page">
     {!browseOnly && <section className="add-progress"><div className="active"><span>1</span><strong>Find item</strong></div><i /><div className={selected ? 'active' : ''}><span>2</span><strong>Add details</strong></div><i /><div><span>3</span><strong>Review</strong></div></section>}

@@ -29,7 +29,23 @@ export function CardArt({ asset, size = 'md' }: { asset: DemoAsset; size?: 'xs' 
     <div className="art-compass"><span>{monogram}</span></div>
     <div className="art-waves" />
     <div className="art-meta"><small>{asset.setCode}</small><strong>{asset.kind === 'card' ? asset.rarity : asset.productType}</strong></div>
-    {displayImageUrl && <img className="card-art-image" src={displayImageUrl} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={(event) => { event.currentTarget.style.display = 'none'; }} />}
+    {displayImageUrl && (
+      <img
+        className="card-art-image"
+        src={displayImageUrl}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        onError={(event) => {
+          if (asset.kind === 'sealed' && !event.currentTarget.src.includes('sealed-product-placeholder')) {
+            event.currentTarget.src = sealedProductPlaceholder;
+          } else {
+            event.currentTarget.style.display = 'none';
+          }
+        }}
+      />
+    )}
     {usesSealedPlaceholder ? <span className="art-unavailable art-placeholder-label"><Icon name="info" size={size === 'xs' ? 10 : 13}/><small>Placeholder image</small></span> : asset.imageState === 'unavailable' && <span className="art-unavailable"><Icon name="info" size={size === 'xs' ? 10 : 13}/><small>Art unavailable</small></span>}
   </div>;
 }

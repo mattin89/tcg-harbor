@@ -571,6 +571,11 @@ export function AssetDetailModal({
               <Icon name="box" />This is the real corresponding contained product, not a photo of the outer case.
             </p>
           )}
+          {asset.kind === 'sealed' && asset.imageSourceRelationship === 'english-edition' && (
+            <p className="reference-note">
+              <Icon name="box" />Showing corresponding English edition packaging artwork.
+            </p>
+          )}
           <div className="detail-prices">
             <div className="detail-price-box active-market-box">
               <span className="price-source-heading">

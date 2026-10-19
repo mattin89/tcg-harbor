@@ -24,6 +24,127 @@ const existingProductIds = new Set(
   existingSealed.map((a) => a.cardmarketProductId).filter(Boolean)
 );
 
+const englishSealed = v10Catalog.filter(
+  (a) => a.kind === 'sealed' && a.language === 'English' && a.imageUrl && a.imageUrl.startsWith('/catalog/sealed/v1/')
+);
+
+const englishBySetAndType = new Map();
+const englishBySet = new Map();
+
+for (const item of englishSealed) {
+  const setCode = (item.setCode || '').toUpperCase();
+  const type = (item.productType || '').toLowerCase();
+  
+  const key = setCode + '|' + type;
+  if (!englishBySetAndType.has(key)) englishBySetAndType.set(key, item);
+  
+  if (!englishBySet.has(setCode)) englishBySet.set(setCode, item);
+  
+  if (setCode === 'OP14-EB04') {
+    if (!englishBySetAndType.has('OP14|' + type)) englishBySetAndType.set('OP14|' + type, item);
+    if (!englishBySetAndType.has('EB04|' + type)) englishBySetAndType.set('EB04|' + type, item);
+    if (!englishBySet.has('OP14')) englishBySet.set('OP14', item);
+    if (!englishBySet.has('EB04')) englishBySet.set('EB04', item);
+  }
+}
+
+function normalizeSetCode(code) {
+  if (!code) return '';
+  return code.toUpperCase().replace(/-(?:KR|CN|JP|FR|EN)$/, '').trim();
+}
+
+function resolveEnglishSealedArtwork(product) {
+  const existingV10 = v10Catalog.find(
+    (a) => a.kind === 'sealed' && a.cardmarketProductId === product.cardmarketProductId && a.imageUrl?.startsWith('/catalog/sealed/v1/')
+  );
+  if (existingV10) {
+    return {
+      imageUrl: existingV10.imageUrl,
+      imageSourceRelationship: existingV10.imageSourceRelationship || 'exact-product',
+    };
+  }
+
+  const normSet = normalizeSetCode(product.setCode);
+  const type = (product.productType || '').toLowerCase();
+  const name = (product.name || '').toLowerCase();
+
+  // 1. Exact setCode + productType match
+  const exact = englishBySetAndType.get(normSet + '|' + type);
+  if (exact) {
+    return {
+      imageUrl: exact.imageUrl,
+      imageSourceRelationship: product.language === 'English' ? 'exact-product' : 'english-edition',
+    };
+  }
+
+  // 2. Cases can display the booster box image
+  if (type.includes('case')) {
+    const box = englishBySetAndType.get(normSet + '|booster box');
+    if (box) {
+      return {
+        imageUrl: box.imageUrl,
+        imageSourceRelationship: 'contained-unit',
+      };
+    }
+  }
+
+  // 3. Name-based keyword heuristics
+  if (name.includes('sound loader')) {
+    const m = englishSealed.find((e) => e.name.toLowerCase().includes('sound loader'));
+    if (m) return { imageUrl: m.imageUrl, imageSourceRelationship: 'english-edition' };
+  }
+  if (name.includes('film red')) {
+    const m = englishSealed.find((e) => e.name.toLowerCase().includes('film red'));
+    if (m) return { imageUrl: m.imageUrl, imageSourceRelationship: 'english-edition' };
+  }
+  if (name.includes('devil fruit')) {
+    const m = englishSealed.find((e) => e.name.toLowerCase().includes('devil fruit'));
+    if (m) return { imageUrl: m.imageUrl, imageSourceRelationship: 'english-edition' };
+  }
+  if (name.includes('gift collection') || name.includes('gift box')) {
+    const m = englishSealed.find((e) => e.name.toLowerCase().includes('gift'));
+    if (m) return { imageUrl: m.imageUrl, imageSourceRelationship: 'english-edition' };
+  }
+  if (name.includes('double pack')) {
+    const dpMatch = name.match(/vol(?:ume|\.)?\s*(\d+)/i);
+    if (dpMatch) {
+      const vol = dpMatch[1];
+      const m = englishSealed.find((e) => e.name.toLowerCase().includes('double pack') && e.name.includes(vol));
+      if (m) return { imageUrl: m.imageUrl, imageSourceRelationship: 'english-edition' };
+    }
+  }
+
+  // 4. Set match if setCode is specific
+  if (normSet && !['BOOSTER', 'BOX', 'DECK', 'PROMO'].includes(normSet)) {
+    const setMatch = englishBySet.get(normSet);
+    if (setMatch) {
+      return {
+        imageUrl: setMatch.imageUrl,
+        imageSourceRelationship: 'english-edition',
+      };
+    }
+  }
+
+  // 5. Generic fallback by productType
+  if (type === 'booster box') {
+    const op01Box = englishBySetAndType.get('OP01|booster box');
+    if (op01Box) return { imageUrl: op01Box.imageUrl, imageSourceRelationship: 'english-edition' };
+  }
+  if (type === 'preconstructed deck') {
+    const st01Deck = englishBySetAndType.get('ST01|preconstructed deck');
+    if (st01Deck) return { imageUrl: st01Deck.imageUrl, imageSourceRelationship: 'english-edition' };
+  }
+  if (type === 'booster') {
+    const op01Booster = englishBySetAndType.get('OP01|booster');
+    if (op01Booster) return { imageUrl: op01Booster.imageUrl, imageSourceRelationship: 'english-edition' };
+  }
+
+  return {
+    imageUrl: '/catalog/sealed/v1/placeholder.webp',
+    imageSourceRelationship: 'contained-unit',
+  };
+}
+
 function percentAgainst(current, comparison) {
   if (current == null || comparison == null || comparison === 0) return null;
   return Number((((current - comparison) / comparison) * 100).toFixed(2));
@@ -154,6 +275,13 @@ for (const p of candidateCmProducts) {
 
   const stableId = `sealed-cardmarket-${p.idProduct}`;
   const trend = price?.trend != null ? Number(price.trend.toFixed(2)) : null;
+  const art = resolveEnglishSealedArtwork({
+    cardmarketProductId: p.idProduct,
+    setCode,
+    productType: cat.productType,
+    name: p.name,
+    language,
+  });
 
   multilingualSealed.push({
     id: stableId,
@@ -173,8 +301,9 @@ for (const p of candidateCmProducts) {
     quantity: 1,
     addedAt: '2026-10-19T12:00:00.000Z',
     color: colorFor(stableId),
-    imageUrl: `https://product-images.s3.cardmarket.com/${p.idCategory}/${p.idProduct}/${p.idProduct}.jpg`,
+    imageUrl: art.imageUrl,
     imageState: 'available',
+    imageSourceRelationship: art.imageSourceRelationship,
     cardmarketProductId: p.idProduct,
     cardmarketExpansionId: p.idExpansion,
     cardmarketPriceState: trend !== null ? 'available' : 'trend-unavailable',
@@ -260,6 +389,13 @@ function createLocalizedProduct({ code, name, type, language, region, evidence, 
 
   const price = cmPriceMap.get(cmId);
   const trend = price?.trend != null ? Number(price.trend.toFixed(2)) : null;
+  const art = resolveEnglishSealedArtwork({
+    cardmarketProductId: cmId || null,
+    setCode: code,
+    productType: type,
+    name,
+    language,
+  });
 
   multilingualSealed.push({
     id,
@@ -279,8 +415,9 @@ function createLocalizedProduct({ code, name, type, language, region, evidence, 
     quantity: 1,
     addedAt: '2026-10-19T12:00:00.000Z',
     color: colorFor(id),
-    imageUrl: cmId ? `https://product-images.s3.cardmarket.com/1622/${cmId}/${cmId}.jpg` : '/catalog/sealed/v1/placeholder.webp',
+    imageUrl: art.imageUrl,
     imageState: 'available',
+    imageSourceRelationship: art.imageSourceRelationship,
     cardmarketProductId: cmId || null,
     cardmarketExpansionId: null,
     cardmarketPriceState: trend !== null ? 'available' : 'trend-unavailable',

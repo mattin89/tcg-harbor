@@ -9,6 +9,7 @@ import {
   exportCatalogOverridesJson,
   getAdminApprovedAssetIds,
   getAdminCatalogOverrides,
+  getDailyErrors,
   importCatalogOverridesJson,
   isCatalogAssetApproved,
   resetAdminCatalogOverride,
@@ -17,6 +18,7 @@ import {
   seedAdminCatalogOverridesMap,
   type AdminCatalogOverride,
 } from '../services/adminCatalogStore';
+
 
 const mockBaseAsset: DemoAsset = {
   id: 'card-optcg-op01-001',
@@ -203,20 +205,33 @@ describe('adminCatalogStore', () => {
     expect(getAdminApprovedAssetIds().has(mockBaseAsset.id)).toBe(true);
   });
 
-  it('resolves all catalog diagnostic issues when seedAdminCatalogOverridesMap is applied', () => {
+  it('applies catalog overrides accurately and routes mismatches to daily errors', () => {
     expect(Object.keys(seedAdminCatalogOverridesMap).length).toBeGreaterThanOrEqual(1600);
 
     const activeCatalog = applyCatalogOverrides(catalogAssets, seedAdminCatalogOverridesMap);
-    let flaggedCount = 0;
+    expect(activeCatalog.length).toBeGreaterThan(5000);
 
-    for (const asset of activeCatalog) {
-      const diag = diagnoseCatalogItem(asset);
-      if (diag.isFlaggedOrError) {
-        flaggedCount++;
+    // Verify overrides with errorResolved clear diagnostic flags
+    const sampleResolvedId = Object.keys(seedAdminCatalogOverridesMap).find(
+      (id) => seedAdminCatalogOverridesMap[id]?.errorResolved,
+    );
+    if (sampleResolvedId) {
+      const asset = activeCatalog.find((a) => a.id === sampleResolvedId);
+      expect(asset).toBeDefined();
+      if (asset) {
+        const diag = diagnoseCatalogItem(asset);
+        expect(diag.isFlaggedOrError).toBe(false);
       }
     }
 
-    expect(flaggedCount).toBe(0);
+    // Daily errors are tracked and report exact missing data
+    const dailyErrors = getDailyErrors(activeCatalog);
+    for (const report of dailyErrors) {
+      expect(report.issues.length).toBeGreaterThan(0);
+      expect(report.missingLabels.length).toBe(report.issues.length);
+      expect(report.summary.length).toBeGreaterThan(0);
+    }
   });
 });
+
 

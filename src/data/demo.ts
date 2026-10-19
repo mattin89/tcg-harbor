@@ -494,8 +494,9 @@ export interface Conversation {
 }
 
 const marketSnapshot = JSON.parse(marketSnapshotRaw) as MarketSnapshot;
-const sourceBackedCatalog = marketSnapshot.assets;
+export const sourceBackedCatalog: DemoAsset[] = marketSnapshot.assets;
 const representativeHoldingIds = new Set(marketSnapshot.initialAssetIds);
+
 
 const flameFlameFruitTrophyCard: DemoAsset = {
   id: 'card-tcgplayer-906851',

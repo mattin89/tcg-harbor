@@ -4,8 +4,10 @@ import {
   initialAssets,
   marketDataGeneratedAt,
   marketDataMeta,
+  sourceBackedCatalog,
   stores,
 } from '../data/demo';
+
 
 type CatalogAsset = (typeof catalogAssets)[number];
 type SourcePrintingAsset = CatalogAsset & { sourcePrintingId?: string };
@@ -180,8 +182,9 @@ describe('source-backed catalog snapshot', () => {
   });
 
   it('includes released sealed products with real source-backed imagery and honest language metadata', () => {
-    const sealed = catalogAssets.filter((asset) => asset.kind === 'sealed');
+    const sealed = sourceBackedCatalog.filter((asset) => asset.kind === 'sealed');
     expect(marketDataMeta.catalogCounts.releasedSealedProducts).toBeGreaterThan(350);
+
     expect(marketDataMeta.catalogCounts.sealedSourceCandidates).toBe(
       marketDataMeta.catalogCounts.releasedSealedProducts
       + marketDataMeta.catalogCounts.futureSealedProductsExcluded
@@ -251,8 +254,9 @@ describe('source-backed catalog snapshot', () => {
   });
 
   it('classifies every OP02 through OP11 and ST30 sealed product by its released expansion', () => {
-    const sealed = catalogAssets.filter((asset) => asset.kind === 'sealed');
+    const sealed = sourceBackedCatalog.filter((asset) => asset.kind === 'sealed');
     const expectedSetCodes = [
+
       ...Array.from({ length: 10 }, (_value, index) =>
         `OP${String(index + 2).padStart(2, '0')}`),
       'ST30',

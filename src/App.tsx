@@ -1149,9 +1149,38 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
     : (allGroupArts.some((art) => art.language === catalogLanguage)
       ? allGroupArts.filter((art) => art.language === catalogLanguage)
       : allGroupArts);
+
+  const availableSealedLanguages = useMemo(() => {
+    if (!selected || selected.kind !== 'sealed') return [];
+    const cleanSet = (selected.setCode || '').replace(/[-_]KR$/i, '').toUpperCase();
+    const cleanType = (selected.productType || '').toLowerCase();
+    const isBox = /booster box/i.test(cleanType);
+    const isPack = /booster/i.test(cleanType) && !isBox;
+    const isDeck = /deck/i.test(cleanType);
+
+    if (!isBox && !isPack && !isDeck) {
+      return [selected];
+    }
+
+    const matches = catalogAssets.filter((a) => {
+      if (a.kind !== 'sealed') return false;
+      const aSet = (a.setCode || '').replace(/[-_]KR$/i, '').toUpperCase();
+      const aType = (a.productType || '').toLowerCase();
+      if (aSet !== cleanSet) return false;
+      if (isBox && !/booster box/i.test(aType)) return false;
+      if (isPack && (!/booster/i.test(aType) || /booster box/i.test(aType))) return false;
+      if (isDeck && !/deck/i.test(aType)) return false;
+      return true;
+    });
+
+    const order: Record<string, number> = { English: 0, Japanese: 1, French: 2, Chinese: 3, Korean: 4 };
+    return matches.sort((a, b) => (order[a.language] ?? 9) - (order[b.language] ?? 9) || a.name.localeCompare(b.name));
+  }, [selected]);
+
   const selectedCardmarketReference = selected
     ? resolveCardmarketArtworkReferenceV10(selected, allGroupArts)
     : null;
+
 
   useEffect(() => { setResultLimit(40); }, [catalogSet, catalogLanguage, query, tab]);
 
@@ -1273,7 +1302,49 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
         return <button type="button" key={art.id} className={selected.id === art.id ? 'selected' : ''} aria-pressed={selected.id === art.id} title={market === 'cardmarket' ? cardmarketReference.detail : undefined} onClick={() => { setSelected(art); setValidation(''); }}><CardArt asset={art} size="xs"/><span><strong>{art.variant}</strong><small>{art.language} · {art.setCode}</small><em>{displayedReference} · {displayedReferenceLabel}</em></span>{selected.id === art.id && <i><Icon name="check"/></i>}</button>;
       })}</div>
     </section>}
+    {selected.kind === 'sealed' && availableSealedLanguages.length > 1 && (
+      <section className="art-picker" aria-labelledby="sealed-language-picker-title">
+        <header>
+          <span>
+            <strong id="sealed-language-picker-title">Choose product language</strong>
+            <small>{availableSealedLanguages.length} language editions available for this product</small>
+          </span>
+          <Chip tone="blue">{selected.language} edition</Chip>
+        </header>
+        <div>
+          {availableSealedLanguages.map((sealedItem) => {
+            const cmPrice = extractAssetAveragePrice(sealedItem, 'cardmarket', priceHistory);
+            const displayedPrice = cmPrice > 0
+              ? formatMoney(cmPrice, 'EUR')
+              : (sealedItem.quote.cardmarket != null ? formatMoney(sealedItem.quote.cardmarket, 'EUR') : 'Market reference');
+            return (
+              <button
+                type="button"
+                key={sealedItem.id}
+                className={selected.id === sealedItem.id ? 'selected' : ''}
+                aria-pressed={selected.id === sealedItem.id}
+                onClick={() => { setSelected(sealedItem); setValidation(''); }}
+              >
+                <CardArt asset={sealedItem} size="xs" />
+                <span>
+                  <strong>{sealedItem.language} edition</strong>
+                  <small>{sealedItem.variant || `${sealedItem.language} release`}</small>
+                  <em>{displayedPrice}</em>
+                </span>
+                {selected.id === sealedItem.id && <i><Icon name="check" /></i>}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+    )}
+    {selected.kind === 'sealed' && availableSealedLanguages.length === 1 && (
+      <div style={{ margin: '6px 0 14px 0' }}>
+        <Chip tone="blue">{selected.language}-exclusive product</Chip>
+      </div>
+    )}
     {(() => {
+
       const selectedCmPrice = selected ? extractAssetAveragePrice(selected, 'cardmarket', priceHistory) : 0;
       const selectedTcpPrice = selected ? extractAssetAveragePrice(selected, 'tcgplayer', priceHistory) : 0;
       const isRegular = selected ? selected.kind === 'card' && /^(?:standard|base art)$/i.test(selected.variant.trim()) && !isExclusiveCard(selected) : false;

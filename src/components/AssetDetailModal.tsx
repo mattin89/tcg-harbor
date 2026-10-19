@@ -281,11 +281,17 @@ export function cardmarketProductUrl(asset: DemoAsset): string {
     const expansionId = asset.cardmarketExpansionId ?? asset.cardmarketArtworkReference?.expansionId;
     if (expansionId && CARDMARKET_EXPANSION_SLUGS[expansionId]) {
       expansion = CARDMARKET_EXPANSION_SLUGS[expansionId];
-    } else if (asset.set === 'Special Tournaments Promos' || asset.setCode === 'STP') {
+    } else if (
+      asset.set === 'Special Tournaments Promos' ||
+      asset.setCode === 'STP' ||
+      /treasure cup|championship|tournament/i.test(asset.variant || '') ||
+      /special tournament/i.test(asset.set || '')
+    ) {
       expansion = 'Special-Tournaments-Promos';
     }
 
     if (!expansion) {
+
       const cleanSetCode = (asset.setCode || '').replace(/-(?:JP|CN|KR|FR|EN)$/i, '').trim();
       if (isAsianLanguage) {
         if (cleanSetCode) expansion = ASIAN_EXPANSIONS[cleanSetCode] || '';

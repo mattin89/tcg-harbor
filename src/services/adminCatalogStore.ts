@@ -408,6 +408,50 @@ export function diagnoseCatalogItem(
   };
 }
 
+export interface DailyErrorReport {
+  readonly asset: DemoAsset;
+  readonly issues: readonly CatalogItemIssue[];
+  readonly missingLabels: readonly string[];
+  readonly summary: string;
+}
+
+export function getMissingLabelsForIssues(issues: readonly CatalogItemIssue[]): string[] {
+  return issues.map((issue) => {
+    switch (issue) {
+      case 'unmapped-cardmarket':
+        return 'Missing Cardmarket Product ID';
+      case 'missing-image':
+        return 'Missing card or product image';
+      case 'price-unavailable':
+        return 'Missing TCGplayer US price';
+      case 'trend-unavailable':
+        return 'Missing Cardmarket EUR trend';
+      case 'ambiguous-artwork':
+        return 'Ambiguous artwork candidate match';
+      case 'continuity-flagged':
+        return 'Continuity verification flag';
+    }
+  });
+}
+
+export function getDailyErrors(assets: readonly DemoAsset[]): DailyErrorReport[] {
+  const reports: DailyErrorReport[] = [];
+  for (const asset of assets) {
+    const diag = diagnoseCatalogItem(asset);
+    if (diag.isFlaggedOrError) {
+      const missingLabels = getMissingLabelsForIssues(diag.issues);
+      reports.push({
+        asset,
+        issues: diag.issues,
+        missingLabels,
+        summary: missingLabels.join(', '),
+      });
+    }
+  }
+  return reports;
+}
+
+
 /**
  * Export all overrides and approved IDs as formatted JSON string for upstream ingestion.
  */

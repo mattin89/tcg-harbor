@@ -21,7 +21,7 @@ import {
 } from '../../services/adminCatalogStore';
 import type { ProductionAccessController } from '../../production';
 
-type TabMode = 'all' | 'cards' | 'sealed' | 'approved' | 'flagged' | 'overrides';
+type TabMode = 'all' | 'cards' | 'sealed' | 'approved' | 'flagged';
 
 interface PlatformInventoryPanelProps {
   access?: ProductionAccessController;
@@ -134,13 +134,13 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
       if (activeTab === 'cards' && asset.kind !== 'card') return false;
       if (activeTab === 'sealed' && asset.kind !== 'sealed') return false;
       if (activeTab === 'approved' && !asset.isApproved) return false;
-      if (activeTab === 'overrides' && !overrides[asset.id]) return false;
       if (activeTab === 'flagged') {
         const diag = diagnosticsMap.get(asset.id);
         if (!diag?.isFlaggedOrError) return false;
         if (issueFilter !== 'all' && !diag.issues.includes(issueFilter)) return false;
       }
       if (languageFilter !== 'all' && asset.language !== languageFilter) return false;
+
 
       // Query filter
       if (!query) return true;
@@ -221,9 +221,28 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
     setToastMessage('Cleared all catalog overrides and approval states.');
   };
 
+  const isPlatformAdmin = _access?.snapshot
+    ? _access.snapshot.profile.roles.includes('platform_administrator')
+    : true;
+
+  if (_access?.snapshot && !isPlatformAdmin) {
+    return (
+      <section className="production-panel production-inventory-panel">
+        <header className="production-panel-header">
+          <div>
+            <p className="production-eyebrow">Platform inventory administration</p>
+            <h2>Administrator Access Required</h2>
+            <p>The catalog inventory and Daily Errors management panel is restricted to the platform administrator.</p>
+          </div>
+        </header>
+      </section>
+    );
+  }
+
   return (
     <section className="production-panel production-inventory-panel">
       <header className="production-panel-header">
+
         <div>
           <p className="production-eyebrow">Platform inventory administration</p>
           <h2>Catalog & Diagnostic Management</h2>
@@ -306,15 +325,7 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
           onClick={() => { setActiveTab('flagged'); setIssueFilter('all'); }}
         >
           <span className="production-metric-number">{counts.flagged.toLocaleString()}</span>
-          <span className="production-metric-label">Items with flags / errors</span>
-        </button>
-        <button
-          type="button"
-          className={`production-metric-tile is-overridden ${activeTab === 'overrides' ? 'is-selected' : ''}`}
-          onClick={() => setActiveTab('overrides')}
-        >
-          <span className="production-metric-number">{counts.overrides.toLocaleString()}</span>
-          <span className="production-metric-label">Live admin overrides</span>
+          <span className="production-metric-label">Daily Errors</span>
         </button>
       </div>
 
@@ -356,19 +367,10 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
             onClick={() => { setActiveTab('flagged'); setIssueFilter('all'); }}
           >
             <Icon name="shield" size={14} />
-            Flags & Errors ({counts.flagged})
+            Daily Errors ({counts.flagged})
           </button>
-          {counts.overrides > 0 && (
-            <button
-              type="button"
-              className={`production-inventory-tab is-live ${activeTab === 'overrides' ? 'is-active' : ''}`}
-              onClick={() => setActiveTab('overrides')}
-            >
-              <Icon name="sparkle" size={14} />
-              Pushed Live ({counts.overrides})
-            </button>
-          )}
         </div>
+
 
         <div className="production-inventory-controls" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
           <label className="production-search-field">
@@ -412,7 +414,35 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
         </div>
       </div>
 
-      {/* Sub-filters when Flagged & Errors tab is active */}
+      {/* Daily Errors Admin Notice Banner */}
+      {activeTab === 'flagged' && (
+        <div
+          className="daily-errors-admin-banner"
+          style={{
+            background: 'rgba(239, 68, 68, 0.08)',
+            border: '1px solid rgba(239, 68, 68, 0.25)',
+            borderRadius: '10px',
+            padding: '12px 16px',
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+          }}
+        >
+          <Icon name="shield" size={20} />
+          <div>
+            <strong style={{ color: '#f87171', display: 'block', marginBottom: '2px', fontSize: '13px' }}>
+              Daily Errors & Upstream Mismatches ({counts.flagged})
+            </strong>
+            <small style={{ color: '#cbd5e1', fontSize: '12px' }}>
+              These items have missing upstream prices, unmapped Cardmarket IDs, or missing images.
+              Daily prices update continuously regardless of these items. Use “Edit” to supply the missing information and push fixes live.
+            </small>
+          </div>
+        </div>
+      )}
+
+      {/* Sub-filters when Daily Errors tab is active */}
       {activeTab === 'flagged' && (
         <div className="production-subfilter-chips">
           <span className="production-subfilter-label">Filter issue kind:</span>
@@ -453,10 +483,11 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
                   <th>Set & Number</th>
                   <th>Cardmarket Info</th>
                   <th>TCGplayer Info</th>
-                  <th>Diagnostics / Status</th>
+                  <th>{activeTab === 'flagged' ? 'Daily Error / Missing Data' : 'Diagnostics / Status'}</th>
                   <th style={{ width: '130px', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
+
               <tbody>
                 {currentPageAssets.map((asset) => {
                   const diag = diagnosticsMap.get(asset.id);
@@ -540,14 +571,15 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
                         )}
                         {diag?.issues.map((issue) => (
                           <span key={issue} className={`diag-tag is-${issue}`}>
-                            {issue === 'unmapped-cardmarket' && 'Unmapped Cardmarket'}
+                            {issue === 'unmapped-cardmarket' && 'Missing Cardmarket ID'}
                             {issue === 'missing-image' && 'Missing Image'}
-                            {issue === 'ambiguous-artwork' && 'Ambiguous Art'}
-                            {issue === 'trend-unavailable' && 'No EUR Trend'}
-                            {issue === 'price-unavailable' && 'No USD Price'}
+                            {issue === 'ambiguous-artwork' && 'Ambiguous Art Match'}
+                            {issue === 'trend-unavailable' && 'Missing EUR Trend'}
+                            {issue === 'price-unavailable' && 'Missing US Price'}
                             {issue === 'continuity-flagged' && 'Continuity Discrepancy'}
                           </span>
                         ))}
+
                         {asset.isApproved && (
                           <span className="diag-tag is-approved" title="Card verified and approved for catalog trading">
                             <Icon name="check" size={12} /> Approved

@@ -297,6 +297,56 @@ describe('cardmarketProductUrl generalized logic', () => {
     );
   });
 
+  it('correctly resolves Chinese sealed products to verified canonical URLs without language parameters', () => {
+    // Chinese New Year Red Envelope - Boa Hancock
+    const boaEnvelope = createMockAsset({
+      kind: 'sealed',
+      name: 'Chinese New Year Red Envelope - Boa Hancock',
+      productType: 'Promo Product',
+      language: 'Chinese',
+      cardmarketProductId: 808783,
+    });
+    expect(cardmarketProductUrl(boaEnvelope)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Promo-Products/Chinese-New-Year-Red-Envelope-Boa-Hancock'
+    );
+
+    // Chinese Anniversary Nami Gift Box
+    const namiBox = createMockAsset({
+      kind: 'sealed',
+      name: 'Chinese Anniversary Nami Gift Box',
+      productType: 'Promo Product',
+      language: 'Chinese',
+      cardmarketProductId: 773682,
+    });
+    expect(cardmarketProductUrl(namiBox)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Promo-Products/Chinese-Anniversary-Nami-Gift-Box'
+    );
+
+    // Romance Dawn Booster box (Chinese)
+    const romanceBox = createMockAsset({
+      kind: 'sealed',
+      name: 'Romance Dawn Booster box (Chinese)',
+      productType: 'Booster box',
+      language: 'Chinese',
+      cardmarketProductId: 693905,
+    });
+    expect(cardmarketProductUrl(romanceBox)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Booster-Boxes/Romance-Dawn-Booster-Box-Non-English'
+    );
+
+    // Unmapped sealed product should fallback to search without language parameter
+    const unmappedSealed = createMockAsset({
+      kind: 'sealed',
+      name: 'Sample Promo Pack',
+      productType: 'Promo product',
+      language: 'Chinese',
+      number: undefined,
+    });
+    expect(cardmarketProductUrl(unmappedSealed)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Search?searchString=Sample%20Promo%20Pack'
+    );
+  });
+
   it('correctly routes multilingual cards to their language-specific expansions and filter parameters', () => {
     // 1. Chinese Adio (OP03-002) routes to Pillars-of-Strength-Japanese with ?language=6
     const chineseAdio = createMockAsset({

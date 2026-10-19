@@ -243,6 +243,23 @@ export const CARDMARKET_LANG_PARAM: Record<string, number> = {
   Korean: 10,
 };
 
+export function cleanCardmarketSealedSlug(name: string): string {
+  return name
+    .replace(/Monkey\.D\.Luffy/gi, 'MonkeyDLuffy')
+    .replace(/Edward\.Newgate/gi, 'EdwardNewgate')
+    .replace(/Marshall\.D\.Teach/gi, 'MarshallDTeach')
+    .replace(/Donquixote\.Doflamingo/gi, 'DonquixoteDoflamingo')
+    .replace(/Trafalgar\.D\.Water\.Law/gi, 'TrafalgarDWaterLaw')
+    .replace(/Portgas\.D\.Ace/gi, 'PortgasDAce')
+    .replace(/Gol\.D\.Roger/gi, 'GolDRoger')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[’']/g, '')
+    .replace(/&/g, '-and-')
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 export function cardmarketProductUrl(asset: DemoAsset): string {
   const lang = typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('de') ? 'de' : 'en';
 
@@ -360,15 +377,15 @@ export function cardmarketProductUrl(asset: DemoAsset): string {
 
   if (asset.cardmarketProductId && Number.isFinite(asset.cardmarketProductId) && asset.cardmarketProductId > 0) {
     const searchByIdUrl = `https://www.cardmarket.com/${lang}/OnePiece/Products/Search?idProduct=${asset.cardmarketProductId}`;
-    if (langId && langId !== 1) {
+    if (asset.kind !== 'sealed' && langId && langId !== 1) {
       return `${searchByIdUrl}&language=${langId}`;
     }
     return searchByIdUrl;
   }
 
-  const query = asset.number ?? asset.name;
-  let searchUrl = `https://www.cardmarket.com/${lang}/OnePiece/Products/Search?searchString=${encodeURIComponent(query)}`;
-  if (langId && langId !== 1) {
+  const query = asset.kind === 'sealed' ? asset.name : (asset.number ?? asset.name);
+  let searchUrl = `https://www.cardmarket.com/${lang}/OnePiece/Products/Search?searchString=${encodeURIComponent(query || '')}`;
+  if (asset.kind !== 'sealed' && langId && langId !== 1) {
     searchUrl += `&language=${langId}`;
   }
   return searchUrl;

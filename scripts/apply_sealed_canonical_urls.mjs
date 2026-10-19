@@ -46,8 +46,41 @@ function run() {
     sealedAdded++;
   }
 
+  // Also process multilingual sealed products
+  const multiPath = 'src/data/generated/multilingual-sealed.json';
+  if (fs.existsSync(multiPath)) {
+    const multiSealed = JSON.parse(fs.readFileSync(multiPath, 'utf8'));
+    for (const s of multiSealed) {
+      const cmIdStr = String(s.cardmarketProductId);
+      const p = nsMap.get(s.cardmarketProductId);
+      if (!p) continue;
+
+      const cat = CATEGORY_PATHS.get(p.idCategory);
+      if (!cat) continue;
+
+      const slug = cleanCardmarketSealedSlug(p.name);
+      const fullPath = `${cat}/${slug}`;
+
+      canonicalMap[cmIdStr] = fullPath;
+      sealedAdded++;
+    }
+  }
+
+  // Apply BrightData-verified Chinese sealed URLs (takes highest precedence for Chinese products)
+  const chineseVerifiedPath = 'scripts/data/chinese_sealed_verified_urls.json';
+  let chineseAdded = 0;
+  if (fs.existsSync(chineseVerifiedPath)) {
+    const verifiedChinese = JSON.parse(fs.readFileSync(chineseVerifiedPath, 'utf8'));
+    for (const v of verifiedChinese) {
+      if (v.status === 200 && v.slug) {
+        canonicalMap[String(v.cmId)] = v.slug;
+        chineseAdded++;
+      }
+    }
+  }
+
   fs.writeFileSync(canonicalPath, JSON.stringify(canonicalMap, null, 2), 'utf8');
-  console.log(`Successfully mapped ${sealedAdded} sealed products to canonical Cardmarket paths.`);
+  console.log(`Successfully mapped ${sealedAdded} sealed products and ${chineseAdded} verified Chinese products to canonical Cardmarket paths.`);
   console.log(`Total canonical entries in map: ${Object.keys(canonicalMap).length}`);
 }
 

@@ -14,10 +14,11 @@ import {
 import {
   AssetDetailModal,
   cardmarketProductUrl,
+  cleanCardmarketSealedSlug,
   getCardGroupArts,
   tcgplayerProductUrl,
 } from './components/AssetDetailModal';
-export { cardmarketProductUrl, tcgplayerProductUrl };
+export { cardmarketProductUrl, cleanCardmarketSealedSlug, tcgplayerProductUrl };
 import { Avatar, Button, CardArt, Chip, DemoBadge, EmptyState, MarketDataBadge, Modal, PriceChart, Segmented, Trend } from './components/ui';
 import type { ProductionNotificationPreferences, ProductionProfileSettingsDraft } from './production/types';
 import { clearStoredStoreJoinIntent, peekStoreJoinIntent } from './production/storeJoinRoute';

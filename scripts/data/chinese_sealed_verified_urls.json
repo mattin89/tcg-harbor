@@ -1,0 +1,218 @@
+[
+  {
+    "id": "sealed-cardmarket-765985",
+    "cmId": 765985,
+    "name": "Chinese New Year Red Envelope - Roronoa Zoro",
+    "slug": "Promo-Products/Chinese-New-Year-Red-Envelope-Roronoa-Zoro",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Promo-Products/Chinese-New-Year-Red-Envelope-Roronoa-Zoro",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-cardmarket-773682",
+    "cmId": 773682,
+    "name": "Chinese Anniversary Nami Gift Box",
+    "slug": "Promo-Products/Chinese-Anniversary-Nami-Gift-Box",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Promo-Products/Chinese-Anniversary-Nami-Gift-Box",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-cardmarket-808782",
+    "cmId": 808782,
+    "name": "Chinese New Year Red Envelope - Monkey.D.Luffy",
+    "slug": "Promo-Products/Chinese-New-Year-Red-Envelope-Monkey-D-Luffy",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Promo-Products/Chinese-New-Year-Red-Envelope-Monkey-D-Luffy",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-cardmarket-808783",
+    "cmId": 808783,
+    "name": "Chinese New Year Red Envelope - Boa Hancock",
+    "slug": "Promo-Products/Chinese-New-Year-Red-Envelope-Boa-Hancock",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Promo-Products/Chinese-New-Year-Red-Envelope-Boa-Hancock",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-cardmarket-808801",
+    "cmId": 808801,
+    "name": "2nd Chinese Anniversary Boa Hancock Gift Box",
+    "slug": "Promo-Products/2nd-Chinese-Anniversary-Boa-Hancock-Gift-Box",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Promo-Products/2nd-Chinese-Anniversary-Boa-Hancock-Gift-Box",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-cardmarket-871507",
+    "cmId": 871507,
+    "name": "Chinese New Year Red Envelope - Sanji",
+    "slug": "Promo-Products/Chinese-New-Year-Red-Envelope-Sanji",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Promo-Products/Chinese-New-Year-Red-Envelope-Sanji",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-cardmarket-901323",
+    "cmId": 901323,
+    "name": "Chinese 3rd Anniversary Set (Asia Region Legal)",
+    "slug": "Promo-Products/Chinese-3rd-Anniversary-Set-Asia-Region-Legal",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Promo-Products/Chinese-3rd-Anniversary-Set-Asia-Region-Legal",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-cardmarket-901325",
+    "cmId": 901325,
+    "name": "Japanese 2nd Anniversary Set (Chinese Edition)",
+    "slug": "Promo-Products/Japanese-2nd-Anniversary-Set-Chinese-Edition",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Promo-Products/Japanese-2nd-Anniversary-Set-Chinese-Edition",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-multilingual-ch-op01-booster-box",
+    "cmId": 693905,
+    "name": "Romance Dawn Booster box (Chinese)",
+    "slug": "Booster-Boxes/Romance-Dawn-Booster-Box-Non-English",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Booster-Boxes/Romance-Dawn-Booster-Box-Non-English",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-multilingual-ch-op02-booster-box",
+    "cmId": 696242,
+    "name": "Paramount War Booster box (Chinese)",
+    "slug": "Booster-Boxes/Paramount-War-Booster-Box-Non-English",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Booster-Boxes/Paramount-War-Booster-Box-Non-English",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-multilingual-ch-op03-booster-box",
+    "cmId": 714452,
+    "name": "Pillars of Strength Booster box (Chinese)",
+    "slug": "Booster-Boxes/Pillars-of-Strength-Booster-Box-Non-English",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Booster-Boxes/Pillars-of-Strength-Booster-Box-Non-English",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-multilingual-ch-op04-booster-box",
+    "cmId": 714453,
+    "name": "Kingdoms of Intrigue Booster box (Chinese)",
+    "slug": "Booster-Boxes/Kingdoms-of-Intrigue-Booster-Box-Non-English",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Booster-Boxes/Kingdoms-of-Intrigue-Booster-Box-Non-English",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-multilingual-ch-op05-booster-box",
+    "cmId": 728806,
+    "name": "Awakening of the New Era Booster box (Chinese)",
+    "slug": "Booster-Boxes/Awakening-of-the-New-Era-Booster-box",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Booster-Boxes/Awakening-of-the-New-Era-Booster-box",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-multilingual-ch-op06-booster-box",
+    "cmId": 746401,
+    "name": "Wings of the Captain Booster box (Chinese)",
+    "slug": "Booster-Boxes/Wings-of-the-Captain-Booster-Box-Asia-Region-Legal",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Booster-Boxes/Wings-of-the-Captain-Booster-Box-Asia-Region-Legal",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-multilingual-ch-st01-preconstructed-deck",
+    "cmId": 809523,
+    "name": "Straw Hat Crew Preconstructed deck (Chinese)",
+    "slug": "Preconstructed-Decks/Starter-Deck-Straw-Hat-Crew-Non-English",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Preconstructed-Decks/Starter-Deck-Straw-Hat-Crew-Non-English",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-multilingual-ch-st02-preconstructed-deck",
+    "cmId": 809524,
+    "name": "Worst Generation Preconstructed deck (Chinese)",
+    "slug": "Preconstructed-Decks/Starter-Deck-Worst-Generation-Non-English",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Preconstructed-Decks/Starter-Deck-Worst-Generation-Non-English",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-multilingual-ch-st03-preconstructed-deck",
+    "cmId": 809525,
+    "name": "The Seven Warlords of the Sea Preconstructed deck (Chinese)",
+    "slug": "Preconstructed-Decks/Starter-Deck-The-Seven-Warlords-of-the-Sea-Non-English",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Preconstructed-Decks/Starter-Deck-The-Seven-Warlords-of-the-Sea-Non-English",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-multilingual-ch-st04-preconstructed-deck",
+    "cmId": 809526,
+    "name": "Animal Kingdom Pirates Preconstructed deck (Chinese)",
+    "slug": "Preconstructed-Decks/Starter-Deck-Animal-Kingdom-Pirates-Non-English",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Preconstructed-Decks/Starter-Deck-Animal-Kingdom-Pirates-Non-English",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-multilingual-ch-st05-preconstructed-deck",
+    "cmId": 696232,
+    "name": "ONE PIECE FILM edition Preconstructed deck (Chinese)",
+    "slug": "Preconstructed-Decks/ONE-PIECE-FILM-edition-Preconstructed-deck",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Preconstructed-Decks/ONE-PIECE-FILM-edition-Preconstructed-deck",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-multilingual-ch-st06-preconstructed-deck",
+    "cmId": 696234,
+    "name": "Absolute Justice Preconstructed deck (Chinese)",
+    "slug": "Preconstructed-Decks/Absolute-Justice-Preconstructed-deck",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Preconstructed-Decks/Absolute-Justice-Preconstructed-deck",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-multilingual-ch-st07-preconstructed-deck",
+    "cmId": 708272,
+    "name": "Big Mom Pirates Preconstructed deck (Chinese)",
+    "slug": "Preconstructed-Decks/Big-Mom-Pirates-Preconstructed-deck-Chinese",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Preconstructed-Decks/Big-Mom-Pirates-Preconstructed-deck-Chinese",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-multilingual-ch-st08-preconstructed-deck",
+    "cmId": 714450,
+    "name": "Monkey.D.Luffy Preconstructed deck (Chinese)",
+    "slug": "Preconstructed-Decks/Monkey-D-Luffy-Preconstructed-deck",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Preconstructed-Decks/Monkey-D-Luffy-Preconstructed-deck",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-multilingual-ch-st09-preconstructed-deck",
+    "cmId": 835369,
+    "name": "Yamato Preconstructed deck (Chinese)",
+    "slug": "Preconstructed-Decks/Starter-Deck-Yamato-Non-English",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Preconstructed-Decks/Starter-Deck-Yamato-Non-English",
+    "status": 200,
+    "method": "direct"
+  },
+  {
+    "id": "sealed-multilingual-ch-st10-preconstructed-deck",
+    "cmId": 728804,
+    "name": "The Three Captains Preconstructed deck (Chinese)",
+    "slug": "Preconstructed-Decks/The-Three-Captains-Preconstructed-deck",
+    "url": "https://www.cardmarket.com/en/OnePiece/Products/Preconstructed-Decks/The-Three-Captains-Preconstructed-deck",
+    "status": 200,
+    "method": "direct"
+  }
+]

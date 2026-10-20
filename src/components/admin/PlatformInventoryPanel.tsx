@@ -20,6 +20,8 @@ import {
   type CatalogItemIssue,
 } from '../../services/adminCatalogStore';
 import type { ProductionAccessController } from '../../production';
+import { SUPPORTED_GAMES, ALL_GAME_SLUGS, getGameDefinition, type GameSlug } from '../../domain/games';
+import { loadGameCatalogAssets, GAME_CATALOG_SUMMARIES } from '../../data/multigameCatalogs';
 
 type TabMode = 'all' | 'cards' | 'sealed' | 'approved' | 'flagged';
 
@@ -28,11 +30,14 @@ interface PlatformInventoryPanelProps {
 }
 
 export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPanelProps) {
+  const [selectedGame, setSelectedGame] = useState<GameSlug>('one-piece');
+  const [rawCatalog, setRawCatalog] = useState<DemoAsset[]>(catalogAssets);
+  const [isLoadingGame, setIsLoadingGame] = useState(false);
   const [overrides, setOverrides] = useState<Record<string, AdminCatalogOverride>>(() => getAdminCatalogOverrides());
   const [approvedIds, setApprovedIds] = useState<Set<string>>(() => getAdminApprovedAssetIds());
   const [activeTab, setActiveTab] = useState<TabMode>('all');
   const [issueFilter, setIssueFilter] = useState<'all' | CatalogItemIssue>('all');
-  const [languageFilter, setLanguageFilter] = useState<'all' | 'English' | 'Japanese' | 'French' | 'Chinese' | 'Korean'>('all');
+  const [languageFilter, setLanguageFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const pageSize = 30;
@@ -42,6 +47,28 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [importText, setImportText] = useState('');
   const [importStatus, setImportStatus] = useState<string | null>(null);
+
+  const selectedGameDef = useMemo(() => getGameDefinition(selectedGame), [selectedGame]);
+
+  const handleGameChange = async (slug: GameSlug) => {
+    if (slug === selectedGame) return;
+    setSelectedGame(slug);
+    setLanguageFilter('all');
+    setIssueFilter('all');
+    setActiveTab('all');
+    setSearchQuery('');
+    setPage(1);
+    setIsLoadingGame(true);
+    try {
+      const assets = await loadGameCatalogAssets(slug);
+      setRawCatalog(assets);
+    } catch (err) {
+      console.error('Failed to load catalog for', slug, err);
+      setToastMessage(`Error loading catalog for ${slug}`);
+    } finally {
+      setIsLoadingGame(false);
+    }
+  };
 
   // Sync state if storage changes
   useEffect(() => {
@@ -87,8 +114,8 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
 
   const activeCatalog = useMemo(() => {
     const effectiveOverrides = { ...seedAdminCatalogOverridesMap, ...overrides };
-    return applyCatalogOverrides(catalogAssets, effectiveOverrides, approvedIds);
-  }, [overrides, approvedIds]);
+    return applyCatalogOverrides(rawCatalog, effectiveOverrides, approvedIds);
+  }, [rawCatalog, overrides, approvedIds]);
 
   const diagnosticsMap = useMemo(() => {
     const map = new Map<string, ReturnType<typeof diagnoseCatalogItem>>();
@@ -278,6 +305,48 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
         </div>
       </header>
 
+      {/* Multi-TCG Staging Game Bar */}
+      <div className="production-inventory-games-bar">
+        <div className="production-game-selector-title">
+          <Icon name="cards" size={16} />
+          <span>Active Trading Card Game:</span>
+          {isLoadingGame && <span style={{ marginLeft: '8px', color: '#f0a36b', fontSize: '11px' }}>Loading catalog…</span>}
+        </div>
+        <div className="production-game-selector-pills">
+          {ALL_GAME_SLUGS.map((slug) => {
+            const def = SUPPORTED_GAMES[slug];
+            const summary = GAME_CATALOG_SUMMARIES[slug];
+            const isSelected = selectedGame === slug;
+            return (
+              <button
+                key={slug}
+                type="button"
+                className={`production-game-pill ${isSelected ? 'is-active' : ''}`}
+                onClick={() => handleGameChange(slug)}
+                title={def.description}
+              >
+                <span className="production-game-pill-name">{def.name}</span>
+                <span className={`production-game-status-badge ${def.isPublic ? 'status-live' : 'status-internal'}`}>
+                  {def.badge}
+                </span>
+                <span className="production-game-pill-count">{summary?.totalAssets.toLocaleString() ?? ''}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Internal Staging Banner for unreleased games */}
+      {!selectedGameDef.isPublic && (
+        <div className="production-inventory-internal-banner" role="alert">
+          <span className="internal-banner-badge">INTERNAL / STAGING INVENTORY</span>
+          <div className="internal-banner-content">
+            <strong>{selectedGameDef.name}</strong> is currently internal and hidden from public browse, search, and live user collections.
+            All {counts.total.toLocaleString()} products across {selectedGameDef.languages.join(', ')} are verified via Cardmarket and TCGplayer but remain restricted to administrators.
+          </div>
+        </div>
+      )}
+
       {toastMessage && (
         <div className="production-inventory-toast" role="status">
           <Icon name="check" size={16} />
@@ -390,7 +459,7 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
           <select
             className="production-inventory-lang-select"
             value={languageFilter}
-            onChange={(e) => setLanguageFilter(e.target.value as 'all' | 'English' | 'Japanese' | 'French' | 'Chinese' | 'Korean')}
+            onChange={(e) => setLanguageFilter(e.target.value)}
             aria-label="Filter catalog by language"
             style={{
               minWidth: '135px',
@@ -405,11 +474,9 @@ export function PlatformInventoryPanel({ access: _access }: PlatformInventoryPan
             }}
           >
             <option value="all">All Languages</option>
-            <option value="English">English</option>
-            <option value="Japanese">Japanese</option>
-            <option value="French">French</option>
-            <option value="Chinese">Chinese</option>
-            <option value="Korean">Korean</option>
+            {selectedGameDef.languages.map((lang) => (
+              <option key={lang} value={lang}>{lang}</option>
+            ))}
           </select>
         </div>
       </div>

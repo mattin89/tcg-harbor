@@ -311,6 +311,8 @@ export interface TcgplayerArtworkReference {
 
 export interface DemoAsset {
   id: string;
+  /** Supported trading card game slug (e.g. 'one-piece', 'pokemon', 'magic'). */
+  game?: string;
   /** Production-only owner-scoped row identifier. */
   collectionItemId?: string;
   catalogId?: string;

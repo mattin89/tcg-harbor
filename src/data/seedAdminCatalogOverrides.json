@@ -18314,11 +18314,11 @@
     "number": "P-001",
     "set": "One Piece Promotion Cards",
     "setCode": "P",
-    "cardmarketProductId": 690375,
-    "cardmarketExpansionId": 5230,
+    "cardmarketProductId": 766637,
+    "cardmarketExpansionId": 5262,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #690375)",
-    "cardmarketTrendPrice": 3.65,
+    "cardmarketTrendPrice": 1064.37,
     "tcgplayerProductId": 544771,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 654.92,
@@ -18327,8 +18327,27 @@
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
-    "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.454Z"
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:37:08.123Z",
+    "quote": {
+      "cardmarket": 1064.37,
+      "tcgplayer": 599.88
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1064.37,
+        "low": 899.99,
+        "average": 874.5,
+        "average1Day": 850,
+        "average7Days": 928.43,
+        "average30Days": 296.23
+      },
+      "usMarket": {
+        "market": 599.88,
+        "inventory": null
+      }
+    },
+    "variant": "Finalist promo · TCGplayer #544771"
   },
   "card-tcgplayer-544774": {
     "id": "card-tcgplayer-544774",
@@ -18337,11 +18356,11 @@
     "number": "P-001",
     "set": "One Piece Promotion Cards",
     "setCode": "P",
-    "cardmarketProductId": 690375,
-    "cardmarketExpansionId": 5230,
+    "cardmarketProductId": 766638,
+    "cardmarketExpansionId": 5262,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #690375)",
-    "cardmarketTrendPrice": 3.65,
+    "cardmarketTrendPrice": 895.95,
     "tcgplayerProductId": 544774,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 599.99,
@@ -18350,8 +18369,27 @@
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
-    "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.454Z"
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:37:08.123Z",
+    "quote": {
+      "cardmarket": 895.95,
+      "tcgplayer": 599.99
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 895.95,
+        "low": 96969,
+        "average": 895.95,
+        "average1Day": 895.95,
+        "average7Days": 895.95,
+        "average30Days": 895.95
+      },
+      "usMarket": {
+        "market": 599.99,
+        "inventory": null
+      }
+    },
+    "variant": "Finalist promo · TCGplayer #544774"
   },
   "card-tcgplayer-523785": {
     "id": "card-tcgplayer-523785",
@@ -18360,11 +18398,11 @@
     "number": "P-001",
     "set": "One Piece Promotion Cards",
     "setCode": "P",
-    "cardmarketProductId": 690375,
+    "cardmarketProductId": 740388,
     "cardmarketExpansionId": 5230,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #690375)",
-    "cardmarketTrendPrice": 3.65,
+    "cardmarketTrendPrice": 82.07,
     "tcgplayerProductId": 523785,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 58.15,
@@ -18373,8 +18411,27 @@
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
-    "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.454Z"
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:37:08.123Z",
+    "quote": {
+      "cardmarket": 82.07,
+      "tcgplayer": 57.96
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 82.07,
+        "low": 46,
+        "average": 115,
+        "average1Day": 80,
+        "average7Days": 85,
+        "average30Days": 151.3
+      },
+      "usMarket": {
+        "market": 57.96,
+        "inventory": null
+      }
+    },
+    "variant": "Promotional art · Gift Collection 2023 · TCGplayer #523785"
   },
   "card-tcgplayer-544770": {
     "id": "card-tcgplayer-544770",
@@ -18383,11 +18440,11 @@
     "number": "P-001",
     "set": "One Piece Promotion Cards",
     "setCode": "P",
-    "cardmarketProductId": 690375,
-    "cardmarketExpansionId": 5230,
+    "cardmarketProductId": 766636,
+    "cardmarketExpansionId": 5262,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #690375)",
-    "cardmarketTrendPrice": 3.65,
+    "cardmarketTrendPrice": 85.01,
     "tcgplayerProductId": 544770,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 79.13,
@@ -18396,8 +18453,27 @@
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
-    "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.454Z"
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:37:08.124Z",
+    "quote": {
+      "cardmarket": 85.01,
+      "tcgplayer": 76.35
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 85.01,
+        "low": 44.95,
+        "average": 75.33,
+        "average1Day": 49.33,
+        "average7Days": 74.45,
+        "average30Days": 89.11
+      },
+      "usMarket": {
+        "market": 76.35,
+        "inventory": null
+      }
+    },
+    "variant": "Promotional art · Participant · TCGplayer #544770"
   },
   "card-tcgplayer-544773": {
     "id": "card-tcgplayer-544773",
@@ -18406,11 +18482,11 @@
     "number": "P-001",
     "set": "One Piece Promotion Cards",
     "setCode": "P",
-    "cardmarketProductId": 690375,
-    "cardmarketExpansionId": 5230,
+    "cardmarketProductId": 766636,
+    "cardmarketExpansionId": 5262,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #690375)",
-    "cardmarketTrendPrice": 3.65,
+    "cardmarketTrendPrice": 85.01,
     "tcgplayerProductId": 544773,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 109.88,
@@ -18419,8 +18495,27 @@
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
-    "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.454Z"
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:37:08.124Z",
+    "quote": {
+      "cardmarket": 85.01,
+      "tcgplayer": 107.77
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 85.01,
+        "low": 44.95,
+        "average": 75.33,
+        "average1Day": 49.33,
+        "average7Days": 74.45,
+        "average30Days": 89.11
+      },
+      "usMarket": {
+        "market": 107.77,
+        "inventory": null
+      }
+    },
+    "variant": "Promotional art · Participant · TCGplayer #544773"
   },
   "card-tcgplayer-564250": {
     "id": "card-tcgplayer-564250",
@@ -18429,11 +18524,11 @@
     "number": "P-001",
     "set": "One Piece Promotion Cards",
     "setCode": "P",
-    "cardmarketProductId": 690375,
+    "cardmarketProductId": 786107,
     "cardmarketExpansionId": 5230,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #690375)",
-    "cardmarketTrendPrice": 3.65,
+    "cardmarketTrendPrice": 31.24,
     "tcgplayerProductId": 564250,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 25.39,
@@ -18442,8 +18537,27 @@
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
-    "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.454Z"
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:37:08.125Z",
+    "quote": {
+      "cardmarket": 31.24,
+      "tcgplayer": 22.89
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 31.24,
+        "low": 20,
+        "average": 39.27,
+        "average1Day": 25,
+        "average7Days": 25.55,
+        "average30Days": 36.97
+      },
+      "usMarket": {
+        "market": 22.89,
+        "inventory": null
+      }
+    },
+    "variant": "Promotional art · Premium Card Collection -BANDAI CARD GAMES Fest. 23-24 Edition- · TCGplayer #564250"
   },
   "card-tcgplayer-450299": {
     "id": "card-tcgplayer-450299",
@@ -18456,7 +18570,7 @@
     "cardmarketExpansionId": 5230,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #690375)",
-    "cardmarketTrendPrice": 3.65,
+    "cardmarketTrendPrice": 3.2,
     "tcgplayerProductId": 450299,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 29.99,
@@ -18465,8 +18579,27 @@
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
-    "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.454Z"
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:37:08.125Z",
+    "quote": {
+      "cardmarket": 3.2,
+      "tcgplayer": 17.47
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 3.2,
+        "low": 2.5,
+        "average": 5.06,
+        "average1Day": 4.49,
+        "average7Days": 4.2,
+        "average30Days": 6.07
+      },
+      "usMarket": {
+        "market": 17.47,
+        "inventory": null
+      }
+    },
+    "variant": "Promotional art · Promotion Pack 2022 · TCGplayer #450299"
   },
   "card-tcgplayer-450301": {
     "id": "card-tcgplayer-450301",
@@ -18475,11 +18608,11 @@
     "number": "P-001",
     "set": "One Piece Promotion Cards",
     "setCode": "P",
-    "cardmarketProductId": 690375,
-    "cardmarketExpansionId": 5230,
+    "cardmarketProductId": 717506,
+    "cardmarketExpansionId": 5262,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #690375)",
-    "cardmarketTrendPrice": 3.65,
+    "cardmarketTrendPrice": 1857.78,
     "tcgplayerProductId": 450301,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 3.94,
@@ -18488,8 +18621,27 @@
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
-    "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.454Z"
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:37:08.125Z",
+    "quote": {
+      "cardmarket": 1857.78,
+      "tcgplayer": null
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1857.78,
+        "low": 2199,
+        "average": 2000,
+        "average1Day": 1666.67,
+        "average7Days": 1634.22,
+        "average30Days": 976.7
+      },
+      "usMarket": {
+        "market": null,
+        "inventory": null
+      }
+    },
+    "variant": "Winner promo · TCGplayer #450301"
   },
   "card-tcgplayer-544772": {
     "id": "card-tcgplayer-544772",
@@ -18498,11 +18650,11 @@
     "number": "P-001",
     "set": "One Piece Promotion Cards",
     "setCode": "P",
-    "cardmarketProductId": 690375,
-    "cardmarketExpansionId": 5230,
+    "cardmarketProductId": 766638,
+    "cardmarketExpansionId": 5262,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #690375)",
-    "cardmarketTrendPrice": 3.65,
+    "cardmarketTrendPrice": 895.95,
     "tcgplayerProductId": 544772,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 3.94,
@@ -18511,8 +18663,27 @@
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
-    "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.454Z"
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:37:08.125Z",
+    "quote": {
+      "cardmarket": 895.95,
+      "tcgplayer": null
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 895.95,
+        "low": 96969,
+        "average": 895.95,
+        "average1Day": 895.95,
+        "average7Days": 895.95,
+        "average30Days": 895.95
+      },
+      "usMarket": {
+        "market": null,
+        "inventory": null
+      }
+    },
+    "variant": "Winner promo · TCGplayer #544772"
   },
   "card-tcgplayer-544775": {
     "id": "card-tcgplayer-544775",
@@ -18521,11 +18692,11 @@
     "number": "P-001",
     "set": "One Piece Promotion Cards",
     "setCode": "P",
-    "cardmarketProductId": 690375,
-    "cardmarketExpansionId": 5230,
+    "cardmarketProductId": 766638,
+    "cardmarketExpansionId": 5262,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #690375)",
-    "cardmarketTrendPrice": 3.65,
+    "cardmarketTrendPrice": 895.95,
     "tcgplayerProductId": 544775,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 3.94,
@@ -18534,8 +18705,27 @@
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
-    "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.454Z"
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:37:08.125Z",
+    "quote": {
+      "cardmarket": 895.95,
+      "tcgplayer": null
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 895.95,
+        "low": 96969,
+        "average": 895.95,
+        "average1Day": 895.95,
+        "average7Days": 895.95,
+        "average30Days": 895.95
+      },
+      "usMarket": {
+        "market": null,
+        "inventory": null
+      }
+    },
+    "variant": "Winner promo · TCGplayer #544775"
   },
   "card-tcgplayer-544778": {
     "id": "card-tcgplayer-544778",
@@ -37737,5 +37927,5278 @@
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
     "updatedAt": "2026-10-12T14:59:07.472Z"
+  },
+  "card-tcgplayer-509752": {
+    "cardmarketProductId": 698916,
+    "cardmarketExpansionId": 5267,
+    "cardmarketPriceState": "available",
+    "quote": {
+      "cardmarket": 134.15,
+      "tcgplayer": 120.6
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 134.15,
+        "low": 80,
+        "average": 101.33,
+        "average1Day": 87.5,
+        "average7Days": 183.07,
+        "average30Days": 143.85
+      },
+      "usMarket": {
+        "market": 120.6,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:37:08.118Z",
+    "id": "card-tcgplayer-509752",
+    "name": "Monkey.D.Luffy (001) (Offline Regional 2024 Vol. 2) [Winner]",
+    "productName": "Monkey.D.Luffy (Alternate Art)",
+    "set": "One Piece Promotion Cards",
+    "setCode": "P",
+    "number": "P-001",
+    "variant": "Alternate art · TCGplayer #509752",
+    "cardmarketTrendPrice": 134.15
+  },
+  "card-tcgplayer-503023": {
+    "cardmarketProductId": 717506,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "available",
+    "quote": {
+      "cardmarket": 1857.78,
+      "tcgplayer": 1300
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1857.78,
+        "low": 2199,
+        "average": 2000,
+        "average1Day": 1666.67,
+        "average7Days": 1634.22,
+        "average30Days": 976.7
+      },
+      "usMarket": {
+        "market": 1300,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:37:08.122Z",
+    "id": "card-tcgplayer-503023",
+    "name": "Monkey.D.Luffy (001) (Offline Regional 2024 Vol. 2) [Winner]",
+    "productName": "Monkey.D.Luffy (Store Championship Trophy Card)",
+    "set": "One Piece Promotion Cards",
+    "setCode": "P",
+    "number": "P-001",
+    "variant": "Champion promo · TCGplayer #503023",
+    "cardmarketTrendPrice": 1857.78
+  },
+  "card-tcgplayer-450300": {
+    "cardmarketProductId": 691231,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "available",
+    "quote": {
+      "cardmarket": 75.44,
+      "tcgplayer": 196.98
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 75.44,
+        "low": 60,
+        "average": 106.61,
+        "average1Day": 108.33,
+        "average7Days": 106.86,
+        "average30Days": 133.45
+      },
+      "usMarket": {
+        "market": 196.98,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:37:08.124Z",
+    "id": "card-tcgplayer-450300",
+    "name": "Monkey.D.Luffy (001) (Offline Regional 2024 Vol. 2) [Winner]",
+    "productName": "Monkey.D.Luffy (Super Pre-Release) [Participant]",
+    "set": "One Piece Promotion Cards",
+    "setCode": "P",
+    "number": "P-001",
+    "variant": "Promotional art · Participant · TCGplayer #450300",
+    "cardmarketTrendPrice": 75.44
+  },
+  "card-optcg-e16295be8bd30834ff90": {
+    "cardmarketProductId": 767989,
+    "cardmarketExpansionId": 5585,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 1.47,
+      "tcgplayer": 2.29
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1.47,
+        "low": 0.03,
+        "average": 1.34,
+        "average1Day": 1.13,
+        "average7Days": 1.46,
+        "average30Days": 1.39
+      },
+      "usMarket": {
+        "market": 2.29,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.784Z",
+    "id": "card-optcg-e16295be8bd30834ff90"
+  },
+  "card-tcgplayer-629758": {
+    "cardmarketProductId": 821355,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 1459.64,
+      "tcgplayer": 949.73
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1459.64,
+        "low": 1579.99,
+        "average": 1300,
+        "average1Day": 1300,
+        "average7Days": 1140.55,
+        "average30Days": 889.86
+      },
+      "usMarket": {
+        "market": 949.73,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.784Z",
+    "id": "card-tcgplayer-629758"
+  },
+  "card-tcgplayer-503020": {
+    "cardmarketProductId": 717498,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 42.4,
+      "tcgplayer": 69.89
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 42.4,
+        "low": 34.99,
+        "average": 38.25,
+        "average1Day": 29,
+        "average7Days": 43.72,
+        "average30Days": 46.04
+      },
+      "usMarket": {
+        "market": 69.89,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.785Z",
+    "id": "card-tcgplayer-503020"
+  },
+  "card-tcgplayer-510707": {
+    "cardmarketProductId": 729809,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 15.63,
+      "tcgplayer": 14.97
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 15.63,
+        "low": 10,
+        "average": 14.29,
+        "average1Day": 8,
+        "average7Days": 14.9,
+        "average30Days": 12.17
+      },
+      "usMarket": {
+        "market": 14.97,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.785Z",
+    "id": "card-tcgplayer-510707"
+  },
+  "card-tcgplayer-503019": {
+    "cardmarketProductId": 717497,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 4.66,
+      "tcgplayer": 2.71
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 4.66,
+        "low": 2.49,
+        "average": 4.95,
+        "average1Day": 4.96,
+        "average7Days": 4.72,
+        "average30Days": 4.05
+      },
+      "usMarket": {
+        "market": 2.71,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.785Z",
+    "id": "card-tcgplayer-503019"
+  },
+  "card-tcgplayer-514047": {
+    "cardmarketProductId": 762664,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 5033.52,
+      "tcgplayer": null
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 5033.52,
+        "low": 8500,
+        "average": 9300,
+        "average1Day": 9300,
+        "average7Days": 6707.14,
+        "average30Days": 3412.09
+      },
+      "usMarket": {
+        "market": null,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.785Z",
+    "id": "card-tcgplayer-514047"
+  },
+  "card-tcgplayer-552709": {
+    "cardmarketProductId": 773422,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 1867.95,
+      "tcgplayer": null
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1867.95,
+        "low": 3000,
+        "average": 2650,
+        "average1Day": 2000,
+        "average7Days": 1926.25,
+        "average30Days": 890.82
+      },
+      "usMarket": {
+        "market": null,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.785Z",
+    "id": "card-tcgplayer-552709"
+  },
+  "card-tcgplayer-510712": {
+    "cardmarketProductId": 729810,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 4.18,
+      "tcgplayer": 4.87
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 4.18,
+        "low": 3.89,
+        "average": 4.39,
+        "average1Day": 3.5,
+        "average7Days": 4.16,
+        "average30Days": 4.92
+      },
+      "usMarket": {
+        "market": 4.87,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.785Z",
+    "id": "card-tcgplayer-510712"
+  },
+  "card-tcgplayer-514044": {
+    "cardmarketProductId": 729810,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 4.18,
+      "tcgplayer": 140.58
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 4.18,
+        "low": 3.89,
+        "average": 4.39,
+        "average1Day": 3.5,
+        "average7Days": 4.16,
+        "average30Days": 4.92
+      },
+      "usMarket": {
+        "market": 140.58,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.785Z",
+    "id": "card-tcgplayer-514044"
+  },
+  "card-tcgplayer-515352": {
+    "cardmarketProductId": 719924,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 538.34,
+      "tcgplayer": 4.99
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 538.34,
+        "low": 390,
+        "average": 540,
+        "average1Day": 540,
+        "average7Days": 507,
+        "average30Days": 244.29
+      },
+      "usMarket": {
+        "market": 4.99,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.786Z",
+    "id": "card-tcgplayer-515352"
+  },
+  "card-tcgplayer-503018": {
+    "cardmarketProductId": 717496,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 77.44,
+      "tcgplayer": 93.85
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 77.44,
+        "low": 39.99,
+        "average": 59,
+        "average1Day": 35,
+        "average7Days": 66.86,
+        "average30Days": 36.76
+      },
+      "usMarket": {
+        "market": 93.85,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.786Z",
+    "id": "card-tcgplayer-503018"
+  },
+  "card-tcgplayer-509466": {
+    "cardmarketProductId": 708381,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 1458.27,
+      "tcgplayer": null
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1458.27,
+        "low": 5900,
+        "average": 2600,
+        "average1Day": 2600,
+        "average7Days": 1711.29,
+        "average30Days": 1160.21
+      },
+      "usMarket": {
+        "market": null,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.786Z",
+    "id": "card-tcgplayer-509466"
+  },
+  "card-tcgplayer-535277": {
+    "cardmarketProductId": 696681,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 118.68,
+      "tcgplayer": 155.77
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 118.68,
+        "low": 180,
+        "average": 180,
+        "average1Day": 180,
+        "average7Days": 132.86,
+        "average30Days": 94.93
+      },
+      "usMarket": {
+        "market": 155.77,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.786Z",
+    "id": "card-tcgplayer-535277"
+  },
+  "card-tcgplayer-503017": {
+    "cardmarketProductId": 717495,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 13.12,
+      "tcgplayer": 16.83
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 13.12,
+        "low": 10.3,
+        "average": 10.83,
+        "average1Day": 8,
+        "average7Days": 11,
+        "average30Days": 7.63
+      },
+      "usMarket": {
+        "market": 16.83,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.786Z",
+    "id": "card-tcgplayer-503017"
+  },
+  "card-tcgplayer-509465": {
+    "cardmarketProductId": 708383,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 1274.09,
+      "tcgplayer": 1049.48
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1274.09,
+        "low": 1100,
+        "average": 1900,
+        "average1Day": 2600,
+        "average7Days": 1193,
+        "average30Days": 657.66
+      },
+      "usMarket": {
+        "market": 1049.48,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.786Z",
+    "id": "card-tcgplayer-509465"
+  },
+  "card-tcgplayer-514046": {
+    "cardmarketProductId": 732276,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 1070.32,
+      "tcgplayer": 999.99
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1070.32,
+        "low": 1850,
+        "average": 2200,
+        "average1Day": 2200,
+        "average7Days": 1249.37,
+        "average30Days": 873.56
+      },
+      "usMarket": {
+        "market": 999.99,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.786Z",
+    "id": "card-tcgplayer-514046"
+  },
+  "card-tcgplayer-510718": {
+    "cardmarketProductId": 729811,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 3.45,
+      "tcgplayer": 2.15
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 3.45,
+        "low": 2.2,
+        "average": 3.37,
+        "average1Day": 2,
+        "average7Days": 3.19,
+        "average30Days": 3.03
+      },
+      "usMarket": {
+        "market": 2.15,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.786Z",
+    "id": "card-tcgplayer-510718"
+  },
+  "card-tcgplayer-510722": {
+    "cardmarketProductId": 729812,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 3.96,
+      "tcgplayer": 2.17
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 3.96,
+        "low": 2,
+        "average": 4.45,
+        "average1Day": 2.9,
+        "average7Days": 3.57,
+        "average30Days": 2.61
+      },
+      "usMarket": {
+        "market": 2.17,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.786Z",
+    "id": "card-tcgplayer-510722"
+  },
+  "card-tcgplayer-510726": {
+    "cardmarketProductId": 729813,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 16.03,
+      "tcgplayer": 18.51
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 16.03,
+        "low": 9.98,
+        "average": 14.33,
+        "average1Day": 8,
+        "average7Days": 14.28,
+        "average30Days": 12.89
+      },
+      "usMarket": {
+        "market": 18.51,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.786Z",
+    "id": "card-tcgplayer-510726"
+  },
+  "card-tcgplayer-561184": {
+    "cardmarketProductId": 773423,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 595.14,
+      "tcgplayer": 549.3
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 595.14,
+        "low": 490,
+        "average": 610,
+        "average1Day": 719.99,
+        "average7Days": 505.45,
+        "average30Days": 374.15
+      },
+      "usMarket": {
+        "market": 549.3,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.787Z",
+    "id": "card-tcgplayer-561184"
+  },
+  "card-tcgplayer-561172": {
+    "cardmarketProductId": 773424,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 1595.61,
+      "tcgplayer": null
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1595.61,
+        "low": 3000,
+        "average": 2600,
+        "average1Day": 2600,
+        "average7Days": 1637.57,
+        "average30Days": 1197.87
+      },
+      "usMarket": {
+        "market": null,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.787Z",
+    "id": "card-tcgplayer-561172"
+  },
+  "card-tcgplayer-584365": {
+    "cardmarketProductId": 794716,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 707.81,
+      "tcgplayer": 761.97
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 707.81,
+        "low": 899,
+        "average": 622,
+        "average1Day": 950,
+        "average7Days": 672.86,
+        "average30Days": 317.17
+      },
+      "usMarket": {
+        "market": 761.97,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.787Z",
+    "id": "card-tcgplayer-584365"
+  },
+  "card-tcgplayer-561183": {
+    "cardmarketProductId": 773425,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 842.7,
+      "tcgplayer": null
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 842.7,
+        "low": 1400,
+        "average": 1400,
+        "average1Day": 1400,
+        "average7Days": 966.25,
+        "average30Days": 637.11
+      },
+      "usMarket": {
+        "market": null,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.787Z",
+    "id": "card-tcgplayer-561183"
+  },
+  "card-tcgplayer-583773": {
+    "cardmarketProductId": 794717,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 1438.65,
+      "tcgplayer": null
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1438.65,
+        "low": 6000,
+        "average": null,
+        "average1Day": 1850,
+        "average7Days": 1280.71,
+        "average30Days": 505.05
+      },
+      "usMarket": {
+        "market": null,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.787Z",
+    "id": "card-tcgplayer-583773"
+  },
+  "card-tcgplayer-584366": {
+    "cardmarketProductId": 794718,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 3800.83,
+      "tcgplayer": 8000
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 3800.83,
+        "low": 4500,
+        "average": 5000,
+        "average1Day": 5800,
+        "average7Days": 2042.86,
+        "average30Days": 1592.86
+      },
+      "usMarket": {
+        "market": 8000,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.787Z",
+    "id": "card-tcgplayer-584366"
+  },
+  "card-tcgplayer-657799": {
+    "cardmarketProductId": 857365,
+    "cardmarketExpansionId": 6684,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 45.29,
+      "tcgplayer": 80.2
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 45.29,
+        "low": 33.9,
+        "average": 56.75,
+        "average1Day": 49,
+        "average7Days": 53.29,
+        "average30Days": 75.87
+      },
+      "usMarket": {
+        "market": 80.2,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.788Z",
+    "id": "card-tcgplayer-657799"
+  },
+  "card-tcgplayer-632670": {
+    "cardmarketProductId": 825874,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 82.51,
+      "tcgplayer": 80.1
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 82.51,
+        "low": 35,
+        "average": null,
+        "average1Day": 35,
+        "average7Days": 82.74,
+        "average30Days": 43.3
+      },
+      "usMarket": {
+        "market": 80.1,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.789Z",
+    "id": "card-tcgplayer-632670"
+  },
+  "card-tcgplayer-629757": {
+    "cardmarketProductId": 825874,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 82.51,
+      "tcgplayer": 66
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 82.51,
+        "low": 35,
+        "average": null,
+        "average1Day": 35,
+        "average7Days": 82.74,
+        "average30Days": 43.3
+      },
+      "usMarket": {
+        "market": 66,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.789Z",
+    "id": "card-tcgplayer-629757"
+  },
+  "card-tcgplayer-615309": {
+    "cardmarketProductId": 818271,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 460,
+      "tcgplayer": null
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 460,
+        "low": 899.9,
+        "average": 515,
+        "average1Day": 460,
+        "average7Days": 515,
+        "average30Days": 515
+      },
+      "usMarket": {
+        "market": null,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.789Z",
+    "id": "card-tcgplayer-615309"
+  },
+  "card-tcgplayer-646742": {
+    "cardmarketProductId": 840741,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 509.95,
+      "tcgplayer": 424.24
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 509.95,
+        "low": 290,
+        "average": 380,
+        "average1Day": 380,
+        "average7Days": 442.41,
+        "average30Days": 268.26
+      },
+      "usMarket": {
+        "market": 424.24,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.789Z",
+    "id": "card-tcgplayer-646742"
+  },
+  "card-tcgplayer-646741": {
+    "cardmarketProductId": 840743,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 160.89,
+      "tcgplayer": 221.02
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 160.89,
+        "low": 180,
+        "average": 173.69,
+        "average1Day": 179.99,
+        "average7Days": 177.33,
+        "average30Days": 157.56
+      },
+      "usMarket": {
+        "market": 221.02,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.789Z",
+    "id": "card-tcgplayer-646741"
+  },
+  "card-tcgplayer-657800": {
+    "cardmarketProductId": 857367,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 21.33,
+      "tcgplayer": 32.37
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 21.33,
+        "low": 16,
+        "average": 23.42,
+        "average1Day": 28.9,
+        "average7Days": 24.36,
+        "average30Days": 31.91
+      },
+      "usMarket": {
+        "market": 32.37,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.789Z",
+    "id": "card-tcgplayer-657800"
+  },
+  "card-tcgplayer-646745": {
+    "cardmarketProductId": 854475,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 680.54,
+      "tcgplayer": 398.97
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 680.54,
+        "low": 590,
+        "average": 599.5,
+        "average1Day": 699,
+        "average7Days": 480.43,
+        "average30Days": 408.67
+      },
+      "usMarket": {
+        "market": 398.97,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.790Z",
+    "id": "card-tcgplayer-646745"
+  },
+  "card-tcgplayer-646747": {
+    "cardmarketProductId": 837872,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 2221.24,
+      "tcgplayer": null
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 2221.24,
+        "low": 1649.98,
+        "average": 2000,
+        "average1Day": 2000,
+        "average7Days": 1146,
+        "average30Days": 1146
+      },
+      "usMarket": {
+        "market": null,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.790Z",
+    "id": "card-tcgplayer-646747"
+  },
+  "card-tcgplayer-657117": {
+    "cardmarketProductId": 857806,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 2082.82,
+      "tcgplayer": 1850
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 2082.82,
+        "low": 1175,
+        "average": 1995,
+        "average1Day": 1995,
+        "average7Days": 1520.71,
+        "average30Days": 925.52
+      },
+      "usMarket": {
+        "market": 1850,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.791Z",
+    "id": "card-tcgplayer-657117"
+  },
+  "card-tcgplayer-657112": {
+    "cardmarketProductId": 859004,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 17.3,
+      "tcgplayer": 28.44
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 17.3,
+        "low": 20,
+        "average": 20.3,
+        "average1Day": 20,
+        "average7Days": 20.27,
+        "average30Days": 33
+      },
+      "usMarket": {
+        "market": 28.44,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.791Z",
+    "id": "card-tcgplayer-657112"
+  },
+  "card-tcgplayer-657114": {
+    "cardmarketProductId": 857807,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 446.1,
+      "tcgplayer": null
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 446.1,
+        "low": 1999,
+        "average": 870,
+        "average1Day": 890,
+        "average7Days": 339.16,
+        "average30Days": 241.28
+      },
+      "usMarket": {
+        "market": null,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.791Z",
+    "id": "card-tcgplayer-657114"
+  },
+  "card-tcgplayer-686281": {
+    "cardmarketProductId": 884456,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 1013.39,
+      "tcgplayer": 710.69
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1013.39,
+        "low": 600,
+        "average": 899,
+        "average1Day": 899,
+        "average7Days": 841.14,
+        "average30Days": 841.14
+      },
+      "usMarket": {
+        "market": 710.69,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.791Z",
+    "id": "card-tcgplayer-686281"
+  },
+  "card-tcgplayer-692134": {
+    "cardmarketProductId": 888106,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 2100,
+      "tcgplayer": 2048.73
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 2100,
+        "low": 999,
+        "average": 2250,
+        "average1Day": 2100,
+        "average7Days": 2250,
+        "average30Days": 2250
+      },
+      "usMarket": {
+        "market": 2048.73,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.791Z",
+    "id": "card-tcgplayer-692134"
+  },
+  "card-tcgplayer-682929": {
+    "cardmarketProductId": 878022,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 334.51,
+      "tcgplayer": 192.06
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 334.51,
+        "low": 150,
+        "average": 263.14,
+        "average1Day": 700,
+        "average7Days": 255.78,
+        "average30Days": 146.58
+      },
+      "usMarket": {
+        "market": 192.06,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.792Z",
+    "id": "card-tcgplayer-682929"
+  },
+  "card-tcgplayer-657113": {
+    "cardmarketProductId": 859005,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 601.8,
+      "tcgplayer": 458.48
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 601.8,
+        "low": 320,
+        "average": 500,
+        "average1Day": 460,
+        "average7Days": 480.27,
+        "average30Days": 390.18
+      },
+      "usMarket": {
+        "market": 458.48,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.792Z",
+    "id": "card-tcgplayer-657113"
+  },
+  "card-tcgplayer-684105": {
+    "cardmarketProductId": 882470,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 3158.11,
+      "tcgplayer": 3999.95
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 3158.11,
+        "low": 2500,
+        "average": 2600,
+        "average1Day": 2600,
+        "average7Days": 3222.38,
+        "average30Days": 2947.12
+      },
+      "usMarket": {
+        "market": 3999.95,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.792Z",
+    "id": "card-tcgplayer-684105"
+  },
+  "card-tcgplayer-683981": {
+    "cardmarketProductId": 882472,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 1181.4,
+      "tcgplayer": 1281.94
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1181.4,
+        "low": 850,
+        "average": 1100,
+        "average1Day": 1100,
+        "average7Days": 1027.14,
+        "average30Days": 915.44
+      },
+      "usMarket": {
+        "market": 1281.94,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.792Z",
+    "id": "card-tcgplayer-683981"
+  },
+  "card-tcgplayer-692133": {
+    "cardmarketProductId": 888107,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 1418.65,
+      "tcgplayer": null
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1418.65,
+        "low": 1000,
+        "average": 1440,
+        "average1Day": 1480,
+        "average7Days": 1831.67,
+        "average30Days": 1844.61
+      },
+      "usMarket": {
+        "market": null,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.792Z",
+    "id": "card-tcgplayer-692133"
+  },
+  "card-tcgplayer-692135": {
+    "cardmarketProductId": 888108,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 2900,
+      "tcgplayer": null
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 2900,
+        "low": 180,
+        "average": 2900,
+        "average1Day": 2900,
+        "average7Days": 2900,
+        "average30Days": 2900
+      },
+      "usMarket": {
+        "market": null,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.792Z",
+    "id": "card-tcgplayer-692135"
+  },
+  "card-tcgplayer-721297": {
+    "cardmarketProductId": 904362,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 1183.82,
+      "tcgplayer": null
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1183.82,
+        "low": 1080,
+        "average": 1166.33,
+        "average1Day": 1200,
+        "average7Days": 1233,
+        "average30Days": 1233
+      },
+      "usMarket": {
+        "market": null,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.793Z",
+    "id": "card-tcgplayer-721297"
+  },
+  "card-tcgplayer-710741": {
+    "cardmarketProductId": 901283,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 2400,
+      "tcgplayer": null
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 2400,
+        "low": 2500,
+        "average": 2500,
+        "average1Day": 2400,
+        "average7Days": 2450,
+        "average30Days": 2450
+      },
+      "usMarket": {
+        "market": null,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.793Z",
+    "id": "card-tcgplayer-710741"
+  },
+  "card-optcg-d8b9e3f0b29cf9ea38be": {
+    "cardmarketProductId": 904396,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 80,
+      "tcgplayer": 58.88
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 80,
+        "low": 80,
+        "average": 82.66,
+        "average1Day": 80,
+        "average7Days": 119.67,
+        "average30Days": 119.67
+      },
+      "usMarket": {
+        "market": 58.88,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.793Z",
+    "id": "card-optcg-d8b9e3f0b29cf9ea38be"
+  },
+  "card-optcg-df02bb1a9fee60904e24": {
+    "cardmarketProductId": 817502,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.35,
+      "tcgplayer": 158.76
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.35,
+        "low": 0.09,
+        "average": 0.21,
+        "average1Day": 0.2,
+        "average7Days": 0.27,
+        "average30Days": 0.24
+      },
+      "usMarket": {
+        "market": 158.76,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.793Z",
+    "id": "card-optcg-df02bb1a9fee60904e24"
+  },
+  "card-optcg-74e049ba0aef8bbe8761": {
+    "cardmarketProductId": 858539,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 4.33,
+      "tcgplayer": 138.99
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 4.33,
+        "low": 1.95,
+        "average": 3.55,
+        "average1Day": 5,
+        "average7Days": 4.68,
+        "average30Days": 3.87
+      },
+      "usMarket": {
+        "market": 138.99,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.793Z",
+    "id": "card-optcg-74e049ba0aef8bbe8761"
+  },
+  "card-tcgplayer-450302": {
+    "cardmarketProductId": 691233,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 1.63,
+      "tcgplayer": 3.42
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1.63,
+        "low": 0.4,
+        "average": 1.85,
+        "average1Day": 2.25,
+        "average7Days": 1.71,
+        "average30Days": 1.71
+      },
+      "usMarket": {
+        "market": 3.42,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.793Z",
+    "id": "card-tcgplayer-450302"
+  },
+  "card-tcgplayer-450303": {
+    "cardmarketProductId": 766643,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "trend-unavailable",
+    "quote": {
+      "cardmarket": null,
+      "tcgplayer": 1.83
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": null,
+        "low": null,
+        "average": null,
+        "average1Day": null,
+        "average7Days": null,
+        "average30Days": null
+      },
+      "usMarket": {
+        "market": 1.83,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-450303"
+  },
+  "card-tcgplayer-510733": {
+    "cardmarketProductId": 729808,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 75.81,
+      "tcgplayer": 57.84
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 75.81,
+        "low": 48.5,
+        "average": 63.37,
+        "average1Day": 43,
+        "average7Days": 68.71,
+        "average30Days": 62.08
+      },
+      "usMarket": {
+        "market": 57.84,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-510733"
+  },
+  "card-tcgplayer-450304": {
+    "cardmarketProductId": 691235,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.84,
+      "tcgplayer": 1.36
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.84,
+        "low": 0.19,
+        "average": 1.13,
+        "average1Day": 1.24,
+        "average7Days": 1.03,
+        "average30Days": 1.03
+      },
+      "usMarket": {
+        "market": 1.36,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-450304"
+  },
+  "card-tcgplayer-450305": {
+    "cardmarketProductId": 691236,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.86,
+      "tcgplayer": 1.26
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.86,
+        "low": 0.19,
+        "average": 1.27,
+        "average1Day": 0.5,
+        "average7Days": 0.95,
+        "average30Days": 1.14
+      },
+      "usMarket": {
+        "market": 1.26,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-450305"
+  },
+  "card-tcgplayer-525310": {
+    "cardmarketProductId": 732278,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 15.11,
+      "tcgplayer": 103.04
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 15.11,
+        "low": 9.5,
+        "average": 15.17,
+        "average1Day": 16.5,
+        "average7Days": 15.31,
+        "average30Days": 17.79
+      },
+      "usMarket": {
+        "market": 103.04,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-525310"
+  },
+  "card-tcgplayer-457018": {
+    "cardmarketProductId": 752047,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 270.06,
+      "tcgplayer": 189.3
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 270.06,
+        "low": 115,
+        "average": 114.99,
+        "average1Day": 80,
+        "average7Days": 218.57,
+        "average30Days": 98.89
+      },
+      "usMarket": {
+        "market": 189.3,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-457018"
+  },
+  "card-tcgplayer-455801": {
+    "cardmarketProductId": 752048,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 222.57,
+      "tcgplayer": 10.74
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 222.57,
+        "low": 164,
+        "average": 175,
+        "average1Day": 150,
+        "average7Days": 172,
+        "average30Days": 175.84
+      },
+      "usMarket": {
+        "market": 10.74,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-455801"
+  },
+  "card-tcgplayer-525315": {
+    "cardmarketProductId": 692239,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 283.86,
+      "tcgplayer": 209.11
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 283.86,
+        "low": 150,
+        "average": 252.13,
+        "average1Day": 205,
+        "average7Days": 232.16,
+        "average30Days": 184.01
+      },
+      "usMarket": {
+        "market": 209.11,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-525315"
+  },
+  "card-tcgplayer-457019": {
+    "cardmarketProductId": 752048,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 222.57,
+      "tcgplayer": 243.28
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 222.57,
+        "low": 164,
+        "average": 175,
+        "average1Day": 150,
+        "average7Days": 172,
+        "average30Days": 175.84
+      },
+      "usMarket": {
+        "market": 243.28,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-457019"
+  },
+  "card-tcgplayer-525317": {
+    "cardmarketProductId": 752054,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 128.21,
+      "tcgplayer": 104.22
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 128.21,
+        "low": 50,
+        "average": 70,
+        "average1Day": 70,
+        "average7Days": 94.12,
+        "average30Days": 58.37
+      },
+      "usMarket": {
+        "market": 104.22,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-525317"
+  },
+  "card-tcgplayer-455802": {
+    "cardmarketProductId": 752054,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 128.21,
+      "tcgplayer": 6.07
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 128.21,
+        "low": 50,
+        "average": 70,
+        "average1Day": 70,
+        "average7Days": 94.12,
+        "average30Days": 58.37
+      },
+      "usMarket": {
+        "market": 6.07,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-455802"
+  },
+  "card-tcgplayer-455804": {
+    "cardmarketProductId": 752056,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 49.33,
+      "tcgplayer": 4.23
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 49.33,
+        "low": 37.99,
+        "average": 38.33,
+        "average1Day": 41,
+        "average7Days": 44.14,
+        "average30Days": 29.68
+      },
+      "usMarket": {
+        "market": 4.23,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-455804"
+  },
+  "card-tcgplayer-525319": {
+    "cardmarketProductId": 691240,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 4.45,
+      "tcgplayer": 31.95
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 4.45,
+        "low": 2.99,
+        "average": 3.86,
+        "average1Day": 3.99,
+        "average7Days": 4.16,
+        "average30Days": 3.94
+      },
+      "usMarket": {
+        "market": 31.95,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-525319"
+  },
+  "card-tcgplayer-455805": {
+    "cardmarketProductId": 752057,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 50.59,
+      "tcgplayer": 5.89
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 50.59,
+        "low": 38.95,
+        "average": 40.66,
+        "average1Day": 39,
+        "average7Days": 43.7,
+        "average30Days": 35.65
+      },
+      "usMarket": {
+        "market": 5.89,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-455805"
+  },
+  "card-tcgplayer-525323": {
+    "cardmarketProductId": 692250,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 43.45,
+      "tcgplayer": 58.19
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 43.45,
+        "low": 30,
+        "average": 40.2,
+        "average1Day": 42.99,
+        "average7Days": 38.89,
+        "average30Days": 33.91
+      },
+      "usMarket": {
+        "market": 58.19,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-525323"
+  },
+  "card-tcgplayer-504472": {
+    "cardmarketProductId": 692214,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 1.04,
+      "tcgplayer": 11.26
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1.04,
+        "low": 0.3,
+        "average": 0.94,
+        "average1Day": 0.59,
+        "average7Days": 0.78,
+        "average30Days": 0.93
+      },
+      "usMarket": {
+        "market": 11.26,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-504472"
+  },
+  "card-tcgplayer-580048": {
+    "cardmarketProductId": 777163,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 10.21,
+      "tcgplayer": 32.1
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 10.21,
+        "low": 8,
+        "average": 12.41,
+        "average1Day": 10,
+        "average7Days": 10.93,
+        "average30Days": 12.33
+      },
+      "usMarket": {
+        "market": 32.1,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-580048"
+  },
+  "card-tcgplayer-548436": {
+    "cardmarketProductId": 787485,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 52.79,
+      "tcgplayer": 0.36
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 52.79,
+        "low": 34,
+        "average": 39.49,
+        "average1Day": 38.5,
+        "average7Days": 42.55,
+        "average30Days": 29.9
+      },
+      "usMarket": {
+        "market": 0.36,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-548436"
+  },
+  "card-tcgplayer-548437": {
+    "cardmarketProductId": 787485,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 52.79,
+      "tcgplayer": 10.54
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 52.79,
+        "low": 34,
+        "average": 39.49,
+        "average1Day": 38.5,
+        "average7Days": 42.55,
+        "average30Days": 29.9
+      },
+      "usMarket": {
+        "market": 10.54,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-548437"
+  },
+  "card-tcgplayer-580049": {
+    "cardmarketProductId": 777165,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 8.38,
+      "tcgplayer": 24.74
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 8.38,
+        "low": 4,
+        "average": 8.77,
+        "average1Day": 5,
+        "average7Days": 8.06,
+        "average30Days": 8.55
+      },
+      "usMarket": {
+        "market": 24.74,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-580049"
+  },
+  "card-tcgplayer-548438": {
+    "cardmarketProductId": 787487,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 25.14,
+      "tcgplayer": 0.38
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 25.14,
+        "low": 18,
+        "average": 20,
+        "average1Day": 16.5,
+        "average7Days": 21.5,
+        "average30Days": 20.59
+      },
+      "usMarket": {
+        "market": 0.38,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-548438"
+  },
+  "card-tcgplayer-548439": {
+    "cardmarketProductId": 787487,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 25.14,
+      "tcgplayer": 8.08
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 25.14,
+        "low": 18,
+        "average": 20,
+        "average1Day": 16.5,
+        "average7Days": 21.5,
+        "average30Days": 20.59
+      },
+      "usMarket": {
+        "market": 8.08,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-548439"
+  },
+  "card-tcgplayer-504473": {
+    "cardmarketProductId": 692220,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 3.65,
+      "tcgplayer": 42.97
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 3.65,
+        "low": 1.19,
+        "average": 5.75,
+        "average1Day": 3,
+        "average7Days": 3.44,
+        "average30Days": 4.15
+      },
+      "usMarket": {
+        "market": 42.97,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-504473"
+  },
+  "card-tcgplayer-482215": {
+    "cardmarketProductId": 699241,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 1.79,
+      "tcgplayer": 3.61
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1.79,
+        "low": 1,
+        "average": 1.74,
+        "average1Day": 4,
+        "average7Days": 1.92,
+        "average30Days": 1.98
+      },
+      "usMarket": {
+        "market": 3.61,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-482215"
+  },
+  "card-tcgplayer-482216": {
+    "cardmarketProductId": 699242,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 131.33,
+      "tcgplayer": 86.29
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 131.33,
+        "low": 73.29,
+        "average": 65,
+        "average1Day": 78,
+        "average7Days": 88.12,
+        "average30Days": 96.72
+      },
+      "usMarket": {
+        "market": 86.29,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-482216"
+  },
+  "card-tcgplayer-486778": {
+    "cardmarketProductId": 701306,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.42,
+      "tcgplayer": 0.38
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.42,
+        "low": 0.02,
+        "average": 0.21,
+        "average1Day": 0.1,
+        "average7Days": 0.55,
+        "average30Days": 0.27
+      },
+      "usMarket": {
+        "market": 0.38,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-486778"
+  },
+  "card-tcgplayer-497406": {
+    "cardmarketProductId": 704113,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 3.86,
+      "tcgplayer": 7.34
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 3.86,
+        "low": 2.99,
+        "average": 6.42,
+        "average1Day": 4.99,
+        "average7Days": 5.06,
+        "average30Days": 6.95
+      },
+      "usMarket": {
+        "market": 7.34,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-497406"
+  },
+  "card-tcgplayer-515361": {
+    "cardmarketProductId": 729799,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 1.57,
+      "tcgplayer": 3.02
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1.57,
+        "low": 0.4,
+        "average": 1.97,
+        "average1Day": 1.5,
+        "average7Days": 1.61,
+        "average30Days": 2.41
+      },
+      "usMarket": {
+        "market": 3.02,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-515361"
+  },
+  "card-tcgplayer-515362": {
+    "cardmarketProductId": 729800,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 542.11,
+      "tcgplayer": 455.8
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 542.11,
+        "low": 199.99,
+        "average": 237.23,
+        "average1Day": 235.85,
+        "average7Days": 455.07,
+        "average30Days": 356.82
+      },
+      "usMarket": {
+        "market": 455.8,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-515362"
+  },
+  "card-tcgplayer-520772": {
+    "cardmarketProductId": 748121,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 33.84,
+      "tcgplayer": 29.51
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 33.84,
+        "low": 27,
+        "average": 39.08,
+        "average1Day": 25,
+        "average7Days": 36.48,
+        "average30Days": 42.08
+      },
+      "usMarket": {
+        "market": 29.51,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-520772"
+  },
+  "card-tcgplayer-510688": {
+    "cardmarketProductId": 722801,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.64,
+      "tcgplayer": 0.81
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.64,
+        "low": 0.25,
+        "average": 0.71,
+        "average1Day": 0.49,
+        "average7Days": 0.69,
+        "average30Days": 0.93
+      },
+      "usMarket": {
+        "market": 0.81,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-510688"
+  },
+  "card-tcgplayer-544784": {
+    "cardmarketProductId": 766648,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 895.95,
+      "tcgplayer": 589.21
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 895.95,
+        "low": null,
+        "average": 895.95,
+        "average1Day": 895.95,
+        "average7Days": 585.48,
+        "average30Days": 585.48
+      },
+      "usMarket": {
+        "market": 589.21,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-544784"
+  },
+  "card-tcgplayer-580055": {
+    "cardmarketProductId": 787461,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 44.25,
+      "tcgplayer": 55.13
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 44.25,
+        "low": 35,
+        "average": 43.99,
+        "average1Day": 44.99,
+        "average7Days": 51.99,
+        "average30Days": 66.62
+      },
+      "usMarket": {
+        "market": 55.13,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-580055"
+  },
+  "card-tcgplayer-520773": {
+    "cardmarketProductId": 766648,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 895.95,
+      "tcgplayer": 663.33
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 895.95,
+        "low": null,
+        "average": 895.95,
+        "average1Day": 895.95,
+        "average7Days": 585.48,
+        "average30Days": 585.48
+      },
+      "usMarket": {
+        "market": 663.33,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-520773"
+  },
+  "card-tcgplayer-532752": {
+    "cardmarketProductId": 766646,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 82.11,
+      "tcgplayer": 204.86
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 82.11,
+        "low": 65.99,
+        "average": 97.33,
+        "average1Day": 84,
+        "average7Days": 93.11,
+        "average30Days": 137.8
+      },
+      "usMarket": {
+        "market": 204.86,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-532752"
+  },
+  "card-tcgplayer-544783": {
+    "cardmarketProductId": 766646,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 82.11,
+      "tcgplayer": 155.17
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 82.11,
+        "low": 65.99,
+        "average": 97.33,
+        "average1Day": 84,
+        "average7Days": 93.11,
+        "average30Days": 137.8
+      },
+      "usMarket": {
+        "market": 155.17,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-544783"
+  },
+  "card-tcgplayer-531486": {
+    "cardmarketProductId": 787461,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 44.25,
+      "tcgplayer": 3.61
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 44.25,
+        "low": 35,
+        "average": 43.99,
+        "average1Day": 44.99,
+        "average7Days": 51.99,
+        "average30Days": 66.62
+      },
+      "usMarket": {
+        "market": 3.61,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-531486"
+  },
+  "card-tcgplayer-544782": {
+    "cardmarketProductId": 766646,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 82.11,
+      "tcgplayer": 115.71
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 82.11,
+        "low": 65.99,
+        "average": 97.33,
+        "average1Day": 84,
+        "average7Days": 93.11,
+        "average30Days": 137.8
+      },
+      "usMarket": {
+        "market": 115.71,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-544782"
+  },
+  "card-tcgplayer-537438": {
+    "cardmarketProductId": 754941,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 239.71,
+      "tcgplayer": 2.63
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 239.71,
+        "low": 150,
+        "average": 246,
+        "average1Day": 160,
+        "average7Days": 237,
+        "average30Days": 256.08
+      },
+      "usMarket": {
+        "market": 2.63,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-537438"
+  },
+  "card-tcgplayer-537439": {
+    "cardmarketProductId": 754941,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 239.71,
+      "tcgplayer": 393.01
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 239.71,
+        "low": 150,
+        "average": 246,
+        "average1Day": 160,
+        "average7Days": 237,
+        "average30Days": 256.08
+      },
+      "usMarket": {
+        "market": 393.01,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-537439"
+  },
+  "card-tcgplayer-518694": {
+    "cardmarketProductId": 746240,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 77.9,
+      "tcgplayer": 80.05
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 77.9,
+        "low": 55,
+        "average": 60.5,
+        "average1Day": 55,
+        "average7Days": 73.87,
+        "average30Days": 71.79
+      },
+      "usMarket": {
+        "market": 80.05,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-518694"
+  },
+  "card-tcgplayer-518695": {
+    "cardmarketProductId": 746241,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 4.7,
+      "tcgplayer": 12.9
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 4.7,
+        "low": 5,
+        "average": 8.21,
+        "average1Day": 5.8,
+        "average7Days": 7.45,
+        "average30Days": 11.66
+      },
+      "usMarket": {
+        "market": 12.9,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-518695"
+  },
+  "card-tcgplayer-518696": {
+    "cardmarketProductId": 746242,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 6.03,
+      "tcgplayer": 6.71
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 6.03,
+        "low": 4.96,
+        "average": 7.24,
+        "average1Day": 5,
+        "average7Days": 6.85,
+        "average30Days": 5.7
+      },
+      "usMarket": {
+        "market": 6.71,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-518696"
+  },
+  "card-tcgplayer-518697": {
+    "cardmarketProductId": 746243,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 5.99,
+      "tcgplayer": 5.52
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 5.99,
+        "low": 4.48,
+        "average": 5.09,
+        "average1Day": 4.98,
+        "average7Days": 5.63,
+        "average30Days": 5.18
+      },
+      "usMarket": {
+        "market": 5.52,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-518697"
+  },
+  "card-tcgplayer-518698": {
+    "cardmarketProductId": 746244,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 4.29,
+      "tcgplayer": 4.95
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 4.29,
+        "low": 3,
+        "average": 4.62,
+        "average1Day": 5,
+        "average7Days": 5.13,
+        "average30Days": 5.15
+      },
+      "usMarket": {
+        "market": 4.95,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-518698"
+  },
+  "card-tcgplayer-518699": {
+    "cardmarketProductId": 768123,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 1.59,
+      "tcgplayer": 2.75
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1.59,
+        "low": 0.89,
+        "average": 1.07,
+        "average1Day": 1.59,
+        "average7Days": 1.67,
+        "average30Days": 1.59
+      },
+      "usMarket": {
+        "market": 2.75,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-518699"
+  },
+  "card-tcgplayer-518700": {
+    "cardmarketProductId": 746246,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.13,
+      "tcgplayer": 3.79
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.13,
+        "low": 0.02,
+        "average": 0.14,
+        "average1Day": 0.2,
+        "average7Days": 0.15,
+        "average30Days": 0.14
+      },
+      "usMarket": {
+        "market": 3.79,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-518700"
+  },
+  "card-tcgplayer-518701": {
+    "cardmarketProductId": 746247,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 7.98,
+      "tcgplayer": 1.97
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 7.98,
+        "low": 5,
+        "average": 6.33,
+        "average1Day": 6,
+        "average7Days": 6.99,
+        "average30Days": 7.83
+      },
+      "usMarket": {
+        "market": 1.97,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-518701"
+  },
+  "card-tcgplayer-518702": {
+    "cardmarketProductId": 746248,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.4,
+      "tcgplayer": 1.67
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.4,
+        "low": 0.02,
+        "average": 0.15,
+        "average1Day": 0.25,
+        "average7Days": 0.34,
+        "average30Days": 0.25
+      },
+      "usMarket": {
+        "market": 1.67,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-518702"
+  },
+  "card-tcgplayer-518703": {
+    "cardmarketProductId": 746249,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.68,
+      "tcgplayer": 5.91
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.68,
+        "low": 0.3,
+        "average": 0.51,
+        "average1Day": 0.35,
+        "average7Days": 0.59,
+        "average30Days": 0.57
+      },
+      "usMarket": {
+        "market": 5.91,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-518703"
+  },
+  "card-tcgplayer-532111": {
+    "cardmarketProductId": 754827,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.23,
+      "tcgplayer": 0.47
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.23,
+        "low": 0.02,
+        "average": 0.38,
+        "average1Day": 0.29,
+        "average7Days": 0.27,
+        "average30Days": 0.56
+      },
+      "usMarket": {
+        "market": 0.47,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-532111"
+  },
+  "card-tcgplayer-532114": {
+    "cardmarketProductId": 754830,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.33,
+      "tcgplayer": 0.34
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.33,
+        "low": 0.04,
+        "average": 0.28,
+        "average1Day": 0.2,
+        "average7Days": 0.29,
+        "average30Days": 0.25
+      },
+      "usMarket": {
+        "market": 0.34,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-532114"
+  },
+  "card-tcgplayer-532112": {
+    "cardmarketProductId": 754828,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.23,
+      "tcgplayer": 0.49
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.23,
+        "low": 0.08,
+        "average": 0.26,
+        "average1Day": 0.08,
+        "average7Days": 0.2,
+        "average30Days": 0.21
+      },
+      "usMarket": {
+        "market": 0.49,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-532112"
+  },
+  "card-tcgplayer-532113": {
+    "cardmarketProductId": 754829,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.3,
+      "tcgplayer": 0.43
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.3,
+        "low": 0.02,
+        "average": 0.29,
+        "average1Day": 0.4,
+        "average7Days": 0.27,
+        "average30Days": 0.23
+      },
+      "usMarket": {
+        "market": 0.43,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-532113"
+  },
+  "card-tcgplayer-537450": {
+    "cardmarketProductId": 754945,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.92,
+      "tcgplayer": 0.77
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.92,
+        "low": 0.4,
+        "average": 0.83,
+        "average1Day": 0.5,
+        "average7Days": 0.7,
+        "average30Days": 0.82
+      },
+      "usMarket": {
+        "market": 0.77,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-537450"
+  },
+  "card-tcgplayer-552050": {
+    "cardmarketProductId": 775725,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.53,
+      "tcgplayer": 2.4
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.53,
+        "low": 0.02,
+        "average": 0.42,
+        "average1Day": 0.81,
+        "average7Days": 0.63,
+        "average30Days": 0.38
+      },
+      "usMarket": {
+        "market": 2.4,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-552050"
+  },
+  "card-tcgplayer-552051": {
+    "cardmarketProductId": 775726,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 23.13,
+      "tcgplayer": 30.88
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 23.13,
+        "low": 21.99,
+        "average": 24.9,
+        "average1Day": 23.75,
+        "average7Days": 23.31,
+        "average30Days": 34.63
+      },
+      "usMarket": {
+        "market": 30.88,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-552051"
+  },
+  "card-tcgplayer-548442": {
+    "cardmarketProductId": 780216,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.38,
+      "tcgplayer": 0.6
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.38,
+        "low": 0.15,
+        "average": 0.37,
+        "average1Day": 1,
+        "average7Days": 0.46,
+        "average30Days": 0.41
+      },
+      "usMarket": {
+        "market": 0.6,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-548442"
+  },
+  "card-tcgplayer-577142": {
+    "cardmarketProductId": 788386,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.31,
+      "tcgplayer": 0.41
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.31,
+        "low": 0.04,
+        "average": 0.34,
+        "average1Day": 0.5,
+        "average7Days": 0.41,
+        "average30Days": 0.29
+      },
+      "usMarket": {
+        "market": 0.41,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-577142"
+  },
+  "card-tcgplayer-577143": {
+    "cardmarketProductId": 788386,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.31,
+      "tcgplayer": 14.3
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.31,
+        "low": 0.04,
+        "average": 0.34,
+        "average1Day": 0.5,
+        "average7Days": 0.41,
+        "average30Days": 0.29
+      },
+      "usMarket": {
+        "market": 14.3,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-577143"
+  },
+  "card-tcgplayer-548444": {
+    "cardmarketProductId": 780219,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.9,
+      "tcgplayer": 0.72
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.9,
+        "low": 0.3,
+        "average": 0.77,
+        "average1Day": 1,
+        "average7Days": 0.94,
+        "average30Days": 0.76
+      },
+      "usMarket": {
+        "market": 0.72,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-548444"
+  },
+  "card-tcgplayer-634529": {
+    "cardmarketProductId": 828306,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.39,
+      "tcgplayer": 0.34
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.39,
+        "low": 0.02,
+        "average": 0.26,
+        "average1Day": 0.99,
+        "average7Days": 0.27,
+        "average30Days": 0.21
+      },
+      "usMarket": {
+        "market": 0.34,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-634529"
+  },
+  "card-tcgplayer-634530": {
+    "cardmarketProductId": 828307,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 27.25,
+      "tcgplayer": 14.49
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 27.25,
+        "low": 16,
+        "average": 27.57,
+        "average1Day": 23.45,
+        "average7Days": 20.59,
+        "average30Days": 26.09
+      },
+      "usMarket": {
+        "market": 14.49,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-634530"
+  },
+  "card-tcgplayer-630420": {
+    "cardmarketProductId": 828305,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 44.4,
+      "tcgplayer": 0.33
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 44.4,
+        "low": 28,
+        "average": 43.74,
+        "average1Day": 37,
+        "average7Days": 41.65,
+        "average30Days": 47.38
+      },
+      "usMarket": {
+        "market": 0.33,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-630420"
+  },
+  "card-tcgplayer-630428": {
+    "cardmarketProductId": 828305,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 44.4,
+      "tcgplayer": 22.27
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 44.4,
+        "low": 28,
+        "average": 43.74,
+        "average1Day": 37,
+        "average7Days": 41.65,
+        "average30Days": 47.38
+      },
+      "usMarket": {
+        "market": 22.27,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.794Z",
+    "id": "card-tcgplayer-630428"
+  },
+  "card-tcgplayer-620828": {
+    "cardmarketProductId": 817502,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.35,
+      "tcgplayer": 1
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.35,
+        "low": 0.09,
+        "average": 0.21,
+        "average1Day": 0.2,
+        "average7Days": 0.27,
+        "average30Days": 0.24
+      },
+      "usMarket": {
+        "market": 1,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-620828"
+  },
+  "card-tcgplayer-620829": {
+    "cardmarketProductId": 817503,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 34.73,
+      "tcgplayer": 63.18
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 34.73,
+        "low": 18,
+        "average": 42.58,
+        "average1Day": 29.99,
+        "average7Days": 38.82,
+        "average30Days": 47.19
+      },
+      "usMarket": {
+        "market": 63.18,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-620829"
+  },
+  "card-tcgplayer-620834": {
+    "cardmarketProductId": 817504,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.89,
+      "tcgplayer": 1.19
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.89,
+        "low": 0.1,
+        "average": 0.7,
+        "average1Day": 0.5,
+        "average7Days": 0.99,
+        "average30Days": 0.67
+      },
+      "usMarket": {
+        "market": 1.19,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-620834"
+  },
+  "card-tcgplayer-646737": {
+    "cardmarketProductId": 840731,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 8.21,
+      "tcgplayer": 14.28
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 8.21,
+        "low": 7.8,
+        "average": 8.2,
+        "average1Day": 7.8,
+        "average7Days": 8.58,
+        "average30Days": 9.2
+      },
+      "usMarket": {
+        "market": 14.28,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-646737"
+  },
+  "card-tcgplayer-646738": {
+    "cardmarketProductId": 840747,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 4.37,
+      "tcgplayer": 7.2
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 4.37,
+        "low": 2,
+        "average": 4.65,
+        "average1Day": 5.53,
+        "average7Days": 4.81,
+        "average30Days": 5.79
+      },
+      "usMarket": {
+        "market": 7.2,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-646738"
+  },
+  "card-tcgplayer-646739": {
+    "cardmarketProductId": 840749,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 10.09,
+      "tcgplayer": 30.15
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 10.09,
+        "low": 7.9,
+        "average": 10.66,
+        "average1Day": 7,
+        "average7Days": 10.35,
+        "average30Days": 10.42
+      },
+      "usMarket": {
+        "market": 30.15,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-646739"
+  },
+  "card-tcgplayer-649246": {
+    "cardmarketProductId": 843119,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.39,
+      "tcgplayer": 0.46
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.39,
+        "low": 0.05,
+        "average": 0.54,
+        "average1Day": 0.44,
+        "average7Days": 0.31,
+        "average30Days": 0.5
+      },
+      "usMarket": {
+        "market": 0.46,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-649246"
+  },
+  "card-tcgplayer-671883": {
+    "cardmarketProductId": 865617,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 2.2,
+      "tcgplayer": 4.44
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 2.2,
+        "low": 1.61,
+        "average": 3.26,
+        "average1Day": 2.15,
+        "average7Days": 2.71,
+        "average30Days": 3.31
+      },
+      "usMarket": {
+        "market": 4.44,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-671883"
+  },
+  "card-tcgplayer-671884": {
+    "cardmarketProductId": 865618,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 27.15,
+      "tcgplayer": 36.54
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 27.15,
+        "low": 19.8,
+        "average": 34.43,
+        "average1Day": 30.5,
+        "average7Days": 28.9,
+        "average30Days": 36.19
+      },
+      "usMarket": {
+        "market": 36.54,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-671884"
+  },
+  "card-tcgplayer-675735": {
+    "cardmarketProductId": 878018,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 3.93,
+      "tcgplayer": 4.79
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 3.93,
+        "low": 3.8,
+        "average": 6.82,
+        "average1Day": 3.5,
+        "average7Days": 4.62,
+        "average30Days": 5.62
+      },
+      "usMarket": {
+        "market": 4.79,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-675735"
+  },
+  "card-tcgplayer-675736": {
+    "cardmarketProductId": 878019,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 5.17,
+      "tcgplayer": 10.43
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 5.17,
+        "low": 4,
+        "average": 4.03,
+        "average1Day": 5.34,
+        "average7Days": 5.24,
+        "average30Days": 4.79
+      },
+      "usMarket": {
+        "market": 10.43,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-675736"
+  },
+  "card-tcgplayer-675737": {
+    "cardmarketProductId": 901335,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 10.09,
+      "tcgplayer": 16.82
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 10.09,
+        "low": 9.5,
+        "average": 10,
+        "average1Day": 10,
+        "average7Days": 14,
+        "average30Days": 14
+      },
+      "usMarket": {
+        "market": 16.82,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-675737"
+  },
+  "card-tcgplayer-675738": {
+    "cardmarketProductId": 878021,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 4.39,
+      "tcgplayer": 3.05
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 4.39,
+        "low": 3.5,
+        "average": 4.73,
+        "average1Day": 4,
+        "average7Days": 4.44,
+        "average30Days": 4.38
+      },
+      "usMarket": {
+        "market": 3.05,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-675738"
+  },
+  "card-tcgplayer-710239": {
+    "cardmarketProductId": 904392,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 330,
+      "tcgplayer": 245.99
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 330,
+        "low": 350.99,
+        "average": 330,
+        "average1Day": 330,
+        "average7Days": 410,
+        "average30Days": 410
+      },
+      "usMarket": {
+        "market": 245.99,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-710239"
+  },
+  "card-tcgplayer-668173": {
+    "cardmarketProductId": 904392,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 330,
+      "tcgplayer": 0.5
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 330,
+        "low": 350.99,
+        "average": 330,
+        "average1Day": 330,
+        "average7Days": 410,
+        "average30Days": 410
+      },
+      "usMarket": {
+        "market": 0.5,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-668173"
+  },
+  "card-tcgplayer-684309": {
+    "cardmarketProductId": 904392,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 330,
+      "tcgplayer": 1.13
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 330,
+        "low": 350.99,
+        "average": 330,
+        "average1Day": 330,
+        "average7Days": 410,
+        "average30Days": 410
+      },
+      "usMarket": {
+        "market": 1.13,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-684309"
+  },
+  "card-tcgplayer-684302": {
+    "cardmarketProductId": 904392,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 330,
+      "tcgplayer": 30.04
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 330,
+        "low": 350.99,
+        "average": 330,
+        "average1Day": 330,
+        "average7Days": 410,
+        "average30Days": 410
+      },
+      "usMarket": {
+        "market": 30.04,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-684302"
+  },
+  "card-tcgplayer-710240": {
+    "cardmarketProductId": 904393,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 262.99,
+      "tcgplayer": 220.39
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 262.99,
+        "low": 280,
+        "average": 271.25,
+        "average1Day": 249.99,
+        "average7Days": 271.25,
+        "average30Days": 271.25
+      },
+      "usMarket": {
+        "market": 220.39,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-710240"
+  },
+  "card-tcgplayer-668174": {
+    "cardmarketProductId": 904393,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 262.99,
+      "tcgplayer": 0.56
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 262.99,
+        "low": 280,
+        "average": 271.25,
+        "average1Day": 249.99,
+        "average7Days": 271.25,
+        "average30Days": 271.25
+      },
+      "usMarket": {
+        "market": 0.56,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-668174"
+  },
+  "card-tcgplayer-684310": {
+    "cardmarketProductId": 904393,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 262.99,
+      "tcgplayer": 0.59
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 262.99,
+        "low": 280,
+        "average": 271.25,
+        "average1Day": 249.99,
+        "average7Days": 271.25,
+        "average30Days": 271.25
+      },
+      "usMarket": {
+        "market": 0.59,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-684310"
+  },
+  "card-tcgplayer-684303": {
+    "cardmarketProductId": 904393,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 262.99,
+      "tcgplayer": 24.48
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 262.99,
+        "low": 280,
+        "average": 271.25,
+        "average1Day": 249.99,
+        "average7Days": 271.25,
+        "average30Days": 271.25
+      },
+      "usMarket": {
+        "market": 24.48,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-684303"
+  },
+  "card-tcgplayer-710241": {
+    "cardmarketProductId": 904394,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 86.08,
+      "tcgplayer": 147.5
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 86.08,
+        "low": 130,
+        "average": 96.25,
+        "average1Day": 85,
+        "average7Days": 96.25,
+        "average30Days": 96.25
+      },
+      "usMarket": {
+        "market": 147.5,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-710241"
+  },
+  "card-tcgplayer-668175": {
+    "cardmarketProductId": 904394,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 86.08,
+      "tcgplayer": 0.32
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 86.08,
+        "low": 130,
+        "average": 96.25,
+        "average1Day": 85,
+        "average7Days": 96.25,
+        "average30Days": 96.25
+      },
+      "usMarket": {
+        "market": 0.32,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-668175"
+  },
+  "card-tcgplayer-684311": {
+    "cardmarketProductId": 904394,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 86.08,
+      "tcgplayer": 0.31
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 86.08,
+        "low": 130,
+        "average": 96.25,
+        "average1Day": 85,
+        "average7Days": 96.25,
+        "average30Days": 96.25
+      },
+      "usMarket": {
+        "market": 0.31,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-684311"
+  },
+  "card-tcgplayer-684304": {
+    "cardmarketProductId": 904394,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 86.08,
+      "tcgplayer": 7.92
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 86.08,
+        "low": 130,
+        "average": 96.25,
+        "average1Day": 85,
+        "average7Days": 96.25,
+        "average30Days": 96.25
+      },
+      "usMarket": {
+        "market": 7.92,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-684304"
+  },
+  "card-tcgplayer-710242": {
+    "cardmarketProductId": 904395,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 143,
+      "tcgplayer": 64.25
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 143,
+        "low": 140,
+        "average": 143,
+        "average1Day": 143,
+        "average7Days": 143,
+        "average30Days": 143
+      },
+      "usMarket": {
+        "market": 64.25,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-710242"
+  },
+  "card-tcgplayer-668177": {
+    "cardmarketProductId": 904395,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 143,
+      "tcgplayer": 0.31
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 143,
+        "low": 140,
+        "average": 143,
+        "average1Day": 143,
+        "average7Days": 143,
+        "average30Days": 143
+      },
+      "usMarket": {
+        "market": 0.31,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-668177"
+  },
+  "card-tcgplayer-684312": {
+    "cardmarketProductId": 904395,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 143,
+      "tcgplayer": 0.31
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 143,
+        "low": 140,
+        "average": 143,
+        "average1Day": 143,
+        "average7Days": 143,
+        "average30Days": 143
+      },
+      "usMarket": {
+        "market": 0.31,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-684312"
+  },
+  "card-tcgplayer-684305": {
+    "cardmarketProductId": 904395,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 143,
+      "tcgplayer": 7.4
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 143,
+        "low": 140,
+        "average": 143,
+        "average1Day": 143,
+        "average7Days": 143,
+        "average30Days": 143
+      },
+      "usMarket": {
+        "market": 7.4,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-684305"
+  },
+  "card-tcgplayer-710243": {
+    "cardmarketProductId": 904396,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 80,
+      "tcgplayer": 50
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 80,
+        "low": 80,
+        "average": 82.66,
+        "average1Day": 80,
+        "average7Days": 119.67,
+        "average30Days": 119.67
+      },
+      "usMarket": {
+        "market": 50,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-710243"
+  },
+  "card-tcgplayer-668179": {
+    "cardmarketProductId": 904396,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 80,
+      "tcgplayer": 0.4
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 80,
+        "low": 80,
+        "average": 82.66,
+        "average1Day": 80,
+        "average7Days": 119.67,
+        "average30Days": 119.67
+      },
+      "usMarket": {
+        "market": 0.4,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-668179"
+  },
+  "card-tcgplayer-684313": {
+    "cardmarketProductId": 904396,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 80,
+      "tcgplayer": 0.29
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 80,
+        "low": 80,
+        "average": 82.66,
+        "average1Day": 80,
+        "average7Days": 119.67,
+        "average30Days": 119.67
+      },
+      "usMarket": {
+        "market": 0.29,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-684313"
+  },
+  "card-tcgplayer-684306": {
+    "cardmarketProductId": 904396,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 80,
+      "tcgplayer": 6.89
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 80,
+        "low": 80,
+        "average": 82.66,
+        "average1Day": 80,
+        "average7Days": 119.67,
+        "average30Days": 119.67
+      },
+      "usMarket": {
+        "market": 6.89,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-684306"
+  },
+  "card-tcgplayer-710244": {
+    "cardmarketProductId": 904397,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 500,
+      "tcgplayer": null
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 500,
+        "low": 500,
+        "average": 500,
+        "average1Day": 500,
+        "average7Days": 500,
+        "average30Days": 500
+      },
+      "usMarket": {
+        "market": null,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-710244"
+  },
+  "card-tcgplayer-668181": {
+    "cardmarketProductId": 904397,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 500,
+      "tcgplayer": 0.41
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 500,
+        "low": 500,
+        "average": 500,
+        "average1Day": 500,
+        "average7Days": 500,
+        "average30Days": 500
+      },
+      "usMarket": {
+        "market": 0.41,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-668181"
+  },
+  "card-tcgplayer-684314": {
+    "cardmarketProductId": 904397,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 500,
+      "tcgplayer": 0.64
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 500,
+        "low": 500,
+        "average": 500,
+        "average1Day": 500,
+        "average7Days": 500,
+        "average30Days": 500
+      },
+      "usMarket": {
+        "market": 0.64,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-684314"
+  },
+  "card-tcgplayer-684307": {
+    "cardmarketProductId": 904397,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 500,
+      "tcgplayer": 32.76
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 500,
+        "low": 500,
+        "average": 500,
+        "average1Day": 500,
+        "average7Days": 500,
+        "average30Days": 500
+      },
+      "usMarket": {
+        "market": 32.76,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-684307"
+  },
+  "card-tcgplayer-668182": {
+    "cardmarketProductId": 858539,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 4.33,
+      "tcgplayer": 7.59
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 4.33,
+        "low": 1.95,
+        "average": 3.55,
+        "average1Day": 5,
+        "average7Days": 4.68,
+        "average30Days": 3.87
+      },
+      "usMarket": {
+        "market": 7.59,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-668182"
+  },
+  "card-tcgplayer-676843": {
+    "cardmarketProductId": 875027,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 5.4,
+      "tcgplayer": 10.15
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 5.4,
+        "low": 2.99,
+        "average": 5.68,
+        "average1Day": 5.4,
+        "average7Days": 5.36,
+        "average30Days": 5.8
+      },
+      "usMarket": {
+        "market": 10.15,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-676843"
+  },
+  "card-tcgplayer-681612": {
+    "cardmarketProductId": 875028,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 223.02,
+      "tcgplayer": 286.13
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 223.02,
+        "low": 100,
+        "average": 268.33,
+        "average1Day": 140,
+        "average7Days": 195.71,
+        "average30Days": 185.24
+      },
+      "usMarket": {
+        "market": 286.13,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-681612"
+  },
+  "card-tcgplayer-676844": {
+    "cardmarketProductId": 875029,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 1.73,
+      "tcgplayer": 4.8
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1.73,
+        "low": 1,
+        "average": 2.26,
+        "average1Day": 1.85,
+        "average7Days": 1.84,
+        "average30Days": 2.15
+      },
+      "usMarket": {
+        "market": 4.8,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-676844"
+  },
+  "card-tcgplayer-681613": {
+    "cardmarketProductId": 875030,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 195.23,
+      "tcgplayer": 273.85
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 195.23,
+        "low": 120,
+        "average": 237.98,
+        "average1Day": 215.99,
+        "average7Days": 222.27,
+        "average30Days": 219.32
+      },
+      "usMarket": {
+        "market": 273.85,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-681613"
+  },
+  "card-tcgplayer-676845": {
+    "cardmarketProductId": 875032,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 1.48,
+      "tcgplayer": 9.58
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1.48,
+        "low": 0.4,
+        "average": 2.08,
+        "average1Day": 2.3,
+        "average7Days": 2.15,
+        "average30Days": 2.02
+      },
+      "usMarket": {
+        "market": 9.58,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-676845"
+  },
+  "card-tcgplayer-681614": {
+    "cardmarketProductId": 875033,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 87.99,
+      "tcgplayer": 71.77
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 87.99,
+        "low": 48,
+        "average": 59.98,
+        "average1Day": 69.88,
+        "average7Days": 61.86,
+        "average30Days": 66.12
+      },
+      "usMarket": {
+        "market": 71.77,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-681614"
+  },
+  "card-tcgplayer-683972": {
+    "cardmarketProductId": 882480,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 288.16,
+      "tcgplayer": 102
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 288.16,
+        "low": 179.95,
+        "average": 221.74,
+        "average1Day": 199,
+        "average7Days": 232.71,
+        "average30Days": 184.67
+      },
+      "usMarket": {
+        "market": 102,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-683972"
+  },
+  "card-tcgplayer-686457": {
+    "cardmarketProductId": 880065,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 66.22,
+      "tcgplayer": 1.57
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 66.22,
+        "low": 55,
+        "average": 75.64,
+        "average1Day": 73.83,
+        "average7Days": 67.14,
+        "average30Days": 84.69
+      },
+      "usMarket": {
+        "market": 1.57,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-686457"
+  },
+  "card-tcgplayer-686458": {
+    "cardmarketProductId": 880065,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 66.22,
+      "tcgplayer": 104.76
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 66.22,
+        "low": 55,
+        "average": 75.64,
+        "average1Day": 73.83,
+        "average7Days": 67.14,
+        "average30Days": 84.69
+      },
+      "usMarket": {
+        "market": 104.76,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-686458"
+  },
+  "card-tcgplayer-656569": {
+    "cardmarketProductId": 858532,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 1.03,
+      "tcgplayer": 1.65
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 1.03,
+        "low": 0.55,
+        "average": 1.15,
+        "average1Day": 0.99,
+        "average7Days": 0.94,
+        "average30Days": 1.1
+      },
+      "usMarket": {
+        "market": 1.65,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-656569"
+  },
+  "card-tcgplayer-692129": {
+    "cardmarketProductId": 888109,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.46,
+      "tcgplayer": 0.62
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.46,
+        "low": 0.05,
+        "average": 0.41,
+        "average1Day": 0.46,
+        "average7Days": 0.29,
+        "average30Days": 0.29
+      },
+      "usMarket": {
+        "market": 0.62,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-692129"
+  },
+  "card-tcgplayer-697483": {
+    "cardmarketProductId": 888110,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.92,
+      "tcgplayer": 2.25
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.92,
+        "low": 0.15,
+        "average": 0.98,
+        "average1Day": 0.63,
+        "average7Days": 0.78,
+        "average30Days": 0.97
+      },
+      "usMarket": {
+        "market": 2.25,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-697483"
+  },
+  "card-tcgplayer-697484": {
+    "cardmarketProductId": 888111,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 82.23,
+      "tcgplayer": 79.66
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 82.23,
+        "low": 35,
+        "average": 84.42,
+        "average1Day": 73.8,
+        "average7Days": 85.61,
+        "average30Days": 86.41
+      },
+      "usMarket": {
+        "market": 79.66,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.795Z",
+    "id": "card-tcgplayer-697484"
+  },
+  "card-optcg-12896b167e1c651eec62": {
+    "cardmarketProductId": 692212,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.25,
+      "tcgplayer": 17.58
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.25,
+        "low": 0.02,
+        "average": 0.22,
+        "average1Day": 0.2,
+        "average7Days": 0.2,
+        "average30Days": 0.14
+      },
+      "usMarket": {
+        "market": 17.58,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.796Z",
+    "id": "card-optcg-12896b167e1c651eec62"
+  },
+  "card-optcg-31846086e372cf009985": {
+    "cardmarketProductId": 752018,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 42.2,
+      "tcgplayer": 1.65
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 42.2,
+        "low": 25,
+        "average": 34.43,
+        "average1Day": 28.95,
+        "average7Days": 35.32,
+        "average30Days": 18.54
+      },
+      "usMarket": {
+        "market": 1.65,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.796Z",
+    "id": "card-optcg-31846086e372cf009985"
+  },
+  "card-optcg-617a125b159f4bbd22ff": {
+    "cardmarketProductId": 768124,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 14.09,
+      "tcgplayer": 50.51
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 14.09,
+        "low": 13.5,
+        "average": 16.34,
+        "average1Day": 16,
+        "average7Days": 15.01,
+        "average30Days": 16.49
+      },
+      "usMarket": {
+        "market": 50.51,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.796Z",
+    "id": "card-optcg-617a125b159f4bbd22ff"
+  },
+  "card-optcg-4c7bda70f0f8bdfa44f3": {
+    "cardmarketProductId": 768126,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 6.26,
+      "tcgplayer": 74.25
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 6.26,
+        "low": 5,
+        "average": 6.29,
+        "average1Day": 6.99,
+        "average7Days": 5.57,
+        "average30Days": 6.15
+      },
+      "usMarket": {
+        "market": 74.25,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.796Z",
+    "id": "card-optcg-4c7bda70f0f8bdfa44f3"
+  },
+  "card-optcg-2478e74238fc77083588": {
+    "cardmarketProductId": 787454,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 6.84,
+      "tcgplayer": 1.67
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 6.84,
+        "low": 5.9,
+        "average": 7.92,
+        "average1Day": 8.99,
+        "average7Days": 7.92,
+        "average30Days": 9.41
+      },
+      "usMarket": {
+        "market": 1.67,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.796Z",
+    "id": "card-optcg-2478e74238fc77083588"
+  },
+  "card-optcg-65f3a0dd2b1e4f24e13a": {
+    "cardmarketProductId": 787454,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 6.84,
+      "tcgplayer": 1.67
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 6.84,
+        "low": 5.9,
+        "average": 7.92,
+        "average1Day": 8.99,
+        "average7Days": 7.92,
+        "average30Days": 9.41
+      },
+      "usMarket": {
+        "market": 1.67,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.796Z",
+    "id": "card-optcg-65f3a0dd2b1e4f24e13a"
+  },
+  "card-tcgplayer-717032": {
+    "cardmarketProductId": 906861,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 14.48,
+      "tcgplayer": 25.9
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 14.48,
+        "low": 12,
+        "average": 13.37,
+        "average1Day": 13,
+        "average7Days": 14.83,
+        "average30Days": 13.2
+      },
+      "usMarket": {
+        "market": 25.9,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.797Z",
+    "id": "card-tcgplayer-717032"
+  },
+  "card-tcgplayer-717033": {
+    "cardmarketProductId": 906862,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 29.43,
+      "tcgplayer": 60.2
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 29.43,
+        "low": 26,
+        "average": 27.38,
+        "average1Day": 32,
+        "average7Days": 29.87,
+        "average30Days": 27.49
+      },
+      "usMarket": {
+        "market": 60.2,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.797Z",
+    "id": "card-tcgplayer-717033"
+  },
+  "card-tcgplayer-717034": {
+    "cardmarketProductId": 906863,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 14.25,
+      "tcgplayer": 18.86
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 14.25,
+        "low": 12,
+        "average": 17.43,
+        "average1Day": 14.38,
+        "average7Days": 15.51,
+        "average30Days": 19.61
+      },
+      "usMarket": {
+        "market": 18.86,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.797Z",
+    "id": "card-tcgplayer-717034"
+  },
+  "card-tcgplayer-710803": {
+    "cardmarketProductId": 896418,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.58,
+      "tcgplayer": 0.36
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.58,
+        "low": 0.05,
+        "average": 0.27,
+        "average1Day": 0.18,
+        "average7Days": 0.34,
+        "average30Days": 0.28
+      },
+      "usMarket": {
+        "market": 0.36,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.797Z",
+    "id": "card-tcgplayer-710803"
+  },
+  "card-tcgplayer-610802": {
+    "cardmarketProductId": 752059,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 332.13,
+      "tcgplayer": null
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 332.13,
+        "low": 275,
+        "average": 320.6,
+        "average1Day": 285,
+        "average7Days": 322.87,
+        "average30Days": 247.65
+      },
+      "usMarket": {
+        "market": null,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.797Z",
+    "id": "card-tcgplayer-610802"
+  },
+  "card-tcgplayer-657798": {
+    "cardmarketProductId": 857363,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 393.66,
+      "tcgplayer": 366.77
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 393.66,
+        "low": 139.9,
+        "average": 387.5,
+        "average1Day": 430,
+        "average7Days": 363.64,
+        "average30Days": 354.13
+      },
+      "usMarket": {
+        "market": 366.77,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.797Z",
+    "id": "card-tcgplayer-657798"
+  },
+  "card-tcgplayer-455816": {
+    "cardmarketProductId": 696191,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 942.85,
+      "tcgplayer": null
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 942.85,
+        "low": 1700,
+        "average": 1150,
+        "average1Day": 1150,
+        "average7Days": 1106.87,
+        "average30Days": 1464.69
+      },
+      "usMarket": {
+        "market": null,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.797Z",
+    "id": "card-tcgplayer-455816"
+  },
+  "card-tcgplayer-503022": {
+    "cardmarketProductId": 717500,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 7.53,
+      "tcgplayer": 4.79
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 7.53,
+        "low": 6,
+        "average": 8.79,
+        "average1Day": 5,
+        "average7Days": 6.97,
+        "average30Days": 5.87
+      },
+      "usMarket": {
+        "market": 4.79,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.797Z",
+    "id": "card-tcgplayer-503022"
+  },
+  "card-tcgplayer-515354": {
+    "cardmarketProductId": 719319,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 24.15,
+      "tcgplayer": 700.24
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 24.15,
+        "low": 19,
+        "average": 27.04,
+        "average1Day": 24.98,
+        "average7Days": 24.19,
+        "average30Days": 30.13
+      },
+      "usMarket": {
+        "market": 700.24,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.797Z",
+    "id": "card-tcgplayer-515354"
+  },
+  "card-tcgplayer-510728": {
+    "cardmarketProductId": 729814,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 3.49,
+      "tcgplayer": 3.5
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 3.49,
+        "low": 1,
+        "average": 3.04,
+        "average1Day": 2,
+        "average7Days": 3.47,
+        "average30Days": 3.1
+      },
+      "usMarket": {
+        "market": 3.5,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.797Z",
+    "id": "card-tcgplayer-510728"
+  },
+  "card-tcgplayer-535278": {
+    "cardmarketProductId": 754944,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 297.17,
+      "tcgplayer": null
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 297.17,
+        "low": 1999.99,
+        "average": 900,
+        "average1Day": 900,
+        "average7Days": 1075.71,
+        "average30Days": 1075.71
+      },
+      "usMarket": {
+        "market": null,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.797Z",
+    "id": "card-tcgplayer-535278"
+  },
+  "card-tcgplayer-503021": {
+    "cardmarketProductId": 717499,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 4.46,
+      "tcgplayer": 2.84
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 4.46,
+        "low": 4,
+        "average": 5.49,
+        "average1Day": 6.5,
+        "average7Days": 5.17,
+        "average30Days": 5.85
+      },
+      "usMarket": {
+        "market": 2.84,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.797Z",
+    "id": "card-tcgplayer-503021"
+  },
+  "card-optcg-639ffa5a33a2276d96b4": {
+    "cardmarketProductId": 752018,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 42.2,
+      "tcgplayer": 0.27
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 42.2,
+        "low": 25,
+        "average": 34.43,
+        "average1Day": 28.95,
+        "average7Days": 35.32,
+        "average30Days": 18.54
+      },
+      "usMarket": {
+        "market": 0.27,
+        "inventory": 0.15
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.798Z",
+    "id": "card-optcg-639ffa5a33a2276d96b4"
+  },
+  "card-optcg-f750b9c4593ddffc1a6c": {
+    "cardmarketProductId": 754827,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.23,
+      "tcgplayer": 0.14
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.23,
+        "low": 0.02,
+        "average": 0.38,
+        "average1Day": 0.29,
+        "average7Days": 0.27,
+        "average30Days": 0.56
+      },
+      "usMarket": {
+        "market": 0.14,
+        "inventory": 0.09
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.798Z",
+    "id": "card-optcg-f750b9c4593ddffc1a6c"
+  },
+  "card-optcg-918cac7e81c745560035": {
+    "cardmarketProductId": 754830,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.33,
+      "tcgplayer": 0.19
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.33,
+        "low": 0.04,
+        "average": 0.28,
+        "average1Day": 0.2,
+        "average7Days": 0.29,
+        "average30Days": 0.25
+      },
+      "usMarket": {
+        "market": 0.19,
+        "inventory": 0.1
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.798Z",
+    "id": "card-optcg-918cac7e81c745560035"
+  },
+  "card-optcg-d9b9ec6af3f27deb7f36": {
+    "cardmarketProductId": 754828,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.23,
+      "tcgplayer": 0.18
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.23,
+        "low": 0.08,
+        "average": 0.26,
+        "average1Day": 0.08,
+        "average7Days": 0.2,
+        "average30Days": 0.21
+      },
+      "usMarket": {
+        "market": 0.18,
+        "inventory": 0.1
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.798Z",
+    "id": "card-optcg-d9b9ec6af3f27deb7f36"
+  },
+  "card-optcg-f986bec9e503ed5281e4": {
+    "cardmarketProductId": 754829,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 0.3,
+      "tcgplayer": 0.16
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 0.3,
+        "low": 0.02,
+        "average": 0.29,
+        "average1Day": 0.4,
+        "average7Days": 0.27,
+        "average30Days": 0.23
+      },
+      "usMarket": {
+        "market": 0.16,
+        "inventory": 0.06
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.798Z",
+    "id": "card-optcg-f986bec9e503ed5281e4"
+  },
+  "card-optcg-f237a67a36a0c40f3409": {
+    "cardmarketProductId": 754832,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 242.28,
+      "tcgplayer": 1.62
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 242.28,
+        "low": 100,
+        "average": 189.9,
+        "average1Day": 95,
+        "average7Days": 207.27,
+        "average30Days": 110.34
+      },
+      "usMarket": {
+        "market": 1.62,
+        "inventory": 1
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.798Z",
+    "id": "card-optcg-f237a67a36a0c40f3409"
+  },
+  "card-optcg-9c5c803d80d32933da44": {
+    "cardmarketProductId": 845299,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 36.21,
+      "tcgplayer": 0.23
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 36.21,
+        "low": 99.98,
+        "average": null,
+        "average1Day": 50,
+        "average7Days": 29.28,
+        "average30Days": 29.28
+      },
+      "usMarket": {
+        "market": 0.23,
+        "inventory": 0.05
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.798Z",
+    "id": "card-optcg-9c5c803d80d32933da44"
+  },
+  "card-optcg-f0dcb410cae2c12df4a5": {
+    "cardmarketProductId": 787461,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 44.25,
+      "tcgplayer": 3.5
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 44.25,
+        "low": 35,
+        "average": 43.99,
+        "average1Day": 44.99,
+        "average7Days": 51.99,
+        "average30Days": 66.62
+      },
+      "usMarket": {
+        "market": 3.5,
+        "inventory": 3
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.798Z",
+    "id": "card-optcg-f0dcb410cae2c12df4a5"
+  },
+  "card-tcgplayer-615308": {
+    "cardmarketProductId": 804894,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 847.52,
+      "tcgplayer": 949.88
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 847.52,
+        "low": 1098,
+        "average": 1066.66,
+        "average1Day": 1050,
+        "average7Days": 844.25,
+        "average30Days": 349.12
+      },
+      "usMarket": {
+        "market": 949.88,
+        "inventory": null
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.798Z",
+    "id": "card-tcgplayer-615308"
+  },
+  "card-optcg-7111228105f2a0300d76": {
+    "cardmarketProductId": 904392,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 330,
+      "tcgplayer": 0
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 330,
+        "low": 350.99,
+        "average": 330,
+        "average1Day": 330,
+        "average7Days": 410,
+        "average30Days": 410
+      },
+      "usMarket": {
+        "market": 0,
+        "inventory": 0
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.799Z",
+    "id": "card-optcg-7111228105f2a0300d76"
+  },
+  "card-optcg-e4590e073ef9e629ba44": {
+    "cardmarketProductId": 840747,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 4.37,
+      "tcgplayer": 0.25
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 4.37,
+        "low": 2,
+        "average": 4.65,
+        "average1Day": 5.53,
+        "average7Days": 4.81,
+        "average30Days": 5.79
+      },
+      "usMarket": {
+        "market": 0.25,
+        "inventory": 0.17
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.799Z",
+    "id": "card-optcg-e4590e073ef9e629ba44"
+  },
+  "card-optcg-1029b10768777ce5fb55": {
+    "cardmarketProductId": 904396,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 80,
+      "tcgplayer": 0.16
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 80,
+        "low": 80,
+        "average": 82.66,
+        "average1Day": 80,
+        "average7Days": 119.67,
+        "average30Days": 119.67
+      },
+      "usMarket": {
+        "market": 0.16,
+        "inventory": 0.09
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.799Z",
+    "id": "card-optcg-1029b10768777ce5fb55"
+  },
+  "card-optcg-95501d56e63b38cfd0d4": {
+    "cardmarketProductId": 840667,
+    "cardmarketExpansionId": 5262,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 180.68,
+      "tcgplayer": 0.15
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 180.68,
+        "low": 115,
+        "average": 179.99,
+        "average1Day": 179.99,
+        "average7Days": 147.11,
+        "average30Days": 77.35
+      },
+      "usMarket": {
+        "market": 0.15,
+        "inventory": 0.03
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.799Z",
+    "id": "card-optcg-95501d56e63b38cfd0d4"
+  },
+  "card-optcg-41d3e54cb3bd51b0e76d": {
+    "cardmarketProductId": 840731,
+    "cardmarketExpansionId": 5230,
+    "cardmarketPriceState": "priced",
+    "quote": {
+      "cardmarket": 8.21,
+      "tcgplayer": 0.92
+    },
+    "pricing": {
+      "cardmarket": {
+        "trend": 8.21,
+        "low": 7.8,
+        "average": 8.2,
+        "average1Day": 7.8,
+        "average7Days": 8.58,
+        "average30Days": 9.2
+      },
+      "usMarket": {
+        "market": 0.92,
+        "inventory": 0.9
+      }
+    },
+    "adminNote": "Mapped & verified via Cardmarket singles catalog & BrightData",
+    "updatedAt": "2026-10-20T12:30:43.799Z",
+    "id": "card-optcg-41d3e54cb3bd51b0e76d"
   }
 }

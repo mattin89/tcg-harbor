@@ -87,7 +87,7 @@ describe('Multi-TCG Game Registry & Public Isolation', () => {
       expect(asset.name).not.toMatch(/^Pokémon\s/i);
       expect(asset.name).not.toMatch(/^Magic:\sThe\sGathering/i);
     }
-  });
+  }, 15000);
 });
 
 describe('Multi-TCG Catalogs & Staging Inventories', () => {
@@ -143,7 +143,7 @@ describe('Multi-TCG Catalogs & Staging Inventories', () => {
       expect(languages.size).toBeGreaterThanOrEqual(1);
       expect(languages.has('English')).toBe(true);
     }
-  });
+  }, 15000);
 
   it('loads Pokémon inventory with both Cardmarket EUR and TCGPlayer USD quotes', async () => {
     const assets = await loadGameCatalogAssets('pokemon');

@@ -1123,14 +1123,78 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
   const cardGroupIndex = useMemo(() => new Map(cardGroups.map((group) => [group.id, group.arts])), [cardGroups]);
 
   const globalSetNames = useMemo(() => {
-    const names = new Map<string, string>();
+    const names = new Map<string, string>([
+      ['P', 'One Piece Promotion Cards'],
+      ['STP', 'Special Tournaments Promos'],
+      ['CS', 'China Championship Promos'],
+      ['OP01', 'Romance Dawn'],
+      ['OP02', 'Paramount War'],
+      ['OP03', 'Pillars of Strength'],
+      ['OP04', 'Kingdoms of Intrigue'],
+      ['OP05', 'Awakening of the New Era'],
+      ['OP06', 'Wings of the Captain'],
+      ['OP07', '500 Years in the Future'],
+      ['OP08', 'Two Legends'],
+      ['OP09', 'Emperors in the New World'],
+      ['OP10', 'Royal Blood'],
+      ['OP11', 'A Fist of Divine Speed'],
+      ['OP12', 'Legacy of the Master'],
+      ['OP13', 'Carrying On His Will'],
+      ['OP14', 'The Azure Sea\'s Seven'],
+      ['OP15', 'Adventure on Kami\'s Island'],
+      ['OP16', 'The Time of Battle'],
+      ['OP17', 'The World\'s Strongest Warriors'],
+      ['EB01', 'Memorial Collection'],
+      ['EB02', 'Anime 25th Collection'],
+      ['EB03', 'Heroines Edition'],
+      ['EB04', 'The Azure Sea\'s Seven'],
+      ['PRB01', 'Premium Booster -The Best-'],
+      ['PRB02', 'Premium Booster -The Best- Vol. 2'],
+      ['ST01', 'Straw Hat Crew'],
+      ['ST02', 'Worst Generation'],
+      ['ST03', 'The Seven Warlords of the Sea'],
+      ['ST04', 'Animal Kingdom Pirates'],
+      ['ST05', 'ONE PIECE FILM edition'],
+      ['ST06', 'Absolute Justice'],
+      ['ST07', 'Big Mom Pirates'],
+      ['ST08', 'Monkey D. Luffy'],
+      ['ST09', 'Yamato'],
+      ['ST10', 'The Three Captains'],
+      ['ST11', 'Uta'],
+      ['ST12', 'Zoro & Sanji'],
+      ['ST13', 'The Three Brothers'],
+      ['ST14', '3D2Y'],
+      ['ST15', 'Edward.Newgate'],
+      ['ST16', 'Green Uta'],
+      ['ST17', 'Donquixote Doflamingo'],
+      ['ST18', 'Purple Monkey.D.Luffy'],
+      ['ST19', 'Smoker'],
+      ['ST20', 'Charlotte Katakuri'],
+      ['ST21', 'Gear 5'],
+      ['ST22', 'Ace & Newgate'],
+      ['ST23', 'Red Shanks'],
+      ['ST24', 'Green Jewelry Bonney'],
+      ['ST25', 'Blue Buggy'],
+      ['ST26', 'Purple Black Monkey.D.Luffy'],
+      ['ST27', 'Black Marshall.D.Teach'],
+      ['ST28', 'Green Yellow Yamato'],
+      ['ST29', 'Egghead'],
+      ['ST30', 'Luffy & Ace'],
+      ['ST31', 'Red Monkey.D.Luffy'],
+      ['ST32', 'Green Roronoa Zoro'],
+      ['ST33', 'Blue Kuzan'],
+      ['ST34', 'Purple Charlotte Katakuri'],
+      ['ST35', 'Red Black Sabo'],
+      ['ST36', 'Yellow Eustass"Captain"Kid'],
+    ]);
+
     for (const asset of catalogAssets) {
       const base = normalizeBaseSetCode(asset.setCode);
       if (!names.has(base) || !names.get(base)) {
         const cleanName = asset.set
           ? asset.set.replace(/\s*\((Japanese|French|Chinese|Korean|English)\)/i, '').replace(/\s*-\s*(Japanese|French|Chinese|Korean|English)$/i, '').trim()
           : '';
-        if (cleanName && cleanName !== base && !/^(booster|booster boxes|preconstructed decks|promo products|all current sets)$/i.test(cleanName)) {
+        if (cleanName && cleanName !== base && !/^(booster|booster boxes|preconstructed decks|promo products|all current sets|one piece promotion cards)$/i.test(cleanName)) {
           names.set(base, cleanName);
         }
       }
@@ -1146,7 +1210,12 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
       const baseCode = normalizeBaseSetCode(asset.setCode);
       setCodes.add(baseCode);
     }
+    if (tab === 'card') {
+      setCodes.add('P');
+      setCodes.add('STP');
+    }
     return [...setCodes]
+      .filter((code) => code !== 'PROMO')
       .sort((left, right) => left.localeCompare(right, 'en-US', { numeric: true }))
       .map((code) => {
         const name = globalSetNames.get(code);
@@ -1171,7 +1240,21 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
     : catalogAssets
       .filter((asset) => asset.kind === 'sealed')
       .filter((asset) => catalogLanguage === 'all' || asset.language === catalogLanguage)
-      .filter((asset) => catalogSet === 'all' || asset.setCode === catalogSet || normalizeBaseSetCode(asset.setCode) === catalogSet)
+      .filter((asset) => {
+        if (catalogSet === 'all') return true;
+        if (catalogSet === 'STP') {
+          return asset.set === 'Special Tournaments Promos' || asset.setCode === 'STP';
+        }
+        if (catalogSet === 'P') {
+          return (
+            asset.set === 'One Piece Promotion Cards' ||
+            asset.setCode === 'P' ||
+            asset.setCode === 'PROMO' ||
+            asset.set === 'Promo Products'
+          );
+        }
+        return asset.setCode === catalogSet || normalizeBaseSetCode(asset.setCode) === catalogSet;
+      })
       .filter((asset) => !normalizedQuery || `${asset.name} ${asset.set} ${asset.setCode} ${asset.productType ?? ''}`.toLocaleLowerCase('en-US').includes(normalizedQuery));
   const results = allResults.slice(0, resultLimit);
   const allGroupArts = selected?.kind === 'card'

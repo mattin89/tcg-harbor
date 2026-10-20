@@ -13,7 +13,46 @@ export function isDonCardV5(card: { rulesCardId?: string; number?: string }): bo
 }
 
 export function normalizeBaseSetCode(setCode: string): string {
-  return setCode.replace(/[-_](CN|FR|JP|KR|DE|ES|IT|EN)$/i, '');
+  const clean = setCode.replace(/[-_](CN|FR|JP|KR|DE|ES|IT|EN)$/i, '');
+  if (clean === 'PROMO') return 'P';
+  return clean;
+}
+
+export function isTournamentPromoCard(card: {
+  setCode?: string;
+  set?: string;
+  name?: string;
+  variant?: string;
+  productName?: string;
+  cardmarketExpansionId?: number;
+}): boolean {
+  if (card.setCode === 'STP' || card.set === 'Special Tournaments Promos') return true;
+  if (card.cardmarketExpansionId === 5262) return true;
+  const str = `${card.name ?? ''} ${card.variant ?? ''} ${card.set ?? ''} ${card.productName ?? ''}`.toLocaleLowerCase('en-US');
+  return (
+    str.includes('tournament') ||
+    str.includes('championship') ||
+    str.includes('regional') ||
+    str.includes('treasure cup') ||
+    str.includes('winner pack') ||
+    str.includes('judge pack') ||
+    str.includes('finalist') ||
+    str.includes('coliseum champion') ||
+    str.includes('trophy')
+  );
+}
+
+export function isPromotionCard(card: {
+  setCode?: string;
+  set?: string;
+  number?: string;
+  rulesCardId?: string;
+}): boolean {
+  if (card.setCode === 'P' || card.setCode === 'PROMO') return true;
+  if (card.number && /^P-\d+/i.test(card.number)) return true;
+  if (card.rulesCardId && /^P-\d+/i.test(card.rulesCardId)) return true;
+  if (card.set && /promotion/i.test(card.set)) return true;
+  return false;
 }
 
 export function catalogCardGroupIdV5(card: { id: string; rulesCardId?: string; number?: string }): string {
@@ -70,11 +109,19 @@ export function selectCardGroupMatchV5<T extends CatalogSearchCardV5>(
 ): T | null {
   const eligibleArts = setCode === 'all'
     ? arts
-    : arts.filter((art) => (
-        art.setCode === setCode ||
-        art.setCode.startsWith(`${setCode}-`) ||
-        normalizeBaseSetCode(art.setCode) === setCode
-      ));
+    : arts.filter((art) => {
+        if (setCode === 'STP') {
+          return isTournamentPromoCard(art as Parameters<typeof isTournamentPromoCard>[0]);
+        }
+        if (setCode === 'P') {
+          return isPromotionCard(art as Parameters<typeof isPromotionCard>[0]);
+        }
+        return (
+          art.setCode === setCode ||
+          art.setCode.startsWith(`${setCode}-`) ||
+          normalizeBaseSetCode(art.setCode) === setCode
+        );
+      });
 
   if (!normalizedQuery) return eligibleArts[0] ?? null;
 

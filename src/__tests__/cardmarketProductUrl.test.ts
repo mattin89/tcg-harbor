@@ -658,6 +658,112 @@ describe('cardmarketProductUrl generalized logic', () => {
       'https://www.cardmarket.com/en/OnePiece/Products/Singles/Special-Tournaments-Promos/Franky-OP01-021'
     );
   });
+
+  it('correctly maps and resolves distinct canonical Cardmarket links for all Monkey.D.Luffy P-001 variants', () => {
+    // 1. Champion promo (ID 717506) -> Special Tournaments Promos V1
+    const p001Champion = createMockAsset({
+      name: 'Monkey.D.Luffy (001) (Offline Regional 2024 Vol. 2) [Winner]',
+      number: 'P-001',
+      setCode: 'P',
+      cardmarketProductId: 717506,
+      cardmarketExpansionId: 5262,
+      variant: 'Champion promo · TCGplayer #503023',
+    });
+    expect(cardmarketProductUrl(p001Champion)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Special-Tournaments-Promos/MonkeyDLuffy-P-001-V1'
+    );
+
+    // 2. Offline Regional Participant (ID 766636) -> Special Tournaments Promos V2
+    const p001Participant = createMockAsset({
+      name: 'Monkey.D.Luffy (001) (Offline Regional 2024 Vol. 2) [Winner]',
+      number: 'P-001',
+      setCode: 'P',
+      cardmarketProductId: 766636,
+      cardmarketExpansionId: 5262,
+      variant: 'Promotional art · Participant · TCGplayer #544770',
+    });
+    expect(cardmarketProductUrl(p001Participant)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Special-Tournaments-Promos/MonkeyDLuffy-P-001-V2'
+    );
+
+    // 3. Finalist promo (ID 766637) -> Special Tournaments Promos V3
+    const p001Finalist = createMockAsset({
+      name: 'Monkey.D.Luffy (001) (Offline Regional 2024 Vol. 2) [Winner]',
+      number: 'P-001',
+      setCode: 'P',
+      cardmarketProductId: 766637,
+      cardmarketExpansionId: 5262,
+      variant: 'Finalist promo · TCGplayer #544771',
+    });
+    expect(cardmarketProductUrl(p001Finalist)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Special-Tournaments-Promos/MonkeyDLuffy-P-001-V3'
+    );
+
+    // 4. Regional Winner promo (ID 766638) -> Special Tournaments Promos V4
+    const p001Winner = createMockAsset({
+      name: 'Monkey.D.Luffy (001) (Offline Regional 2024 Vol. 2) [Winner]',
+      number: 'P-001',
+      setCode: 'P',
+      cardmarketProductId: 766638,
+      cardmarketExpansionId: 5262,
+      variant: 'Winner promo · TCGplayer #544772',
+    });
+    expect(cardmarketProductUrl(p001Winner)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Special-Tournaments-Promos/MonkeyDLuffy-P-001-V4'
+    );
+
+    // 5. Alternate art (ID 698916) -> Unnumbered-Promos
+    const p001AltArt = createMockAsset({
+      name: 'Monkey.D.Luffy (001) (Offline Regional 2024 Vol. 2) [Winner]',
+      number: 'P-001',
+      setCode: 'P',
+      cardmarketProductId: 698916,
+      cardmarketExpansionId: 5267,
+      variant: 'Alternate art · TCGplayer #509752',
+    });
+    expect(cardmarketProductUrl(p001AltArt)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Unnumbered-Promos/MonkeyDLuffy-P-001'
+    );
+
+    // 6. Gift Collection 2023 (ID 740388) -> Promos V4
+    const p001Gift = createMockAsset({
+      name: 'Monkey.D.Luffy (001) (Offline Regional 2024 Vol. 2) [Winner]',
+      number: 'P-001',
+      setCode: 'P',
+      cardmarketProductId: 740388,
+      cardmarketExpansionId: 5230,
+      variant: 'Promotional art · Gift Collection 2023 · TCGplayer #523785',
+    });
+    expect(cardmarketProductUrl(p001Gift)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Promos/MonkeyDLuffy-P-001-V4'
+    );
+
+    // 7. Bandai Fest 23-24 Edition (ID 786107) -> Promos V5
+    const p001BandaiFest = createMockAsset({
+      name: 'Monkey.D.Luffy (001) (Offline Regional 2024 Vol. 2) [Winner]',
+      number: 'P-001',
+      setCode: 'P',
+      cardmarketProductId: 786107,
+      cardmarketExpansionId: 5230,
+      variant: 'Promotional art · Premium Card Collection -BANDAI CARD GAMES Fest. 23-24 Edition- · TCGplayer #564250',
+    });
+    expect(cardmarketProductUrl(p001BandaiFest)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Promos/MonkeyDLuffy-P-001-V5'
+    );
+
+    // 8. Promotion Pack 2022 (ID 690375) -> Promos V1
+    const p001PromoPack = createMockAsset({
+      name: 'Monkey.D.Luffy (001) (Offline Regional 2024 Vol. 2) [Winner]',
+      number: 'P-001',
+      setCode: 'P',
+      cardmarketProductId: 690375,
+      cardmarketExpansionId: 5230,
+      variant: 'Promotional art · Promotion Pack 2022 · TCGplayer #450299',
+    });
+    expect(cardmarketProductUrl(p001PromoPack)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Promos/MonkeyDLuffy-P-001-V1'
+    );
+  });
 });
 
 

@@ -139,6 +139,8 @@ describe('catalog card search v5', () => {
     expect(normalizeBaseSetCode('OP01-KR')).toBe('OP01');
     expect(normalizeBaseSetCode('ST01-JP')).toBe('ST01');
     expect(normalizeBaseSetCode('P-JP')).toBe('P');
+    expect(normalizeBaseSetCode('PROMO')).toBe('P');
+    expect(normalizeBaseSetCode('P')).toBe('P');
 
     // Retains compound set codes and non-language hyphens
     expect(normalizeBaseSetCode('PRB-01')).toBe('PRB-01');
@@ -174,5 +176,61 @@ describe('catalog card search v5', () => {
     expect(selectCardGroupMatchV5([englishCard], '', 'EB03')).toBe(englishCard);
     expect(selectCardGroupMatchV5([chineseCard], '', 'EB03')).toBe(chineseCard);
     expect(selectCardGroupMatchV5([frenchCard], '', 'EB03')).toBe(frenchCard);
+  });
+
+  it('matches all P-xxx promotional cards when filtering by set P', () => {
+    const promoCard1 = {
+      name: 'Monkey.D.Luffy',
+      number: 'P-001',
+      setCode: 'P',
+      variant: 'Standard',
+    };
+    const promoCard2 = {
+      name: 'Kaido',
+      number: 'P-040',
+      setCode: 'PROMO',
+      variant: 'Standard',
+    };
+    const promoCard3 = {
+      name: 'Koby',
+      number: 'P-014',
+      setCode: 'PRB01',
+      variant: 'Alternate art',
+    };
+
+    expect(selectCardGroupMatchV5([promoCard1], '', 'P')).toBe(promoCard1);
+    expect(selectCardGroupMatchV5([promoCard2], '', 'P')).toBe(promoCard2);
+    expect(selectCardGroupMatchV5([promoCard3], '', 'P')).toBe(promoCard3);
+  });
+
+  it('matches all tournament promo cards when filtering by set STP', () => {
+    const trophyCard = {
+      name: 'Flame-Flame Fruit (Coliseum Champion)',
+      productName: 'Flame-Flame Fruit Coliseum Champion Trophy Card',
+      number: 'P-TROPHY-906851',
+      setCode: 'STP',
+      set: 'Special Tournaments Promos',
+      variant: 'Coliseum Champion Trophy Card · Cardmarket #906851',
+    };
+    const storeTournamentCard = {
+      name: 'Usopp',
+      number: 'OP01-004',
+      setCode: 'OP01',
+      set: 'Special Tournaments Promos',
+      variant: 'Promotional art · Store Tournament 2023 · TCGplayer #450304',
+      cardmarketExpansionId: 5262,
+    };
+    const regionalWinnerCard = {
+      name: 'Monkey.D.Luffy (001)',
+      number: 'P-001',
+      setCode: 'P',
+      set: 'One Piece Promotion Cards',
+      variant: 'Offline Regional 2024 Vol. 2 Winner · TCGplayer #544772',
+      cardmarketExpansionId: 5262,
+    };
+
+    expect(selectCardGroupMatchV5([trophyCard], '', 'STP')).toBe(trophyCard);
+    expect(selectCardGroupMatchV5([storeTournamentCard], '', 'STP')).toBe(storeTournamentCard);
+    expect(selectCardGroupMatchV5([regionalWinnerCard], '', 'STP')).toBe(regionalWinnerCard);
   });
 });

@@ -306,10 +306,17 @@ export function cardmarketProductUrl(asset: DemoAsset): string {
     } else if (
       asset.set === 'Special Tournaments Promos' ||
       asset.setCode === 'STP' ||
-      /treasure cup|championship|tournament/i.test(asset.variant || '') ||
+      /treasure cup|championship|tournament|winner|finalist|coliseum champion|trophy|judge pack/i.test(
+        `${asset.name} ${asset.variant || ''} ${asset.set || ''}`
+      ) ||
       /special tournament/i.test(asset.set || '')
     ) {
       expansion = 'Special-Tournaments-Promos';
+    } else if (
+      !isAsianLanguage &&
+      (asset.setCode === 'P' || asset.setCode === 'PROMO' || (asset.number && /^P-\d+/i.test(asset.number)))
+    ) {
+      expansion = 'Promos';
     }
 
     if (!expansion) {

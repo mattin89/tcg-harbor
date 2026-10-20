@@ -1601,13 +1601,13 @@
     "tcgplayerProductId": 497384,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 0.31,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/497384_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-497384.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.448Z"
+    "updatedAt": "2026-10-20T15:11:29.470Z"
   },
   "card-tcgplayer-557284": {
     "id": "card-tcgplayer-557284",
@@ -1716,13 +1716,13 @@
     "tcgplayerProductId": 497386,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 0.65,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/497386_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-497386.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.448Z"
+    "updatedAt": "2026-10-20T15:11:29.505Z"
   },
   "card-tcgplayer-523802": {
     "id": "card-tcgplayer-523802",
@@ -2130,13 +2130,13 @@
     "tcgplayerProductId": 497385,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 0.58,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/497385_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-497385.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.448Z"
+    "updatedAt": "2026-10-20T15:11:30.232Z"
   },
   "card-tcgplayer-557285": {
     "id": "card-tcgplayer-557285",
@@ -3364,21 +3364,21 @@
     "number": "OP01-052",
     "set": "One Piece Promotion Cards",
     "setCode": "OP01",
-    "cardmarketProductId": 690860,
-    "cardmarketExpansionId": 5229,
+    "cardmarketProductId": 752011,
+    "cardmarketExpansionId": 5262,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #690860)",
     "cardmarketTrendPrice": 0.08,
     "tcgplayerProductId": 539552,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 0.09,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/539552_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-539552.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.448Z"
+    "updatedAt": "2026-10-20T15:11:34.662Z"
   },
   "card-tcgplayer-525295": {
     "id": "card-tcgplayer-525295",
@@ -5848,21 +5848,21 @@
     "number": "OP02-106",
     "set": "One Piece Promotion Cards",
     "setCode": "OP02",
-    "cardmarketProductId": 701047,
-    "cardmarketExpansionId": 5263,
+    "cardmarketProductId": 752013,
+    "cardmarketExpansionId": 5262,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #701047)",
     "cardmarketTrendPrice": 0.16,
     "tcgplayerProductId": 539549,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 0.17,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/539549_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-539549.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.449Z"
+    "updatedAt": "2026-10-20T15:11:34.662Z"
   },
   "card-tcgplayer-525297": {
     "id": "card-tcgplayer-525297",
@@ -7834,13 +7834,13 @@
     "tcgplayerProductId": 599744,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 0.67,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/599744_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-599744.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.450Z"
+    "updatedAt": "2026-10-20T15:11:30.669Z"
   },
   "card-tcgplayer-544619": {
     "id": "card-tcgplayer-544619",
@@ -8616,13 +8616,13 @@
     "tcgplayerProductId": 599748,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 0.34,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/599748_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-599748.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.450Z"
+    "updatedAt": "2026-10-20T15:11:30.781Z"
   },
   "card-tcgplayer-557296": {
     "id": "card-tcgplayer-557296",
@@ -9283,13 +9283,13 @@
     "tcgplayerProductId": 599736,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 0.37,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/599736_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-599736.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.450Z"
+    "updatedAt": "2026-10-20T15:11:30.893Z"
   },
   "card-tcgplayer-548434": {
     "id": "card-tcgplayer-548434",
@@ -14090,13 +14090,13 @@
     "tcgplayerProductId": 711494,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 12.59,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/711494_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-711494.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.452Z"
+    "updatedAt": "2026-10-20T15:11:31.003Z"
   },
   "card-tcgplayer-661702": {
     "id": "card-tcgplayer-661702",
@@ -14251,13 +14251,13 @@
     "tcgplayerProductId": 711496,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 34.7,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/711496_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-711496.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.452Z"
+    "updatedAt": "2026-10-20T15:11:31.111Z"
   },
   "card-tcgplayer-636535": {
     "id": "card-tcgplayer-636535",
@@ -14481,13 +14481,13 @@
     "tcgplayerProductId": 712842,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 0.43,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/712842_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-712842.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.452Z"
+    "updatedAt": "2026-10-20T15:11:31.134Z"
   },
   "card-tcgplayer-694876": {
     "id": "card-tcgplayer-694876",
@@ -14527,13 +14527,13 @@
     "tcgplayerProductId": 712843,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 18.27,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/712843_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-712843.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.452Z"
+    "updatedAt": "2026-10-20T15:11:31.147Z"
   },
   "card-tcgplayer-641239": {
     "id": "card-tcgplayer-641239",
@@ -15033,13 +15033,13 @@
     "tcgplayerProductId": 717404,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 35,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/717404_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-717404.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.452Z"
+    "updatedAt": "2026-10-20T15:11:31.256Z"
   },
   "card-tcgplayer-680494": {
     "id": "card-tcgplayer-680494",
@@ -15125,13 +15125,13 @@
     "tcgplayerProductId": 712844,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 0.34,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/712844_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-712844.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.452Z"
+    "updatedAt": "2026-10-20T15:11:31.364Z"
   },
   "card-tcgplayer-712845": {
     "id": "card-tcgplayer-712845",
@@ -15148,13 +15148,13 @@
     "tcgplayerProductId": 712845,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 26.25,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/712845_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-712845.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.452Z"
+    "updatedAt": "2026-10-20T15:11:31.808Z"
   },
   "card-tcgplayer-711489": {
     "id": "card-tcgplayer-711489",
@@ -15171,13 +15171,13 @@
     "tcgplayerProductId": 711489,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 9.5,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/711489_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-711489.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.452Z"
+    "updatedAt": "2026-10-20T15:11:31.926Z"
   },
   "card-tcgplayer-668202": {
     "id": "card-tcgplayer-668202",
@@ -15332,13 +15332,13 @@
     "tcgplayerProductId": 711497,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 15,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/711497_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-711497.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.452Z"
+    "updatedAt": "2026-10-20T15:11:32.040Z"
   },
   "card-tcgplayer-649708": {
     "id": "card-tcgplayer-649708",
@@ -15447,13 +15447,13 @@
     "tcgplayerProductId": 711495,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 29.99,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/711495_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-711495.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.452Z"
+    "updatedAt": "2026-10-20T15:11:32.155Z"
   },
   "card-tcgplayer-710234": {
     "id": "card-tcgplayer-710234",
@@ -15562,13 +15562,13 @@
     "tcgplayerProductId": 712848,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 3.86,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/712848_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-712848.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.452Z"
+    "updatedAt": "2026-10-20T15:11:32.269Z"
   },
   "card-tcgplayer-712849": {
     "id": "card-tcgplayer-712849",
@@ -15585,13 +15585,13 @@
     "tcgplayerProductId": 712849,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 97.13,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/712849_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-712849.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.452Z"
+    "updatedAt": "2026-10-20T15:11:32.382Z"
   },
   "card-tcgplayer-681982": {
     "id": "card-tcgplayer-681982",
@@ -15815,13 +15815,13 @@
     "tcgplayerProductId": 711488,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 10,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/711488_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-711488.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.452Z"
+    "updatedAt": "2026-10-20T15:11:32.756Z"
   },
   "card-tcgplayer-681983": {
     "id": "card-tcgplayer-681983",
@@ -15861,13 +15861,13 @@
     "tcgplayerProductId": 712846,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 1.01,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/712846_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-712846.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.452Z"
+    "updatedAt": "2026-10-20T15:11:32.972Z"
   },
   "card-tcgplayer-712847": {
     "id": "card-tcgplayer-712847",
@@ -15884,13 +15884,13 @@
     "tcgplayerProductId": 712847,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 20.15,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/712847_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-712847.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.452Z"
+    "updatedAt": "2026-10-20T15:11:33.088Z"
   },
   "card-tcgplayer-693121": {
     "id": "card-tcgplayer-693121",
@@ -16022,13 +16022,13 @@
     "tcgplayerProductId": 711487,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 9.95,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/711487_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-711487.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.452Z"
+    "updatedAt": "2026-10-20T15:11:33.114Z"
   },
   "card-tcgplayer-668167": {
     "id": "card-tcgplayer-668167",
@@ -16137,13 +16137,13 @@
     "tcgplayerProductId": 711490,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 36.09,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/711490_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-711490.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.452Z"
+    "updatedAt": "2026-10-20T15:11:33.228Z"
   },
   "card-tcgplayer-671741": {
     "id": "card-tcgplayer-671741",
@@ -16175,8 +16175,8 @@
     "number": "OP12-112",
     "set": "One Piece Promotion Cards",
     "setCode": "OP12",
-    "cardmarketProductId": 830358,
-    "cardmarketExpansionId": 6157,
+    "cardmarketProductId": 904370,
+    "cardmarketExpansionId": 5262,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #830358)",
     "cardmarketTrendPrice": 0.1,
@@ -16189,7 +16189,7 @@
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.452Z"
+    "updatedAt": "2026-10-20T15:11:34.662Z"
   },
   "card-tcgplayer-711493": {
     "id": "card-tcgplayer-711493",
@@ -16206,13 +16206,13 @@
     "tcgplayerProductId": 711493,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 20,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/711493_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-711493.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.452Z"
+    "updatedAt": "2026-10-20T15:11:33.551Z"
   },
   "card-tcgplayer-657825": {
     "id": "card-tcgplayer-657825",
@@ -16244,8 +16244,8 @@
     "number": "OP12-112",
     "set": "One Piece Promotion Cards",
     "setCode": "OP12",
-    "cardmarketProductId": 830358,
-    "cardmarketExpansionId": 6157,
+    "cardmarketProductId": 870120,
+    "cardmarketExpansionId": 5303,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #830358)",
     "cardmarketTrendPrice": 0.1,
@@ -16258,7 +16258,7 @@
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.452Z"
+    "updatedAt": "2026-10-20T15:11:34.662Z"
   },
   "card-tcgplayer-668189": {
     "id": "card-tcgplayer-668189",
@@ -16267,8 +16267,8 @@
     "number": "OP12-112",
     "set": "One Piece Promotion Cards",
     "setCode": "OP12",
-    "cardmarketProductId": 830358,
-    "cardmarketExpansionId": 6157,
+    "cardmarketProductId": 870121,
+    "cardmarketExpansionId": 6684,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #830358)",
     "cardmarketTrendPrice": 0.1,
@@ -16281,7 +16281,7 @@
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.452Z"
+    "updatedAt": "2026-10-20T15:11:34.662Z"
   },
   "card-tcgplayer-680497": {
     "id": "card-tcgplayer-680497",
@@ -16597,13 +16597,13 @@
     "tcgplayerProductId": 711492,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 25.94,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/711492_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-711492.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.453Z"
+    "updatedAt": "2026-10-20T15:11:33.577Z"
   },
   "card-tcgplayer-661692": {
     "id": "card-tcgplayer-661692",
@@ -16643,13 +16643,13 @@
     "tcgplayerProductId": 711491,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 10,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/711491_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-711491.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.453Z"
+    "updatedAt": "2026-10-20T15:11:33.788Z"
   },
   "card-tcgplayer-661693": {
     "id": "card-tcgplayer-661693",
@@ -17218,13 +17218,13 @@
     "tcgplayerProductId": 712840,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 1.07,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/712840_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-712840.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.453Z"
+    "updatedAt": "2026-10-20T15:11:33.905Z"
   },
   "card-tcgplayer-712841": {
     "id": "card-tcgplayer-712841",
@@ -17241,13 +17241,13 @@
     "tcgplayerProductId": 712841,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 29.5,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/712841_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-712841.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.453Z"
+    "updatedAt": "2026-10-20T15:11:34.020Z"
   },
   "card-tcgplayer-708448": {
     "id": "card-tcgplayer-708448",
@@ -19332,21 +19332,21 @@
     "number": "P-027",
     "set": "One Piece Promotion Cards",
     "setCode": "P",
-    "cardmarketProductId": 696722,
-    "cardmarketExpansionId": 5230,
+    "cardmarketProductId": 752015,
+    "cardmarketExpansionId": 5262,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #696722)",
     "cardmarketTrendPrice": 6.44,
     "tcgplayerProductId": 539556,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 6.96,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/539556_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-539556.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.454Z"
+    "updatedAt": "2026-10-20T15:11:34.662Z"
   },
   "card-tcgplayer-525298": {
     "id": "card-tcgplayer-525298",
@@ -19401,21 +19401,21 @@
     "number": "P-028",
     "set": "One Piece Promotion Cards",
     "setCode": "P",
-    "cardmarketProductId": 692222,
-    "cardmarketExpansionId": 5230,
+    "cardmarketProductId": 752016,
+    "cardmarketExpansionId": 5262,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #692222)",
     "cardmarketTrendPrice": 7.75,
     "tcgplayerProductId": 539553,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 8.37,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/539553_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-539553.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.454Z"
+    "updatedAt": "2026-10-20T15:11:34.662Z"
   },
   "card-tcgplayer-525299": {
     "id": "card-tcgplayer-525299",
@@ -19493,21 +19493,21 @@
     "number": "P-029",
     "set": "One Piece Promotion Cards",
     "setCode": "P",
-    "cardmarketProductId": 692223,
-    "cardmarketExpansionId": 5230,
+    "cardmarketProductId": 752018,
+    "cardmarketExpansionId": 5262,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #692223)",
     "cardmarketTrendPrice": 1.1,
     "tcgplayerProductId": 539557,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 1.19,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/539557_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-539557.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.454Z"
+    "updatedAt": "2026-10-20T15:11:34.662Z"
   },
   "card-tcgplayer-525300": {
     "id": "card-tcgplayer-525300",
@@ -19562,21 +19562,21 @@
     "number": "P-030",
     "set": "One Piece Promotion Cards",
     "setCode": "P",
-    "cardmarketProductId": 692224,
-    "cardmarketExpansionId": 5230,
+    "cardmarketProductId": 752020,
+    "cardmarketExpansionId": 5262,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #692224)",
     "cardmarketTrendPrice": 0.31,
     "tcgplayerProductId": 539555,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 0.33,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/539555_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-539555.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.454Z"
+    "updatedAt": "2026-10-20T15:11:34.662Z"
   },
   "card-tcgplayer-525301": {
     "id": "card-tcgplayer-525301",
@@ -19677,21 +19677,21 @@
     "number": "P-031",
     "set": "One Piece Promotion Cards",
     "setCode": "P",
-    "cardmarketProductId": 692225,
-    "cardmarketExpansionId": 5230,
+    "cardmarketProductId": 752021,
+    "cardmarketExpansionId": 5262,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #692225)",
     "cardmarketTrendPrice": 7.41,
     "tcgplayerProductId": 539550,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 8,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/539550_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-539550.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.455Z"
+    "updatedAt": "2026-10-20T15:11:34.662Z"
   },
   "card-tcgplayer-525302": {
     "id": "card-tcgplayer-525302",
@@ -19769,21 +19769,21 @@
     "number": "P-032",
     "set": "One Piece Promotion Cards",
     "setCode": "P",
-    "cardmarketProductId": 692226,
-    "cardmarketExpansionId": 5230,
+    "cardmarketProductId": 752023,
+    "cardmarketExpansionId": 5262,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #692226)",
     "cardmarketTrendPrice": 3.79,
     "tcgplayerProductId": 539548,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 4.09,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/539548_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-539548.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.455Z"
+    "updatedAt": "2026-10-20T15:11:34.662Z"
   },
   "card-tcgplayer-525303": {
     "id": "card-tcgplayer-525303",
@@ -19838,21 +19838,21 @@
     "number": "P-033",
     "set": "One Piece Promotion Cards",
     "setCode": "P",
-    "cardmarketProductId": 696999,
-    "cardmarketExpansionId": 5230,
+    "cardmarketProductId": 743251,
+    "cardmarketExpansionId": 5262,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #696999)",
     "cardmarketTrendPrice": 257.98,
     "tcgplayerProductId": 539554,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 278.62,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/539554_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-539554.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.455Z"
+    "updatedAt": "2026-10-20T15:11:34.662Z"
   },
   "card-tcgplayer-525304": {
     "id": "card-tcgplayer-525304",
@@ -19907,21 +19907,21 @@
     "number": "P-034",
     "set": "One Piece Promotion Cards",
     "setCode": "P",
-    "cardmarketProductId": 696721,
-    "cardmarketExpansionId": 5230,
+    "cardmarketProductId": 752024,
+    "cardmarketExpansionId": 5262,
     "cardmarketPriceState": "available",
     "cardmarketPriceReason": "Verified Cardmarket mapping (Product #696721)",
     "cardmarketTrendPrice": 4.95,
     "tcgplayerProductId": 539551,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 5.35,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/539551_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-539551.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.455Z"
+    "updatedAt": "2026-10-20T15:11:34.662Z"
   },
   "card-tcgplayer-525305": {
     "id": "card-tcgplayer-525305",
@@ -37671,13 +37671,13 @@
     "tcgplayerProductId": 712851,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 2.09,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/712851_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-712851.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.472Z"
+    "updatedAt": "2026-10-20T15:11:34.647Z"
   },
   "card-tcgplayer-657484": {
     "id": "card-tcgplayer-657484",
@@ -37717,13 +37717,13 @@
     "tcgplayerProductId": 712852,
     "tcgplayerPriceState": "available",
     "tcgplayerMarketPrice": 53.48,
-    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/712852_200w.jpg",
+    "imageUrl": "/catalog/cards/card-tcgplayer-712852.jpg",
     "imageState": "available",
     "errorResolved": true,
     "isApproved": true,
     "approvedAt": "2026-10-05T00:00:00.000Z",
     "adminNote": "Mapped & verified via Cardmarket singles & TCGCSV/BrightData pipeline",
-    "updatedAt": "2026-10-12T14:59:07.472Z"
+    "updatedAt": "2026-10-20T15:11:34.662Z"
   },
   "card-tcgplayer-649709": {
     "id": "card-tcgplayer-649709",

@@ -764,6 +764,71 @@ describe('cardmarketProductUrl generalized logic', () => {
       'https://www.cardmarket.com/en/OnePiece/Products/Singles/Promos/MonkeyDLuffy-P-001-V1'
     );
   });
+
+  it('maps Baby 5 and Tournament promo variants to their exact canonical Cardmarket URLs', () => {
+    // 1. Baby 5 Winner Pack 2026 -> Winner-Cards/Baby-5-OP12-112-V1
+    const babyWinner = createMockAsset({
+      id: 'card-tcgplayer-668189',
+      name: 'Baby 5 (112)',
+      number: 'OP12-112',
+      setCode: 'OP12',
+      cardmarketProductId: 870121,
+      variant: 'Winner promo · TCGplayer #668189',
+    });
+    expect(cardmarketProductUrl(babyWinner)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Winner-Cards/Baby-5-OP12-112-V1'
+    );
+
+    // 2. Baby 5 Tournament Pack 2026 -> Unnumbered-Promos/Baby-5-OP12-112-V1
+    const babyTournament = createMockAsset({
+      id: 'card-tcgplayer-668168',
+      name: 'Baby 5 (112)',
+      number: 'OP12-112',
+      setCode: 'OP12',
+      cardmarketProductId: 870120,
+      variant: 'Promotional art · Tournament Pack 2026 Vol. 1 · TCGplayer #668168',
+    });
+    expect(cardmarketProductUrl(babyTournament)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Unnumbered-Promos/Baby-5-OP12-112-V1'
+    );
+
+    // 3. Baby 5 CS 26-27 Celebration Pack -> Special-Tournaments-Promos/Baby-5-OP12-112-V1
+    const babyCS = createMockAsset({
+      id: 'card-tcgplayer-710237',
+      name: 'Baby 5 (112)',
+      number: 'OP12-112',
+      setCode: 'OP12',
+      cardmarketProductId: 904370,
+      variant: 'Promotional art · CS 26-27 Celebration Pack · TCGplayer #710237',
+    });
+    expect(cardmarketProductUrl(babyCS)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Special-Tournaments-Promos/Baby-5-OP12-112-V1'
+    );
+
+    // 4. Portgas.D.Ace CS 2023 Finalist -> Special-Tournaments-Promos/PortgasDAce-P-028-V1
+    const aceFinalist = createMockAsset({
+      id: 'card-tcgplayer-539553',
+      name: 'Portgas.D.Ace (CS 2023 Event Pack Finalist Ver.)',
+      number: 'P-028',
+      setCode: 'P',
+      cardmarketProductId: 752016,
+    });
+    expect(cardmarketProductUrl(aceFinalist)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Special-Tournaments-Promos/PortgasDAce-P-028-V1'
+    );
+
+    // 5. Raizo CS 2023 Finalist -> Special-Tournaments-Promos/Raizo-OP01-052-V1
+    const raizoFinalist = createMockAsset({
+      id: 'card-tcgplayer-539552',
+      name: 'Raizo (CS 2023 Event Pack Finalist Ver.)',
+      number: 'OP01-052',
+      setCode: 'OP01',
+      cardmarketProductId: 752011,
+    });
+    expect(cardmarketProductUrl(raizoFinalist)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Singles/Special-Tournaments-Promos/Raizo-OP01-052-V1'
+    );
+  });
 });
 
 

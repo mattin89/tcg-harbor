@@ -37,6 +37,7 @@ function fetchBinaryViaBrightData(url) {
         resolve({ status: res.statusCode, length: buf.length, buffer: buf });
       });
     });
+    req.on('timeout', () => { req.destroy(); resolve({ error: 'timeout', status: 408 }); });
     req.on('error', e => resolve({ error: e.message, status: 500 }));
     req.write(postData);
     req.end();

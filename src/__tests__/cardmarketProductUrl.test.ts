@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cardmarketProductUrl } from '../App';
+import { cardmarketProductUrl, cleanCardmarketSealedSlug } from '../App';
 import type { DemoAsset } from '../data/demo';
 
 function createMockAsset(overrides: Partial<DemoAsset> = {}): DemoAsset {
@@ -310,6 +310,43 @@ describe('cardmarketProductUrl generalized logic', () => {
       'https://www.cardmarket.com/en/OnePiece/Products/Promo-Products/Chinese-New-Year-Red-Envelope-Boa-Hancock'
     );
 
+    // Chinese New Year Red Envelope - Monkey.D.Luffy (verifies hyphenated Monkey-D-Luffy, NOT MonkeyDLuffy)
+    const luffyEnvelope = createMockAsset({
+      kind: 'sealed',
+      name: 'Chinese New Year Red Envelope - Monkey.D.Luffy',
+      productType: 'Promo Product',
+      language: 'Chinese',
+      cardmarketProductId: 808782,
+    });
+    expect(cardmarketProductUrl(luffyEnvelope)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Promo-Products/Chinese-New-Year-Red-Envelope-Monkey-D-Luffy'
+    );
+    expect(cardmarketProductUrl(luffyEnvelope)).not.toContain('MonkeyDLuffy');
+
+    // Chinese New Year Red Envelope - Sanji
+    const sanjiEnvelope = createMockAsset({
+      kind: 'sealed',
+      name: 'Chinese New Year Red Envelope - Sanji',
+      productType: 'Promo Product',
+      language: 'Chinese',
+      cardmarketProductId: 871507,
+    });
+    expect(cardmarketProductUrl(sanjiEnvelope)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Promo-Products/Chinese-New-Year-Red-Envelope-Sanji'
+    );
+
+    // Chinese New Year Red Envelope - Roronoa Zoro
+    const zoroEnvelope = createMockAsset({
+      kind: 'sealed',
+      name: 'Chinese New Year Red Envelope - Roronoa Zoro',
+      productType: 'Promo Product',
+      language: 'Chinese',
+      cardmarketProductId: 765985,
+    });
+    expect(cardmarketProductUrl(zoroEnvelope)).toBe(
+      'https://www.cardmarket.com/en/OnePiece/Products/Promo-Products/Chinese-New-Year-Red-Envelope-Roronoa-Zoro'
+    );
+
     // Chinese Anniversary Nami Gift Box
     const namiBox = createMockAsset({
       kind: 'sealed',
@@ -344,6 +381,24 @@ describe('cardmarketProductUrl generalized logic', () => {
     });
     expect(cardmarketProductUrl(unmappedSealed)).toBe(
       'https://www.cardmarket.com/en/OnePiece/Products/Search?searchString=Sample%20Promo%20Pack'
+    );
+  });
+
+  it('correctly handles Monkey.D.Luffy in cleanCardmarketSealedSlug for promo products vs starter decks', () => {
+    // Promo product keeps hyphens for character names on Cardmarket
+    expect(cleanCardmarketSealedSlug('Chinese New Year Red Envelope - Monkey.D.Luffy')).toBe(
+      'Chinese-New-Year-Red-Envelope-Monkey-D-Luffy'
+    );
+    expect(cleanCardmarketSealedSlug('Tin Pack Set Vol.1 (Monkey D. Luffy)')).toBe(
+      'Tin-Pack-Set-Vol-1-Monkey-D-Luffy'
+    );
+
+    // Starter Decks collapse character names without hyphens per Cardmarket convention
+    expect(cleanCardmarketSealedSlug('Starter Deck: Monkey.D.Luffy')).toBe(
+      'Starter-Deck-MonkeyDLuffy'
+    );
+    expect(cleanCardmarketSealedSlug('Starter Deck: Edward.Newgate')).toBe(
+      'Starter-Deck-EdwardNewgate'
     );
   });
 

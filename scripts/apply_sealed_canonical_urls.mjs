@@ -2,14 +2,17 @@ import fs from 'node:fs';
 import { cardmarketProductSlugV1 } from './lib/cardmarket-sealed-release-v1.mjs';
 
 export function cleanCardmarketSealedSlug(name) {
-  let cleaned = name
-    .replace(/Monkey\.D\.Luffy/gi, 'MonkeyDLuffy')
-    .replace(/Edward\.Newgate/gi, 'EdwardNewgate')
-    .replace(/Marshall\.D\.Teach/gi, 'MarshallDTeach')
-    .replace(/Donquixote\.Doflamingo/gi, 'DonquixoteDoflamingo')
-    .replace(/Trafalgar\.D\.Water\.Law/gi, 'TrafalgarDWaterLaw')
-    .replace(/Portgas\.D\.Ace/gi, 'PortgasDAce')
-    .replace(/Gol\.D\.Roger/gi, 'GolDRoger');
+  let cleaned = name;
+  if (/starter deck|demo deck/i.test(cleaned)) {
+    cleaned = cleaned
+      .replace(/Monkey\.D\.Luffy/gi, 'MonkeyDLuffy')
+      .replace(/Edward\.Newgate/gi, 'EdwardNewgate')
+      .replace(/Marshall\.D\.Teach/gi, 'MarshallDTeach')
+      .replace(/Donquixote\.Doflamingo/gi, 'DonquixoteDoflamingo')
+      .replace(/Trafalgar\.D\.Water\.Law/gi, 'TrafalgarDWaterLaw')
+      .replace(/Portgas\.D\.Ace/gi, 'PortgasDAce')
+      .replace(/Gol\.D\.Roger/gi, 'GolDRoger');
+  }
 
   return cardmarketProductSlugV1(cleaned);
 }

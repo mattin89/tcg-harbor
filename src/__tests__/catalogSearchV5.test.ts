@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { catalogAssets, type DemoAsset } from '../data/demo';
 import {
   catalogCardGroupIdV5,
+  normalizeBaseSetCode,
   normalizeCatalogQueryV5,
   selectCardGroupMatchV5,
 } from '../domain/catalogSearchV5';
@@ -127,5 +128,51 @@ describe('catalog card search v5', () => {
     expect(selectCardGroupMatchV5([luffyCard], normalizeCatalogQueryV5('Luffy OP11-040'), 'all')).toBe(luffyCard);
     expect(selectCardGroupMatchV5([luffyCard], normalizeCatalogQueryV5('Luffy OP11'), 'all')).toBe(luffyCard);
     expect(selectCardGroupMatchV5([luffyCard], normalizeCatalogQueryV5('Monkey D Luffy'), 'all')).toBe(luffyCard);
+  });
+
+  it('normalizes base set codes by removing language suffixes like EB03-CN, EB03-FR, OP01-JP', () => {
+    expect(normalizeBaseSetCode('EB03-CN')).toBe('EB03');
+    expect(normalizeBaseSetCode('EB03-FR')).toBe('EB03');
+    expect(normalizeBaseSetCode('EB03-JP')).toBe('EB03');
+    expect(normalizeBaseSetCode('OP01-JP')).toBe('OP01');
+    expect(normalizeBaseSetCode('OP01-CN')).toBe('OP01');
+    expect(normalizeBaseSetCode('OP01-KR')).toBe('OP01');
+    expect(normalizeBaseSetCode('ST01-JP')).toBe('ST01');
+    expect(normalizeBaseSetCode('P-JP')).toBe('P');
+
+    // Retains compound set codes and non-language hyphens
+    expect(normalizeBaseSetCode('PRB-01')).toBe('PRB-01');
+    expect(normalizeBaseSetCode('PRB-02')).toBe('PRB-02');
+    expect(normalizeBaseSetCode('OP14-EB04')).toBe('OP14-EB04');
+    expect(normalizeBaseSetCode('OP15-EB04')).toBe('OP15-EB04');
+  });
+
+  it('matches multilingual cards when filtering by the normalized base set code EB03', () => {
+    const englishCard = {
+      name: 'Nami',
+      number: 'EB03-001',
+      setCode: 'EB03',
+      variant: 'Standard',
+      language: 'English',
+    };
+    const chineseCard = {
+      name: 'Nami',
+      number: 'EB03-001',
+      setCode: 'EB03-CN',
+      variant: 'Standard',
+      language: 'Chinese',
+    };
+    const frenchCard = {
+      name: 'Nami',
+      number: 'EB03-001',
+      setCode: 'EB03-FR',
+      variant: 'Standard',
+      language: 'French',
+    };
+
+    // Base set filter EB03 matches all language variants
+    expect(selectCardGroupMatchV5([englishCard], '', 'EB03')).toBe(englishCard);
+    expect(selectCardGroupMatchV5([chineseCard], '', 'EB03')).toBe(chineseCard);
+    expect(selectCardGroupMatchV5([frenchCard], '', 'EB03')).toBe(frenchCard);
   });
 });

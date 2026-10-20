@@ -12,6 +12,10 @@ export function isDonCardV5(card: { rulesCardId?: string; number?: string }): bo
   return card.rulesCardId === 'DON!!' || card.number === 'DON!!';
 }
 
+export function normalizeBaseSetCode(setCode: string): string {
+  return setCode.replace(/[-_](CN|FR|JP|KR|DE|ES|IT|EN)$/i, '');
+}
+
 export function catalogCardGroupIdV5(card: { id: string; rulesCardId?: string; number?: string }): string {
   if (isDonCardV5(card)) {
     return card.id;
@@ -66,7 +70,11 @@ export function selectCardGroupMatchV5<T extends CatalogSearchCardV5>(
 ): T | null {
   const eligibleArts = setCode === 'all'
     ? arts
-    : arts.filter((art) => art.setCode === setCode || art.setCode.startsWith(`${setCode}-`));
+    : arts.filter((art) => (
+        art.setCode === setCode ||
+        art.setCode.startsWith(`${setCode}-`) ||
+        normalizeBaseSetCode(art.setCode) === setCode
+      ));
 
   if (!normalizedQuery) return eligibleArts[0] ?? null;
 

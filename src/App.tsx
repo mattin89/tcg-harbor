@@ -41,6 +41,7 @@ import { resolveAccountBootstrapSeedsV2 } from './domain/accountBootstrapV2';
 import { resolveViewerPathV4, viewerMutationDecisionV4 } from './domain/guestAccessV4';
 import {
   catalogCardGroupIdV5,
+  normalizeBaseSetCode,
   normalizeCatalogQueryV5,
   selectCardGroupMatchV5,
 } from './domain/catalogSearchV5';
@@ -1120,11 +1121,42 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
   }, []);
 
   const cardGroupIndex = useMemo(() => new Map(cardGroups.map((group) => [group.id, group.arts])), [cardGroups]);
-  const catalogSets = useMemo(() => [...new Set(catalogAssets
-    .filter((asset) => asset.kind === tab)
-    .filter((asset) => catalogLanguage === 'all' || asset.language === catalogLanguage)
-    .map((asset) => asset.setCode))]
-    .sort((left, right) => left.localeCompare(right, 'en-US', { numeric: true })), [tab, catalogLanguage]);
+
+  const globalSetNames = useMemo(() => {
+    const names = new Map<string, string>();
+    for (const asset of catalogAssets) {
+      const base = normalizeBaseSetCode(asset.setCode);
+      if (!names.has(base) || !names.get(base)) {
+        const cleanName = asset.set
+          ? asset.set.replace(/\s*\((Japanese|French|Chinese|Korean|English)\)/i, '').replace(/\s*-\s*(Japanese|French|Chinese|Korean|English)$/i, '').trim()
+          : '';
+        if (cleanName && cleanName !== base && !/^(booster|booster boxes|preconstructed decks|promo products|all current sets)$/i.test(cleanName)) {
+          names.set(base, cleanName);
+        }
+      }
+    }
+    return names;
+  }, []);
+
+  const catalogSets = useMemo(() => {
+    const setCodes = new Set<string>();
+    for (const asset of catalogAssets) {
+      if (asset.kind !== tab) continue;
+      if (catalogLanguage !== 'all' && asset.language !== catalogLanguage) continue;
+      const baseCode = normalizeBaseSetCode(asset.setCode);
+      setCodes.add(baseCode);
+    }
+    return [...setCodes]
+      .sort((left, right) => left.localeCompare(right, 'en-US', { numeric: true }))
+      .map((code) => {
+        const name = globalSetNames.get(code);
+        return {
+          code,
+          label: name ? `${code} · ${name}` : code,
+        };
+      });
+  }, [tab, catalogLanguage, globalSetNames]);
+
   const normalizedQuery = normalizeCatalogQueryV5(query);
   const allResults = tab === 'card'
     ? cardGroups
@@ -1139,7 +1171,7 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
     : catalogAssets
       .filter((asset) => asset.kind === 'sealed')
       .filter((asset) => catalogLanguage === 'all' || asset.language === catalogLanguage)
-      .filter((asset) => catalogSet === 'all' || asset.setCode === catalogSet)
+      .filter((asset) => catalogSet === 'all' || asset.setCode === catalogSet || normalizeBaseSetCode(asset.setCode) === catalogSet)
       .filter((asset) => !normalizedQuery || `${asset.name} ${asset.set} ${asset.setCode} ${asset.productType ?? ''}`.toLocaleLowerCase('en-US').includes(normalizedQuery));
   const results = allResults.slice(0, resultLimit);
   const allGroupArts = selected?.kind === 'card'
@@ -1415,7 +1447,7 @@ function AddItemsPage({ assets, setAssets, productionCollection, onCollectionMut
       <section className="add-catalog panel">
         <div className="panel-header"><div><p className="eyebrow">One Piece Card Game</p><h2>Search the complete catalog</h2></div><div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><MarketDataBadge compact /></div></div>
         <Segmented value={tab} onChange={(value) => { setTab(value); setSelected(null); setQuery(''); setCatalogSet('all'); setCatalogLanguage('all'); setCondition(value === 'sealed' ? 'Factory sealed' : 'Near Mint'); }} label="Catalog type" options={[{ value: 'card', label: 'Individual card', icon: 'cards' }, { value: 'sealed', label: 'Sealed product', icon: 'box' }]} />
-        <div className="catalog-search-row"><label className="search-field catalog-search"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tab === 'card' ? 'Search card name, number, set code or art' : 'Search product, set or type'} aria-label="Search catalog" /></label><label className="select-field catalog-language-filter"><span>Language</span><select value={catalogLanguage} onChange={(event) => { setCatalogLanguage(event.target.value); setCatalogSet('all'); setSelected(null); }}><option value="all">All languages</option><option value="English">English</option><option value="Japanese">Japanese</option><option value="French">French</option><option value="Chinese">Chinese</option><option value="Korean">Korean</option></select></label><label className="select-field catalog-set-filter"><span>Set</span><select value={catalogSet} onChange={(event) => { setCatalogSet(event.target.value); setSelected(null); }}><option value="all">All current sets</option>{catalogSets.map((setCode) => <option key={setCode} value={setCode}>{setCode}</option>)}</select></label></div>
+        <div className="catalog-search-row"><label className="search-field catalog-search"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tab === 'card' ? 'Search card name, number, set code or art' : 'Search product, set or type'} aria-label="Search catalog" /></label><label className="select-field catalog-language-filter"><span>Language</span><select value={catalogLanguage} onChange={(event) => { setCatalogLanguage(event.target.value); setCatalogSet('all'); setSelected(null); }}><option value="all">All languages</option><option value="English">English</option><option value="Japanese">Japanese</option><option value="French">French</option><option value="Chinese">Chinese</option><option value="Korean">Korean</option></select></label><label className="select-field catalog-set-filter"><span>Set</span><select value={catalogSet} onChange={(event) => { setCatalogSet(event.target.value); setSelected(null); }}><option value="all">All current sets</option>{catalogSets.map(({ code, label }) => <option key={code} value={code}>{label}</option>)}</select></label></div>
         <p className="catalog-hint">{tab === 'card' ? `${cardGroups.length.toLocaleString()} card numbers with every sourced art · try “Nami” or “OP01-016”` : `${allResults.length.toLocaleString()} released, source-backed sealed products · try “Booster Box”`}</p>
         <div className="catalog-results" aria-live="polite">
           {results.map((asset) => {

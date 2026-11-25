@@ -130,9 +130,13 @@ describe('OPTCG source cache v1', () => {
     expect([
       [3485, 538, 1082, 187],
       [3654, 626, 1082, 187],
+      [3743, 626, 1082, 187],
+      [3902, 626, 1082, 191],
     ]).toContainEqual(parsed.responses.map((records) => records.length));
     expect(parsed.releasedSetCodes).toContain('OP16');
     expect(parsed.releasedSetCodes).toContain('ST30');
+    expect(parsed.releasedSetCodes).toContain('EB05');
+    expect(parsed.releasedSetCodes).toContain('OP18');
   });
 
   it('falls back only for a transient failure from the exact OPTCG host', async () => {

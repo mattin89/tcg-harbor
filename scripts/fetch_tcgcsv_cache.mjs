@@ -11,6 +11,8 @@ const KEY_GROUP_IDS = [
   23333, // EB-01
   23834, // EB-02
   24545, // EB-03-04
+  24820, // EB-05
+  24833, // OP-18 The Dominance of God
   3188,  // OP01
   17698, // OP02
   22890, // OP03

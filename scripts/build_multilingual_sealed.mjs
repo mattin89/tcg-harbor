@@ -23,6 +23,12 @@ const existingSealed = v10Catalog.filter((a) => a.kind === 'sealed');
 const existingProductIds = new Set(
   existingSealed.map((a) => a.cardmarketProductId).filter(Boolean)
 );
+const futureMemberSetCodes = new Set(
+  (v10Data.provenance?.englishReleaseManifest?.futureProductsExcluded || [])
+    .flatMap((r) => [r.abbreviation, r.officialCode, ...(r.memberSetCodes || [])])
+    .filter(Boolean)
+    .map((code) => code.replace(/[^A-Z0-9]/gi, '').toUpperCase())
+);
 
 const englishSealed = v10Catalog.filter(
   (a) => a.kind === 'sealed' && a.language === 'English' && a.imageUrl && a.imageUrl.startsWith('/catalog/sealed/v1/')
@@ -193,6 +199,7 @@ function extractSetCode(name) {
   if (/Adventure on Kami/i.test(name)) return 'OP15';
   if (/Time of Battle/i.test(name)) return 'OP16';
   if (/World's Strongest Warriors/i.test(name)) return 'OP17';
+  if (/Dominance of God/i.test(name)) return 'OP18';
   if (/Memorial Collection/i.test(name)) return 'EB01';
   if (/Anime 25th/i.test(name)) return 'EB02';
   if (/Heroines Edition/i.test(name)) return 'EB03';
@@ -249,6 +256,9 @@ console.log(`Processing ${candidateCmProducts.length} authentic Cardmarket seale
 for (const p of candidateCmProducts) {
   const cat = CATEGORY_MAP[p.categoryName];
   const setCode = extractSetCode(p.name) ?? cat.setCodeFallback;
+  if (setCode && futureMemberSetCodes.has(setCode.replace(/[^A-Z0-9]/gi, '').toUpperCase())) {
+    continue;
+  }
   const price = cmPriceMap.get(p.idProduct);
 
   let language = 'English';

@@ -27,11 +27,11 @@ export interface DonCardmarketMapping {
 }
 
 export const donCounts = {
-  totalDons: 187,
+  totalDons: 191,
   mappedCount: 177,
   pricedCount: 174,
   trendUnavailableCount: 3,
-  unmappedCount: 10,
+  unmappedCount: 14,
 } as const;
 
 export const donMappings: Record<string, DonCardmarketMapping> = {

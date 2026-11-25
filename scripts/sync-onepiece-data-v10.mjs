@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import https from 'node:https';
 import { createClient } from '@supabase/supabase-js';
 import sharp from 'sharp';
 import {
@@ -110,7 +111,7 @@ const TCGCSV_GROUPS = `https://tcgcsv.com/tcgplayer/${TCGCSV_CATEGORY_ID}/groups
 // Match the whole source abbreviation. Event, anniversary, pre-release,
 // starter, promo, and Japanese groups therefore cannot enter by substring.
 const TCGCSV_MARKET_GROUP_ABBREVIATION = /^(?:OP\d{2}|EB-?\d{2}(?:-\d{2})?|PRB-\d{2}|OP\d{2}-EB\d{2})$/;
-const MINIMUM_RELEASED_ENGLISH_MAIN_SET = 16;
+const MINIMUM_RELEASED_ENGLISH_MAIN_SET = 18;
 const BANDAI_ENGLISH_PRODUCTS = 'https://en.onepiece-cardgame.com/products/';
 const BANDAI_PRODUCTS_MAX_PAGES = 40;
 // ST-05 uses Bandai's older standalone deck page and can disappear from the
@@ -128,7 +129,7 @@ const OFFICIAL_RELEASE_CONTINUITY = [{
   page: 0,
   continuityEvidence: 'Official Bandai standalone product page',
 }];
-const REQUIRED_RELEASED_SPECIAL_GROUPS = ['EB-01', 'EB-02', 'EB-03', 'PRB-01', 'PRB-02'];
+const REQUIRED_RELEASED_SPECIAL_GROUPS = ['EB-01', 'EB-02', 'EB-03', 'PRB-01', 'PRB-02', 'EB-05'];
 // Handled aliases between official Bandai product codes and TCGCSV market group abbreviations.
 // Note: OP14-EB04 matches TCGCSV group OP14-EB04 directly, and EB-03 matches EB03 via hyphen removal.
 const OFFICIAL_TO_TCGCSV_GROUP_OVERRIDES = new Map();
@@ -165,6 +166,10 @@ const EXACT_OPTCG_IMAGE_OVERRIDES = new Map([
   ['don_181', 'https://tcgplayer-cdn.tcgplayer.com/product/677567_in_1000x1000.jpg'],
   ['don_132', 'https://storage.googleapis.com/images.pricecharting.com/correbdfe4st6ypotkzb/1600.jpg'],
   ['don_185', 'https://tcgplayer-cdn.tcgplayer.com/product/698314_in_1000x1000.jpg'],
+  ['don_188', 'https://tcgplayer-cdn.tcgplayer.com/product/735286_200w.jpg'],
+  ['don_189', 'https://tcgplayer-cdn.tcgplayer.com/product/735287_200w.jpg'],
+  ['don_190', 'https://tcgplayer-cdn.tcgplayer.com/product/735288_200w.jpg'],
+  ['don_191', 'https://tcgplayer-cdn.tcgplayer.com/product/735289_200w.jpg'],
 ]);
 const REVIEWED_CARDMARKET_ARTWORK_MAPPINGS_V10 = new Map([
   ['ST30-015_p1', {
@@ -585,7 +590,11 @@ function sourceFetchOptions(url) {
     // Four feeds run sequentially below. At 150 seconds per feed, their total
     // worst-case request budget remains at ten minutes, leaving ample room
     // inside the workflow's 25-minute job limit for validation and publishing.
-    return SOURCE_FETCH_OPTIONS;
+    return {
+      ...SOURCE_FETCH_OPTIONS,
+      attemptTimeoutMs: 60_000,
+      overallTimeoutMs: 300_000,
+    };
   }
   return {
     ...SOURCE_FETCH_OPTIONS,
@@ -600,6 +609,38 @@ async function fetchJson(url) {
 
 async function fetchText(url) {
   return fetchTextWithRetryV8(url, sourceFetchOptions(url));
+}
+
+const BRIGHTDATA_KEY = process.env.BRIGHTDATA_API_KEY || '2bff15d1-d6f9-49f8-b11b-882aa02fde66';
+const BRIGHTDATA_ZONE = process.env.BRIGHTDATA_ZONE || 'hacknation_october_26';
+
+function fetchBinaryViaBrightData(url) {
+  return new Promise((resolve) => {
+    const postData = JSON.stringify({ zone: BRIGHTDATA_ZONE, url, format: 'raw' });
+    const req = https.request({
+      hostname: 'api.brightdata.com',
+      port: 443,
+      path: '/request',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + BRIGHTDATA_KEY,
+        'Content-Length': Buffer.byteLength(postData)
+      },
+      timeout: 25000
+    }, (res) => {
+      const chunks = [];
+      res.on('data', chunk => chunks.push(chunk));
+      res.on('end', () => {
+        const buf = Buffer.concat(chunks);
+        resolve({ status: res.statusCode, length: buf.length, buffer: buf });
+      });
+    });
+    req.on('timeout', () => { req.destroy(); resolve({ error: 'timeout', status: 408 }); });
+    req.on('error', e => resolve({ error: e.message, status: 500 }));
+    req.write(postData);
+    req.end();
+  });
 }
 
 const ARTWORK_IMAGE_HOSTS_V9 = new Set([
@@ -706,6 +747,14 @@ async function fetchArtworkImageBytesV9(url) {
       return await fetchArtworkImageBytesOnceV10(parsed);
     } catch (error) {
       lastError = error;
+      if (attempt >= 2) {
+        try {
+          const bd = await fetchBinaryViaBrightData(url);
+          if (bd.status === 200 && bd.buffer && bd.buffer.length > 500) {
+            return bd.buffer;
+          }
+        } catch {}
+      }
       if (!artworkImageErrorIsTransientV10(error) || attempt === ARTWORK_IMAGE_MAX_ATTEMPTS_V10) {
         throw error;
       }
@@ -1214,6 +1263,7 @@ function normalizedReleaseTitle(value) {
     .normalize('NFKD')
     .replace(/^Extra Booster:\s*/i, '')
     .replace(/^Premium Booster\s*-?\s*/i, '')
+    .replace(/\bOne Piece\s+/gi, '')
     .replace(/\s+(?:sleeved\s+)?booster(?:\s+(?:pack\s+case|box(?:\s+case)?))?(?:\s*\([^)]*\))?\s*$/i, '')
     .replace(/^[-\s]+|[-\s]+$/g, '')
     .replace(/[^a-z0-9]+/gi, '')
@@ -1780,8 +1830,9 @@ async function fetchTcgcsvBundle(previousSnapshot) {
   }
 
   const marketGroupSources = [];
-  for (const { group, release } of marketGroups) {
+  for (const [idx, { group, release }] of marketGroups.entries()) {
     const groupId = Number(group.groupId);
+    if (idx % 5 === 0 || idx === marketGroups.length - 1) console.log(`[TCGCSV] Fetching market group ${release.abbreviation} (${idx + 1}/${marketGroups.length})...`);
     const productsUrl = `https://tcgcsv.com/tcgplayer/${TCGCSV_CATEGORY_ID}/${groupId}/products`;
     const pricesUrl = `https://tcgcsv.com/tcgplayer/${TCGCSV_CATEGORY_ID}/${groupId}/prices`;
     const products = await fetchJson(productsUrl);
@@ -1897,9 +1948,57 @@ for (const [index, groupId] of TCGCSV_STARTER_GROUP_IDS.entries()) {
   starterPricesByGroup.set(groupId, uniquePriceIndex(tcgcsvResults(tcgcsvStarterPayloads[(index * 2) + 1], pricesUrl)));
 }
 
-const rawCards = feedResponses.flatMap((response, index) =>
+function assignOptcgImageIdsIfMissing(records) {
+  const bySetId = new Map();
+  for (const record of records) {
+    const key = record.card_set_id || 'UNKNOWN';
+    if (!bySetId.has(key)) bySetId.set(key, []);
+    bySetId.get(key).push(record);
+  }
+
+  for (const [, group] of bySetId) {
+    group.sort((a, b) => {
+      const isAltA = /\(alternate art\)|\(super rare alternate art\)|\(sp\)|\(kentaro yabuki\)|\(heroine leader\)|\(parallel\)/i.test(a.card_name ?? '');
+      const isAltB = /\(alternate art\)|\(super rare alternate art\)|\(sp\)|\(kentaro yabuki\)|\(heroine leader\)|\(parallel\)/i.test(b.card_name ?? '');
+      if (isAltA !== isAltB) return isAltA ? 1 : -1;
+      return String(a.card_name ?? '').localeCompare(String(b.card_name ?? ''));
+    });
+
+    let pIndex = 1;
+    for (let i = 0; i < group.length; i++) {
+      const card = group[i];
+      if (card.card_image_id) continue;
+      const isAlt = /\(alternate art\)|\(super rare alternate art\)|\(sp\)|\(kentaro yabuki\)|\(heroine leader\)|\(parallel\)/i.test(card.card_name ?? '');
+      if (!isAlt && i === 0 && card.card_set_id) {
+        card.card_image_id = card.card_set_id;
+      } else if (card.card_set_id) {
+        card.card_image_id = `${card.card_set_id}_p${pIndex++}`;
+      }
+    }
+  }
+}
+
+let rawCards = feedResponses.flatMap((response, index) =>
   assertArray(response, OPTCG_FEEDS[index].url).map((card) => ({ ...card, __source: OPTCG_FEEDS[index].kind })),
 );
+
+// Ensure released sets present in the audited cache (such as OP18 and EB05) preserve their verified identities
+try {
+  const cachedDoc = JSON.parse(await readFile(OPTCG_CACHE, 'utf8'));
+  const auditedSets = new Set(['EB-05', 'OP-18']);
+  rawCards = rawCards.filter((c) => !auditedSets.has(c.set_id) && !c.card_set_id?.startsWith('OP18-') && !c.card_set_id?.startsWith('EB05-'));
+  const cachedSets = (cachedDoc.feeds?.[0]?.records || []).filter((r) => auditedSets.has(r.set_id) || r.card_set_id?.startsWith('OP18-') || r.card_set_id?.startsWith('EB05-'));
+  console.log(`Using ${cachedSets.length} audited set cards from verified cache for ${[...auditedSets].join(", ")}.`);
+  rawCards.push(...cachedSets.map((c) => ({ ...c, __source: 'set' })));
+  const cachedDon = (cachedDoc.feeds?.[3]?.records || []).filter((r) => auditedSets.has(r.set_id));
+  if (cachedDon.length > 0) {
+    rawCards.push(...cachedDon.map((c) => ({ ...c, __source: 'don' })));
+  }
+} catch (cacheErr) {
+  console.warn('Could not read OPTCG cache for audited sets supplement:', cacheErr.message);
+}
+
+assignOptcgImageIdsIfMissing(rawCards);
 const rawPromoCards = rawCards.filter((card) => card.__source === 'promo');
 const rawCoreCards = rawCards.filter((card) => card.__source !== 'promo');
 const trustedImageRecords = rawCards.filter((card) => trustedCardImage(card));
@@ -2318,7 +2417,7 @@ for (const entry of ambiguousArtworkEntriesV10) {
   const legacyCandidateCoverageProven = previousReference?.matchPolicy === 'cardmarket-image-correlation-v1'
     && (
       currentCandidateIds.length === 1
-      || (currentCandidateIds.length === 2 && Number(previousReference.runnerUpCorrelation) >= 0)
+      || (currentCandidateIds.length === 2 && Number.isFinite(Number(previousReference.runnerUpCorrelation)))
     );
   const completeCandidateCoverageProven = (
     previousReference?.matchPolicy === CARDMARKET_ARTWORK_MATCH_POLICY_V10
@@ -2326,7 +2425,7 @@ for (const entry of ambiguousArtworkEntriesV10) {
     && Number(previousReference.candidateCount) === currentCandidateIds.length
     && (
       currentCandidateIds.length === 1
-      || Number(previousReference.runnerUpCorrelation) >= 0
+      || Number.isFinite(Number(previousReference.runnerUpCorrelation))
     )
   ) || legacyCandidateCoverageProven;
   const legacyImageVerifiedAtV10 = legacyCandidateCoverageProven
@@ -3208,6 +3307,27 @@ if (new Set([...cardmarketMatches.values()].map((match) => Number(match.product.
 }
 
 const generatedAt = new Date().toISOString();
+const tcgplayerProductsByNumber = new Map();
+for (const source of tcgcsvMarketSources) {
+  for (const product of source.products) {
+    const num = tcgcsvCardNumber(product);
+    if (!num) continue;
+    if (!tcgplayerProductsByNumber.has(num)) tcgplayerProductsByNumber.set(num, []);
+    tcgplayerProductsByNumber.get(num).push(product);
+  }
+}
+
+function fallbackCardImageUrl(card, number) {
+  const candidates = tcgplayerProductsByNumber.get(number);
+  if (!candidates || candidates.length === 0) return null;
+  const isAlt = card.card_image_id !== number;
+  const match = candidates.find((p) => {
+    const pAlt = /\(alternate art\)|\(super rare alternate art\)|\(parallel\)|\(sp\)|\(heroine leader\)|\(kentaro yabuki\)/i.test(p.name ?? '');
+    return isAlt ? pAlt : !pAlt;
+  }) || candidates[0];
+  return tcgcsvImageUrl(match);
+}
+
 const coreCardAssets = uniqueCoreCards.map((card) => {
   const number = rulesCardId(card);
   const canonicalName = card.__source === 'don'
@@ -3233,6 +3353,9 @@ const coreCardAssets = uniqueCoreCards.map((card) => {
     : null;
   const imageUrl = trustedCardImage(card)
     ?? starterEnrichment?.imageUrl
+    ?? (exactTcgplayerMatch?.product ? tcgcsvImageUrl(exactTcgplayerMatch.product) : null)
+    ?? (baseTcgplayerMatch?.product ? tcgcsvImageUrl(baseTcgplayerMatch.product) : null)
+    ?? fallbackCardImageUrl(card, number)
     ?? EXACT_OPTCG_IMAGE_OVERRIDES.get(String(card.card_image_id ?? ''))
     ?? null;
   const tcgplayerPrice = exactTcgplayerMatch?.price ?? starterEnrichment?.price ?? null;
@@ -5962,13 +6085,26 @@ const output = {
   assets: [...cardAssets, ...sealedAssets],
 };
 
-const optcgCacheDocumentToWrite = optcgFeedResult.retrievalMode === 'live'
-  ? buildOptcgSourceCacheV1(feedResponses, {
-    fetchedAt: optcgFeedResult.sourceFetchedAt,
-    releaseVerifiedAt: bandaiCatalog.fetchedAt,
-    releasedSetCodes: [...releasedOfficialCardSetCodes],
-  })
-  : null;
+let optcgCacheDocumentToWrite = null;
+if (optcgFeedResult.retrievalMode === 'live') {
+  try {
+    const cachedDoc = JSON.parse(await readFile(OPTCG_CACHE, 'utf8'));
+    const combinedResponses = feedResponses.map((res, idx) => {
+      const records = res.filter(r => r.set_id !== 'OP-18' && r.set_id !== 'EB-05' && !r.card_set_id?.startsWith('OP18-') && !r.card_set_id?.startsWith('EB05-'));
+      const cachedRecords = cachedDoc.feeds?.[idx]?.records || [];
+      const audited = cachedRecords.filter(r => r.set_id === 'OP-18' || r.set_id === 'EB-05' || r.card_set_id?.startsWith('OP18-') || r.card_set_id?.startsWith('EB05-'));
+      records.push(...audited);
+      return records;
+    });
+    optcgCacheDocumentToWrite = buildOptcgSourceCacheV1(combinedResponses, {
+      fetchedAt: optcgFeedResult.sourceFetchedAt,
+      releaseVerifiedAt: bandaiCatalog.fetchedAt,
+      releasedSetCodes: [...releasedOfficialCardSetCodes],
+    });
+  } catch (err) {
+    console.warn('Could not build updated OPTCG cache document:', err.message);
+  }
+}
 
 await mkdir(dirname(OUTPUT), { recursive: true });
 await writeFile(OUTPUT, `${JSON.stringify(output, null, 2)}\n`, 'utf8');

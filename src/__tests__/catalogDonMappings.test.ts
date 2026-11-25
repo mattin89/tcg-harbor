@@ -9,7 +9,7 @@ describe('DON!! Cardmarket Mappings & Live Pricing', () => {
 
   it('preserves rulesCardId as DON!! for all DON cards', () => {
     expect(donCards.length).toBe(donCounts.totalDons);
-    expect(donCards.length).toBe(187);
+    expect(donCards.length).toBe(191);
     const rulesCardIds = new Set(donCards.map((asset) => asset.rulesCardId));
     expect(rulesCardIds.size).toBe(1);
     expect(rulesCardIds.has('DON!!')).toBe(true);
@@ -58,10 +58,10 @@ describe('DON!! Cardmarket Mappings & Live Pricing', () => {
     }
   });
 
-  it('keeps the 10 unlisted promotional cards cleanly documented as unmapped', () => {
+  it('keeps the 14 unlisted promotional cards cleanly documented as unmapped', () => {
     const unmapped = donCards.filter((asset) => asset.cardmarketPriceState === 'unmapped');
     expect(unmapped.length).toBe(donCounts.unmappedCount);
-    expect(unmapped.length).toBe(10);
+    expect(unmapped.length).toBe(14);
 
     for (const asset of unmapped) {
       expect(asset.cardmarketProductId).toBeNull();

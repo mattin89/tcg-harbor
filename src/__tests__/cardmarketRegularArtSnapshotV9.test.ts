@@ -7,7 +7,7 @@ import {
 
 type SnapshotCatalogCardV10 = CatalogCardmarketAssetV9 & Pick<
   DemoAsset,
-  'cardmarketArtworkReference' | 'catalogAliasOf'
+  'cardmarketArtworkReference' | 'catalogAliasOf' | 'set'
 >;
 
 const cards = catalogAssets.filter((asset) => asset.kind === 'card') as SnapshotCatalogCardV10[];
@@ -120,7 +120,7 @@ describe('Cardmarket regular-art snapshot compatibility', () => {
 
   it('keeps priced origin releases and values legacy duplicate rows through one canonical physical art', () => {
     const reprinted = cards.filter((asset) => asset.rulesCardId === 'OP10-063');
-    const origin = reprinted.find((asset) => asset.setCode === 'OP10');
+    const origin = reprinted.find((asset) => asset.setCode === 'OP10' && asset.set === 'Royal Blood');
     const duplicateSources = cards.filter((asset) => asset.rulesCardId === 'OP13-084');
     const duplicateReferences = duplicateSources.filter(
       (asset) => asset.cardmarketRegularArtReference != null,
